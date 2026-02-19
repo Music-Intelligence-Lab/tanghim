@@ -149,6 +149,8 @@ void ArabicMaqamTunerProcessor::getStateInformation (juce::MemoryBlock& dest)
     // Current maqam (for MTS-ESP scale name)
     state.setProperty ("maqamDisplay", currentMaqamDisplay, nullptr);
     state.setProperty ("tonicDisplay", currentTonicDisplay, nullptr);
+    state.setProperty ("tonicEnglish", currentTonicEnglish, nullptr);
+    state.setProperty ("tonicSolfege", currentTonicSolfege, nullptr);
 
     std::unique_ptr<juce::XmlElement> xml (state.createXml());
     copyXmlToBinary (*xml, dest);
@@ -193,6 +195,8 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
     // Restore maqam display info (for MTS-ESP scale name)
     currentMaqamDisplay = state.getProperty ("maqamDisplay").toString();
     currentTonicDisplay = state.getProperty ("tonicDisplay").toString();
+    currentTonicEnglish = state.getProperty ("tonicEnglish").toString();
+    currentTonicSolfege = state.getProperty ("tonicSolfege").toString();
 
     // Restore tuning system — async (may need API fetch)
     const juce::String sysId    = state.getProperty ("tuningSystemId").toString();
@@ -245,6 +249,8 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
     currentMaqamList.clear();
     currentMaqamDisplay.clear();
     currentTonicDisplay.clear();
+    currentTonicEnglish.clear();
+    currentTonicSolfege.clear();
 
     auto doLoad = [this, systemId, startingNote, onComplete] ()
     {
@@ -426,15 +432,36 @@ void ArabicMaqamTunerProcessor::applyMaqam (const juce::String& maqamId, int tra
     currentMaqamDisplay = found->maqamDisplay;
 
     // Choose base degrees or a specific transposition
+    juce::String tonicId;
     if (transpositionIndex < 0 || transpositionIndex >= (int) found->transpositions.size())
     {
         currentTonicDisplay = found->tonicDisplay;
+        tonicId = found->tonicId;
         applyMaqamDegrees (found->degrees);
     }
     else
     {
-        currentTonicDisplay = found->transpositions[(size_t) transpositionIndex].tonicDisplay;
-        applyMaqamDegrees (found->transpositions[(size_t) transpositionIndex].degrees);
+        const auto& t = found->transpositions[(size_t) transpositionIndex];
+        currentTonicDisplay = t.tonicDisplay;
+        tonicId = t.tonicId;
+        applyMaqamDegrees (t.degrees);
+    }
+
+    // Look up tonic's IPN and solfège from pitch class data
+    currentTonicEnglish.clear();
+    currentTonicSolfege.clear();
+    if (tonicId.isNotEmpty() && dataCache.hasData (currentSystemId, currentStartingNote))
+    {
+        const auto& data = dataCache.getData (currentSystemId, currentStartingNote);
+        for (const auto& pc : data.pitchClasses)
+        {
+            if (pc.noteName == tonicId)
+            {
+                currentTonicEnglish = pc.englishName;
+                currentTonicSolfege = pc.solfege;
+                break;
+            }
+        }
     }
 }
 
@@ -617,31 +644,33 @@ juce::String ArabicMaqamTunerProcessor::buildScaleName() const
 {
     if (currentSystemId.isEmpty()) return "Tanghim";
 
-    juce::String name;
-
-    // Include maqam + tonic if a maqam is applied
-    if (currentMaqamDisplay.isNotEmpty())
-    {
-        name = currentMaqamDisplay;
-        if (currentTonicDisplay.isNotEmpty())
-            name += " / " + currentTonicDisplay;
-    }
-
-    // Append tuning system short name
+    // Line 1: tuning system short name
+    juce::String line1;
     const auto& systems = dataCache.getTuningSystemsList();
     for (const auto& ts : systems)
     {
         if (ts.id == currentSystemId)
         {
-            if (name.isNotEmpty())
-                name += " - " + ts.shortName;
-            else
-                name = ts.shortName;
-            return name;
+            line1 = ts.shortName;
+            break;
         }
     }
+    if (line1.isEmpty())
+        line1 = currentSystemId;
 
-    return name.isNotEmpty() ? name : currentSystemId;
+    // Line 2: maqam al-tonic / IPN / solfège (if a maqam is applied)
+    if (currentMaqamDisplay.isEmpty())
+        return line1;
+
+    juce::String line2 = currentMaqamDisplay;
+    if (currentTonicDisplay.isNotEmpty())
+        line2 += " al" + juce::String::charToString (0x2011) + currentTonicDisplay;
+    if (currentTonicEnglish.isNotEmpty())
+        line2 += " / " + currentTonicEnglish;
+    if (currentTonicSolfege.isNotEmpty())
+        line2 += " / " + currentTonicSolfege;
+
+    return line1 + "\n" + line2;
 }
 
 // ── Plugin factory ────────────────────────────────────────────────────────────

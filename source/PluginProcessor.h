@@ -108,6 +108,8 @@ private:
     std::vector<MaqamListEntry>      currentMaqamList;
     juce::String              currentMaqamDisplay;   // e.g. "maqām rāst"
     juce::String              currentTonicDisplay;   // e.g. "rāst" (or transposition tonic)
+    juce::String              currentTonicEnglish;   // e.g. "C3" (IPN from pitch class data)
+    juce::String              currentTonicSolfege;   // e.g. "Do 3" (solfège from pitch class data)
 
     // ── Lifetime guard (must be declared before apiClient so it outlives it) ─
     std::shared_ptr<std::atomic<bool>> alive = std::make_shared<std::atomic<bool>> (true);

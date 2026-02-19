@@ -34,6 +34,7 @@ private:
     ReceiverLookAndFeel lnf;
 
     juce::Label titleLabel;
+    juce::Label connectionLabel;
 
     // Mode toggle buttons
     juce::TextButton mpeButton   { "MPE" };
@@ -45,7 +46,10 @@ private:
     juce::Label      pbValueLabel;
     juce::TextButton pbIncButton;
 
-    juce::Label statusLabel;
+    // Tuning info (from MTS-ESP scale name)
+    juce::Label tuningSystemLabel;
+    juce::Label maqamInfoLabel;
+
     juce::Label versionLabel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ReceiverEditor)

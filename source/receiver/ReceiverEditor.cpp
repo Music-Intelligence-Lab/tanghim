@@ -12,7 +12,8 @@ namespace Theme
     static const juce::Colour text       { 0xffe0e0e0 };  // --text
     static const juce::Colour textMuted  { 0xff888888 };  // --text-muted
     static const juce::Colour border     { 0xff2a2a4a };  // --border
-    static const juce::Colour connected  { 0xff81c784 };  // green (matches mono PB badge)
+    static const juce::Colour connected  { 0xff81c784 };  // green
+    static const juce::Colour tuningText { 0xffb0b0cc };  // slightly brighter than muted
 }
 
 //==============================================================================
@@ -59,16 +60,22 @@ ReceiverEditor::ReceiverEditor (ReceiverProcessor& p)
     : AudioProcessorEditor (p), processor (p)
 {
     setLookAndFeel (&lnf);
-    setSize (360, 210);
+    setSize (360, 260);
 
-    // Title
+    // ── Title ─────────────────────────────────────────────────────────────
     titleLabel.setText ("Tanghim Receiver", juce::dontSendNotification);
     titleLabel.setFont (juce::FontOptions (18.0f, juce::Font::bold));
     titleLabel.setJustificationType (juce::Justification::centred);
     titleLabel.setColour (juce::Label::textColourId, Theme::text);
     addAndMakeVisible (titleLabel);
 
-    // ── Mode toggle buttons ──────────────────────────────────────────────
+    // ── Connection status ─────────────────────────────────────────────────
+    connectionLabel.setFont (juce::FontOptions (12.0f));
+    connectionLabel.setJustificationType (juce::Justification::centred);
+    connectionLabel.setColour (juce::Label::textColourId, Theme::textMuted);
+    addAndMakeVisible (connectionLabel);
+
+    // ── Mode toggle buttons ───────────────────────────────────────────────
     auto setupModeButton = [this] (juce::TextButton& btn)
     {
         btn.setClickingTogglesState (true);
@@ -103,7 +110,7 @@ ReceiverEditor::ReceiverEditor (ReceiverProcessor& p)
         }
     };
 
-    // ── PB Range controls ────────────────────────────────────────────────
+    // ── PB Range controls ─────────────────────────────────────────────────
     pbLabel.setText ("PB Range", juce::dontSendNotification);
     pbLabel.setJustificationType (juce::Justification::centred);
     pbLabel.setColour (juce::Label::textColourId, Theme::textMuted);
@@ -150,12 +157,18 @@ ReceiverEditor::ReceiverEditor (ReceiverProcessor& p)
     };
     addAndMakeVisible (pbValueLabel);
 
-    // Status
-    statusLabel.setJustificationType (juce::Justification::centredLeft);
-    statusLabel.setColour (juce::Label::textColourId, Theme::textMuted);
-    addAndMakeVisible (statusLabel);
+    // ── Tuning info labels ────────────────────────────────────────────────
+    tuningSystemLabel.setFont (juce::FontOptions (14.0f));
+    tuningSystemLabel.setJustificationType (juce::Justification::centred);
+    tuningSystemLabel.setColour (juce::Label::textColourId, Theme::tuningText);
+    addAndMakeVisible (tuningSystemLabel);
 
-    // Version
+    maqamInfoLabel.setFont (juce::FontOptions (14.0f));
+    maqamInfoLabel.setJustificationType (juce::Justification::centred);
+    maqamInfoLabel.setColour (juce::Label::textColourId, Theme::text);
+    addAndMakeVisible (maqamInfoLabel);
+
+    // ── Version ───────────────────────────────────────────────────────────
     versionLabel.setText (juce::String ("v") + PLUGIN_VERSION, juce::dontSendNotification);
     versionLabel.setJustificationType (juce::Justification::centredRight);
     versionLabel.setColour (juce::Label::textColourId, Theme::textMuted.withAlpha (0.6f));
@@ -176,20 +189,28 @@ void ReceiverEditor::paint (juce::Graphics& g)
 {
     g.fillAll (Theme::bg);
 
-    // Separator line below title
     auto area = getLocalBounds().reduced (16);
     g.setColour (Theme::border);
-    g.drawHorizontalLine (area.getY() + 34, (float) area.getX(), (float) area.getRight());
+
+    // Separator below connection status
+    g.drawHorizontalLine (area.getY() + 48, (float) area.getX(), (float) area.getRight());
+
+    // Separator below PB range
+    g.drawHorizontalLine (area.getY() + 150, (float) area.getX(), (float) area.getRight());
 }
 
 void ReceiverEditor::resized()
 {
     auto area = getLocalBounds().reduced (16);
 
-    titleLabel.setBounds (area.removeFromTop (30));
-    area.removeFromTop (8);
+    // ── Title + connection status ─────────────────────────────────────────
+    titleLabel.setBounds (area.removeFromTop (26));
+    area.removeFromTop (2);
+    connectionLabel.setBounds (area.removeFromTop (18));
+    area.removeFromTop (6);  // space before separator
 
-    // ── Mode toggle buttons (centred) ────────────────────────────────────
+    // ── Mode toggle buttons (centred) ─────────────────────────────────────
+    area.removeFromTop (6);  // space after separator
     auto modeRow = area.removeFromTop (28);
     const int buttonW = 140;
     const int gap = 8;
@@ -199,7 +220,7 @@ void ReceiverEditor::resized()
     monoPbButton.setBounds (x0 + buttonW + gap, modeRow.getY(), buttonW, 28);
     area.removeFromTop (10);
 
-    // ── PB Range row (label above, controls centred) ─────────────────────
+    // ── PB Range row (label above, controls centred) ──────────────────────
     pbLabel.setBounds (area.removeFromTop (18));
     area.removeFromTop (4);
 
@@ -212,11 +233,16 @@ void ReceiverEditor::resized()
     pbDecButton.setBounds (pbX0, pbRow.getY(), btnSize, btnSize);
     pbValueLabel.setBounds (pbX0 + btnSize + pbGap, pbRow.getY(), valueW, btnSize);
     pbIncButton.setBounds (pbX0 + btnSize + pbGap + valueW + pbGap, pbRow.getY(), btnSize, btnSize);
-    area.removeFromTop (14);
+    area.removeFromTop (10);  // space before separator
 
-    // ── Status + version ─────────────────────────────────────────────────
-    statusLabel.setBounds (area.removeFromTop (20));
+    // ── Tuning info ───────────────────────────────────────────────────────
+    area.removeFromTop (6);  // space after separator
+    tuningSystemLabel.setBounds (area.removeFromTop (20));
+    area.removeFromTop (2);
+    maqamInfoLabel.setBounds (area.removeFromTop (20));
     area.removeFromTop (4);
+
+    // ── Version ───────────────────────────────────────────────────────────
     versionLabel.setBounds (area.removeFromTop (16));
 }
 
@@ -226,17 +252,32 @@ void ReceiverEditor::timerCallback()
     updateModeButtons();
     updatePbDisplay();
 
-    // Status
+    // Connection status + tuning info
     if (processor.isConnectedToMaster())
     {
-        juce::String name = processor.getScaleName();
-        statusLabel.setText ("Connected " + juce::String::charToString (0x2014) + " " + name, juce::dontSendNotification);
-        statusLabel.setColour (juce::Label::textColourId, Theme::connected);
+        connectionLabel.setText ("Connected", juce::dontSendNotification);
+        connectionLabel.setColour (juce::Label::textColourId, Theme::connected);
+
+        juce::String scaleName = processor.getScaleName();
+        // Scale name format: "tuning system\nmaqam info" or just "tuning system"
+        const int newlineIdx = scaleName.indexOfChar ('\n');
+        if (newlineIdx >= 0)
+        {
+            tuningSystemLabel.setText (scaleName.substring (0, newlineIdx), juce::dontSendNotification);
+            maqamInfoLabel.setText (scaleName.substring (newlineIdx + 1), juce::dontSendNotification);
+        }
+        else
+        {
+            tuningSystemLabel.setText (scaleName, juce::dontSendNotification);
+            maqamInfoLabel.setText ({}, juce::dontSendNotification);
+        }
     }
     else
     {
-        statusLabel.setText ("No transmitter found", juce::dontSendNotification);
-        statusLabel.setColour (juce::Label::textColourId, Theme::textMuted);
+        connectionLabel.setText ("No transmitter found", juce::dontSendNotification);
+        connectionLabel.setColour (juce::Label::textColourId, Theme::textMuted);
+        tuningSystemLabel.setText ({}, juce::dontSendNotification);
+        maqamInfoLabel.setText ({}, juce::dontSendNotification);
     }
 }
 
