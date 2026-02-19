@@ -10,20 +10,6 @@
   white-space: nowrap;
 }
 
-.mts-label {
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.mts-info {
-  color: var(--text-muted);
-}
-
-.mts-warning {
-  color: var(--text-muted);
-  opacity: 0.6;
-}
-
 /* ── Badge chips ─────────────────────────────────────────────────────── */
 .mts-badge {
   display: inline-flex;
@@ -55,4 +41,8 @@
 .mts-badge-mono {
   color: #81c784;
   border-color: rgba(129, 199, 132, 0.4);
+}
+
+.mts-badge-inactive {
+  opacity: 0.35;
 }

@@ -8,43 +8,19 @@ interface Props {
 }
 
 export default function MtsEspStatus({ isMtsTransmitter, mtsNativeCount, mpeCount, monoPbCount }: Props) {
-  if (!isMtsTransmitter) {
-    return (
-      <div className="mts-esp-status">
-        <span className="mts-label">MTS-ESP</span>
-        <span className="mts-info mts-warning">not connected</span>
-      </div>
-    )
-  }
-
-  const total = mtsNativeCount + mpeCount + monoPbCount
-
-  if (total === 0) {
-    return (
-      <div className="mts-esp-status">
-        <span className="mts-label">MTS-ESP</span>
-        <span className="mts-info">no receivers</span>
-      </div>
-    )
-  }
+  const active = isMtsTransmitter
 
   return (
     <div className="mts-esp-status">
-      {mtsNativeCount > 0 && (
-        <span className="mts-badge mts-badge-native">
-          MTS-ESP<span className="mts-badge-count">{mtsNativeCount}</span>
-        </span>
-      )}
-      {mpeCount > 0 && (
-        <span className="mts-badge mts-badge-mpe">
-          MPE<span className="mts-badge-count">{mpeCount}</span>
-        </span>
-      )}
-      {monoPbCount > 0 && (
-        <span className="mts-badge mts-badge-mono">
-          Mono PB<span className="mts-badge-count">{monoPbCount}</span>
-        </span>
-      )}
+      <span className={`mts-badge mts-badge-native${active && mtsNativeCount > 0 ? '' : ' mts-badge-inactive'}`}>
+        MTS-ESP<span className="mts-badge-count">{active ? mtsNativeCount : 0}</span>
+      </span>
+      <span className={`mts-badge mts-badge-mpe${active && mpeCount > 0 ? '' : ' mts-badge-inactive'}`}>
+        MPE<span className="mts-badge-count">{active ? mpeCount : 0}</span>
+      </span>
+      <span className={`mts-badge mts-badge-mono${active && monoPbCount > 0 ? '' : ' mts-badge-inactive'}`}>
+        Mono PB<span className="mts-badge-count">{active ? monoPbCount : 0}</span>
+      </span>
     </div>
   )
 }
