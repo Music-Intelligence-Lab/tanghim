@@ -19,7 +19,8 @@ interface Props {
 const TICK_CLASSES = new Set([0, 7, 9])
 
 export default function RangeScroller({ startMidi, visibleCount, maqamTonicMidi, onChange }: Props) {
-  const endMidi = startMidi + visibleCount - 1
+  const displayStart = Math.round(startMidi)
+  const endMidi = displayStart + visibleCount - 1
   const maxStart = 128 - visibleCount
 
   // Build tick marks at every G, A, and C within the slider range
@@ -38,7 +39,10 @@ export default function RangeScroller({ startMidi, visibleCount, maqamTonicMidi,
       <div
         className="range-track-wrap"
         onDoubleClick={() => {
-          if (maqamTonicMidi >= 0) onChange(Math.max(0, Math.min(maxStart, maqamTonicMidi)))
+          if (maqamTonicMidi >= 0) {
+            const padding = Math.floor((visibleCount - 12) / 2)
+            onChange(Math.max(0, Math.min(maxStart, maqamTonicMidi - padding)))
+          }
         }}
       >
         <div className="range-ticks">
@@ -54,12 +58,13 @@ export default function RangeScroller({ startMidi, visibleCount, maqamTonicMidi,
           type="range"
           min={0}
           max={maxStart}
+          step="any"
           value={startMidi}
           onChange={e => onChange(Number(e.target.value))}
         />
       </div>
       <div className="range-label">
-        {midiToIpn(startMidi)}–{midiToIpn(endMidi)}
+        {midiToIpn(displayStart)}–{midiToIpn(endMidi)}
       </div>
     </div>
   )

@@ -4,38 +4,49 @@
 
 class ReceiverProcessor;
 
+//==============================================================================
+/** Custom LookAndFeel matching the Transmitter's dark navy theme. */
+class ReceiverLookAndFeel : public juce::LookAndFeel_V4
+{
+public:
+    ReceiverLookAndFeel();
+};
+
+//==============================================================================
 class ReceiverEditor : public juce::AudioProcessorEditor,
                        private juce::Timer
 {
 public:
     explicit ReceiverEditor (ReceiverProcessor&);
-    ~ReceiverEditor() override = default;
+    ~ReceiverEditor() override;
 
     void paint (juce::Graphics&) override;
     void resized() override;
 
 private:
     void timerCallback() override;
-    void updatePbRangeVisibility();
+    void updateModeButtons();
+    void updatePbDisplay();
+    void setPbValue (int newVal);
+    bool isMpeMode() const;
 
     ReceiverProcessor& processor;
+    ReceiverLookAndFeel lnf;
 
     juce::Label titleLabel;
-    juce::Label modeLabel;
-    juce::Label pbRangeLabel;
+
+    // Mode toggle buttons
+    juce::TextButton mpeButton   { "MPE" };
+    juce::TextButton monoPbButton { "Mono PB" };
+
+    // PB Range controls
+    juce::Label      pbLabel;
+    juce::TextButton pbDecButton;
+    juce::Label      pbValueLabel;
+    juce::TextButton pbIncButton;
+
     juce::Label statusLabel;
     juce::Label versionLabel;
-
-    juce::ComboBox modeCombo;
-    juce::Slider   mpePbRangeSlider;
-    juce::Slider   monoPbRangeSlider;
-
-    using ComboAttachment  = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
-    using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
-
-    std::unique_ptr<ComboAttachment>  modeAttachment;
-    std::unique_ptr<SliderAttachment> mpePbRangeAttachment;
-    std::unique_ptr<SliderAttachment> monoPbRangeAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ReceiverEditor)
 };

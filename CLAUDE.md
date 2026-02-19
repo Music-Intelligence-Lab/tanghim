@@ -115,11 +115,12 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - Cents deviation is shown above the note name
 
 ### Slider Bank Layout
-- Sliders have a **fixed width** of 68px (`ui/src/constants.ts: SLIDER_WIDTH_PX`)
+- Sliders have a **fixed width** of 68px (`ui/src/constants.ts: SLOT_WIDTH_PX`)
 - The number of visible sliders is computed dynamically via `ResizeObserver` in `useVisibleSliderCount` hook
 - Widening the plugin window reveals more sliders; narrowing hides them — no CSS scrolling, virtual render only
-- `RangeScroller` pans one MIDI note at a time (smooth scrolling), with tick marks at every C, G, A
-- Mouse wheel on the slider bank also scrolls the range
+- **Smooth scrolling**: `startMidi` is fractional (not integer), mouse wheel delta proportional to `deltaY / SLOT_WIDTH_PX`. NoteSliderBank renders an extra slider and uses CSS `translateX(-pixelOffset)` for sub-pixel offset
+- `RangeScroller` pans smoothly with `step="any"`, tick marks at every C, G, A. Double-click centers viewport on the maqam's octave
+- When selecting a maqam, the viewport auto-centers on the maqam's octave: `startMidi = tonicMidi - floor((visibleCount - 12) / 2)`
 - Plugin window: 884–2400px wide, 590–900px tall (`PluginEditor.cpp: setResizeLimits`)
 - Min width = 13 sliders × 68px (full octave including tonic octave above)
 - Min height = maqam dropdown (max-height 480px) lines up flush with status bar
@@ -139,6 +140,10 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 ### Maqam Selector & Preset System
 - Two-dropdown selector: base maqam (searchable) + variant/transposition
 - `CustomSelect` component: searchable with keyboard nav (ArrowUp/Down/Enter/Escape), highlighted option auto-scrolls
+- Transposition dropdown labels: `"segāh / E-b3 / Mi -b3 (qarār)"` — PAO display name + IPN (englishName) + solfège, with "(qarār)" suffix for the base tonic
+- Transposition sort order: ascending by tuning system pitch order using compound key `(octave, pitchClassIndex)` from pitch class data
+- `paoOrder`: unique PAO idNames sorted by `(octave, pitchClassIndex)` — used for transposition dropdown ordering
+- `paoNameInfo`: PAO idName → `{ englishName, solfege }` mapping — used for transposition dropdown labels
 - Preset labels use non-breaking hyphen (U+2011) after "al" to prevent line breaks: `.replace(/\bal-/gi, 'al\u2011')`
 - Preset compatibility: when switching tuning systems, presets are checked against `maqamList` — if `preset.maqamId` doesn't exist or `transpositionIndex` is out of bounds, preset is disabled (opacity 0.35, cursor not-allowed)
 - `degreeNames` (ascending PAO names) stored in presets for degree highlighting
@@ -186,7 +191,7 @@ Key endpoints:
 
 **`/tuning-systems`**: `{ count, data: [{ tuningSystem: { id, idName, displayName, version, year }, startingNotes: { idNames: [...], displayNames: [...] }, stats: {...} }] }`
 
-**`/pitch-classes`**: `{ tuningSystem: {...}, pitchClasses: [...] }` — field is `midiNotePlusCentsDeviation` (not `midiNoteDeviation`), and `ipnReferenceNoteName` is provided by the API
+**`/pitch-classes`**: `{ tuningSystem: {...}, pitchClasses: [...] }` — field is `midiNotePlusCentsDeviation` (not `midiNoteDeviation`), `ipnReferenceNoteName` and `solfege` are provided by the API
 
 MIDI deviation format: `"48 -5.9"` = MIDI note 48, -5.9 cents from 12-EDO.
 
@@ -214,7 +219,7 @@ The **Receiver** plugin (`ArabicMaqamTunerReceiver` CMake target) is a lightweig
 - Separate pitch bend ranges: MPE default 48st, Mono default 2st
 - APVTS for DAW automation + state save/recall (3 params: mode, mpePbRange, monoPbRange)
 - `IS_MIDI_EFFECT=TRUE`, `IS_SYNTH=FALSE` — appears in MIDI FX slots (Logic, Reaper)
-- Simple JUCE-native editor (~360×210px): mode combo, PB range slider, connection status
+- JUCE-native editor (~360×210px) with dark navy theme matching Transmitter: toggle buttons (MPE/Mono PB), PB range with +/- buttons and editable value, connection status
 - Status updates at 5Hz: checks `MTS_HasMaster()` + `MTS_GetScaleName()`
 - **Ableton**: Needs a Max for Live wrapper (future work) — Ableton doesn't support VST3 MIDI effects natively
 - **Registry**: Writes `{uuid}.mpe` or `{uuid}.monopb` to `~/Library/Tanghim/receivers/` for Transmitter discovery (file-based IPC since plugins are separate shared libraries)

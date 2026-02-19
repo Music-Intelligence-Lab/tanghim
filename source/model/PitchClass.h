@@ -21,6 +21,7 @@ struct PitchClass
     juce::String noteName;               // URL-safe id, e.g. "segah", "buselik_ushshaq"
     juce::String noteNameDisplay;        // With diacritics, e.g. "segāh", "būselīk/ʿushshāq"
     juce::String englishName;            // IPN + microtonal, e.g. "E-b3", "D#3", "C3"
+    juce::String solfege;               // Solfège notation, e.g. "Mi -b3", "Do 2", "Sol 1"
     juce::String abjadName;             // Arabic abjad notation
 
     // ── Tuning data ───────────────────────────────────────────────────────────

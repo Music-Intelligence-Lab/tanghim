@@ -146,6 +146,10 @@ void ArabicMaqamTunerProcessor::getStateInformation (juce::MemoryBlock& dest)
     }
     state.addChild (perNoteNode, -1, nullptr);
 
+    // Current maqam (for MTS-ESP scale name)
+    state.setProperty ("maqamDisplay", currentMaqamDisplay, nullptr);
+    state.setProperty ("tonicDisplay", currentTonicDisplay, nullptr);
+
     std::unique_ptr<juce::XmlElement> xml (state.createXml());
     copyXmlToBinary (*xml, dest);
 }
@@ -185,6 +189,10 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
                 if (s.isNotEmpty()) p.degreeNames.push_back (s);
         }
     }
+
+    // Restore maqam display info (for MTS-ESP scale name)
+    currentMaqamDisplay = state.getProperty ("maqamDisplay").toString();
+    currentTonicDisplay = state.getProperty ("tonicDisplay").toString();
 
     // Restore tuning system — async (may need API fetch)
     const juce::String sysId    = state.getProperty ("tuningSystemId").toString();
@@ -235,6 +243,8 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
     currentSystemId     = systemId;
     currentStartingNote = startingNote;
     currentMaqamList.clear();
+    currentMaqamDisplay.clear();
+    currentTonicDisplay.clear();
 
     auto doLoad = [this, systemId, startingNote, onComplete] ()
     {
@@ -412,11 +422,20 @@ void ArabicMaqamTunerProcessor::applyMaqam (const juce::String& maqamId, int tra
     }
     if (found == nullptr) return;
 
+    // Store current maqam info for MTS-ESP scale name
+    currentMaqamDisplay = found->maqamDisplay;
+
     // Choose base degrees or a specific transposition
     if (transpositionIndex < 0 || transpositionIndex >= (int) found->transpositions.size())
+    {
+        currentTonicDisplay = found->tonicDisplay;
         applyMaqamDegrees (found->degrees);
+    }
     else
+    {
+        currentTonicDisplay = found->transpositions[(size_t) transpositionIndex].tonicDisplay;
         applyMaqamDegrees (found->transpositions[(size_t) transpositionIndex].degrees);
+    }
 }
 
 void ArabicMaqamTunerProcessor::clearPreset (int idx)
@@ -597,11 +616,32 @@ void ArabicMaqamTunerProcessor::notifyTuningChanged()
 juce::String ArabicMaqamTunerProcessor::buildScaleName() const
 {
     if (currentSystemId.isEmpty()) return "Tanghim";
+
+    juce::String name;
+
+    // Include maqam + tonic if a maqam is applied
+    if (currentMaqamDisplay.isNotEmpty())
+    {
+        name = currentMaqamDisplay;
+        if (currentTonicDisplay.isNotEmpty())
+            name += " / " + currentTonicDisplay;
+    }
+
+    // Append tuning system short name
     const auto& systems = dataCache.getTuningSystemsList();
     for (const auto& ts : systems)
+    {
         if (ts.id == currentSystemId)
-            return ts.shortName;
-    return currentSystemId;
+        {
+            if (name.isNotEmpty())
+                name += " - " + ts.shortName;
+            else
+                name = ts.shortName;
+            return name;
+        }
+    }
+
+    return name.isNotEmpty() ? name : currentSystemId;
 }
 
 // ── Plugin factory ────────────────────────────────────────────────────────────

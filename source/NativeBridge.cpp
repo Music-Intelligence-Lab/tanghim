@@ -239,6 +239,42 @@ juce::var NativeBridge::buildTuningStateJson() const
     }
     root->setProperty ("paoNameMap", juce::var (paoNameMapObj));
 
+    // paoOrder: unique PAO idNames sorted by (octave, pitchClassIndex) ascending.
+    // This gives correct pitch order across all octaves — qarār (lower octave) before
+    // base, and jawāb (higher octave) after.
+    //
+    // paoNameInfo: PAO idName → { englishName, solfege } for display in transposition dropdown.
+    juce::Array<juce::var> paoOrderArr;
+    auto* paoNameInfoObj = new juce::DynamicObject();
+    {
+        struct PaoEntry { juce::String name; juce::String englishName; juce::String solfege; };
+        std::map<std::pair<int, int>, PaoEntry> sortedEntries;
+        juce::StringArray seen;
+        const auto& allPCs = processor.getCurrentPitchClasses();
+        for (const auto& pc : allPCs)
+        {
+            if (pc.noteName.isEmpty()) continue;
+            if (! seen.contains (pc.noteName))
+            {
+                seen.add (pc.noteName);
+                sortedEntries[{ pc.octave, pc.pitchClassIndex }] =
+                    { pc.noteName, pc.englishName, pc.solfege };
+            }
+        }
+        // std::map iterates in ascending key order: (0,0), (0,1), ..., (1,0), (1,1), ...
+        for (const auto& [key, entry] : sortedEntries)
+        {
+            paoOrderArr.add (juce::var (entry.name));
+
+            auto* info = new juce::DynamicObject();
+            info->setProperty ("englishName", entry.englishName);
+            info->setProperty ("solfege",     entry.solfege);
+            paoNameInfoObj->setProperty (entry.name, juce::var (info));
+        }
+    }
+    root->setProperty ("paoOrder", juce::var (paoOrderArr));
+    root->setProperty ("paoNameInfo", juce::var (paoNameInfoObj));
+
     return juce::var (root);
 }
 

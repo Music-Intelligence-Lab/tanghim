@@ -1,4 +1,5 @@
 import type { ChromaticSlot } from '../types'
+import { SLOT_WIDTH_PX } from '../constants'
 import NoteSlider from './NoteSlider'
 import './NoteSliderBank.css'
 
@@ -18,46 +19,51 @@ interface Props {
 }
 
 export default function NoteSliderBank({ slots, midiActiveNotes, startMidi, visibleCount, noteNames, perNoteOverrides, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, onSliderChange }: Props) {
-  const count = Math.min(visibleCount, 128 - startMidi)
+  const renderStart = Math.floor(startMidi)
+  const pixelOffset = (startMidi - renderStart) * SLOT_WIDTH_PX
+  // Render one extra slider to fill the gap when partially scrolled
+  const renderCount = Math.min(visibleCount + (pixelOffset > 0 ? 1 : 0), 128 - renderStart)
 
   return (
     <div className="note-slider-bank">
-      {Array.from({ length: count }, (_, i) => {
-        const midi = startMidi + i
-        const chromaticIndex = midi % 12
-        const ipnOctave = Math.floor(midi / 12) - 1
-        const ipnLabel = `${IPN_NAMES[chromaticIndex]}${ipnOctave}`
-        const paoName = noteNames?.[String(chromaticIndex)]?.[String(ipnOctave)] ?? '—'
-        const slot = slots[chromaticIndex]
+      <div className="note-slider-bank-inner" style={{ transform: `translateX(-${pixelOffset}px)` }}>
+        {Array.from({ length: renderCount }, (_, i) => {
+          const midi = renderStart + i
+          const chromaticIndex = midi % 12
+          const ipnOctave = Math.floor(midi / 12) - 1
+          const ipnLabel = `${IPN_NAMES[chromaticIndex]}${ipnOctave}`
+          const paoName = noteNames?.[String(chromaticIndex)]?.[String(ipnOctave)] ?? '—'
+          const slot = slots[chromaticIndex]
 
-        // Resolve effective selected index: per-note override or chromatic slot default
-        const noteOverride = perNoteOverrides?.[String(midi)]
-        const effectiveIndex = noteOverride !== undefined ? noteOverride : slot.selectedIndex
-        const hasOverride = noteOverride !== undefined
+          // Resolve effective selected index: per-note override or chromatic slot default
+          const noteOverride = perNoteOverrides?.[String(midi)]
+          const effectiveIndex = noteOverride !== undefined ? noteOverride : slot.selectedIndex
+          const hasOverride = noteOverride !== undefined
 
-        // Home octave: tonic to tonic+11. The octave above (tonic+12) is treated as equiv.
-        const isDegree = maqamDegreeIndices.has(chromaticIndex)
-        const inHomeOctave = maqamTonicMidi >= 0 && midi >= maqamTonicMidi && midi < maqamTonicMidi + 12
+          // Home octave: tonic to tonic+11. The octave above (tonic+12) is treated as equiv.
+          const isDegree = maqamDegreeIndices.has(chromaticIndex)
+          const inHomeOctave = maqamTonicMidi >= 0 && midi >= maqamTonicMidi && midi < maqamTonicMidi + 12
 
-        return (
-          <NoteSlider
-            key={i}
-            slot={slot}
-            chromaticIndex={chromaticIndex}
-            midiNote={midi}
-            effectiveIndex={effectiveIndex}
-            hasOverride={hasOverride}
-            midiActive={midiActiveNotes.has(midi)}
-            isMaqamDegree={isDegree && inHomeOctave}
-            isMaqamDegreeEquiv={isDegree && !inHomeOctave}
-            isMaqamTonic={midi === maqamTonicMidi}
-            isMaqamTonicEquiv={chromaticIndex === maqamTonicIndex && midi !== maqamTonicMidi}
-            ipnLabel={ipnLabel}
-            paoName={paoName}
-            onVariantChange={onSliderChange}
-          />
-        )
-      })}
+          return (
+            <NoteSlider
+              key={midi}
+              slot={slot}
+              chromaticIndex={chromaticIndex}
+              midiNote={midi}
+              effectiveIndex={effectiveIndex}
+              hasOverride={hasOverride}
+              midiActive={midiActiveNotes.has(midi)}
+              isMaqamDegree={isDegree && inHomeOctave}
+              isMaqamDegreeEquiv={isDegree && !inHomeOctave}
+              isMaqamTonic={midi === maqamTonicMidi}
+              isMaqamTonicEquiv={chromaticIndex === maqamTonicIndex && midi !== maqamTonicMidi}
+              ipnLabel={ipnLabel}
+              paoName={paoName}
+              onVariantChange={onSliderChange}
+            />
+          )
+        })}
+      </div>
     </div>
   )
 }

@@ -237,6 +237,7 @@ PitchClass ApiResponseParser::parseSinglePitchClass (const juce::var& obj)
         pc.noteNameDisplay = pc.noteName;
 
     pc.englishName      = get ("englishName").toString();
+    pc.solfege          = get ("solfege").toString();
     pc.abjadName        = get ("abjadName").toString();
     pc.fraction         = get ("fraction").toString();
     pc.cents            = get ("cents").toString().getDoubleValue();

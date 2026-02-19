@@ -7,12 +7,30 @@ interface Props {
   maqamList: MaqamListEntry[]
   selectedMaqamId: string
   selectedTranspositionIndex: number  // -1 = base (no transposition)
-  paoNameMap: Record<string, number>
+  paoOrder: string[]                  // unique PAO idNames in ascending MIDI note order
+  paoNameInfo: Record<string, { englishName: string; solfege: string }>
   onSelect: (maqamId: string, transpositionIndex: number) => void
 }
 
+/** Build a display label like "segāh / E-b3 / Mi -b3 (qarār)" */
+function buildTonicLabel(
+  tonicId: string,
+  tonicDisplay: string,
+  paoNameInfo: Props['paoNameInfo'],
+  isBase: boolean,
+): string {
+  const info = paoNameInfo[tonicId]
+  let label = tonicDisplay
+  if (info) {
+    const parts = [info.englishName, info.solfege].filter(Boolean)
+    if (parts.length > 0) label += ' / ' + parts.join(' / ')
+  }
+  if (isBase) label += ' (qarār)'
+  return label
+}
+
 export default function MaqamSelector({
-  maqamList, selectedMaqamId, selectedTranspositionIndex, paoNameMap, onSelect,
+  maqamList, selectedMaqamId, selectedTranspositionIndex, paoOrder, paoNameInfo, onSelect,
 }: Props) {
   // Simple alphabetical list of maqamat (no family grouping)
   const maqamOptions = useMemo(() => {
@@ -22,34 +40,37 @@ export default function MaqamSelector({
     return opts
   }, [maqamList])
 
-  // Build transposition options sorted by ascending chromatic pitch class order
+  // Build transposition options sorted by the tuning system's pitch class order (low to high)
   const transpositionOptions = useMemo(() => {
     if (!selectedMaqamId) return []
     const entry = maqamList.find(m => m.maqamId === selectedMaqamId)
     if (!entry || entry.transpositions.length === 0) return []
 
-    // All options: base + transpositions, each with their chromatic index
-    const all: { value: string; label: string; chromaticIdx: number }[] = [
+    // Build lookup: PAO idName → position in ascending MIDI order
+    const orderMap = new Map(paoOrder.map((name, i) => [name, i]))
+
+    // All options: base + transpositions
+    const all: { value: string; label: string; order: number }[] = [
       {
         value: '-1',
-        label: entry.tonicDisplay + ' (base)',
-        chromaticIdx: paoNameMap[entry.tonicId] ?? 0,
+        label: buildTonicLabel(entry.tonicId, entry.tonicDisplay, paoNameInfo, true),
+        order: orderMap.get(entry.tonicId) ?? 999,
       },
     ]
     for (let i = 0; i < entry.transpositions.length; i++) {
       const t = entry.transpositions[i]
       all.push({
         value: String(i),
-        label: t.tonicDisplay,
-        chromaticIdx: paoNameMap[t.tonicId] ?? 0,
+        label: buildTonicLabel(t.tonicId, t.tonicDisplay, paoNameInfo, false),
+        order: orderMap.get(t.tonicId) ?? 999,
       })
     }
 
-    // Sort by chromatic index (ascending pitch class order)
-    all.sort((a, b) => a.chromaticIdx - b.chromaticIdx)
+    // Sort by position in the tuning system's pitch class data (ascending MIDI note order)
+    all.sort((a, b) => a.order - b.order)
 
     return all.map(({ value, label }) => ({ value, label }))
-  }, [selectedMaqamId, maqamList, paoNameMap])
+  }, [selectedMaqamId, maqamList, paoOrder, paoNameInfo])
 
   const handleMaqamChange = (maqamId: string) => {
     onSelect(maqamId, -1) // default to base when switching maqam

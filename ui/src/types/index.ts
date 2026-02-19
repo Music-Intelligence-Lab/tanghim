@@ -58,6 +58,11 @@ export interface TuningState {
    *  Covers register-specific names (kirdan, muhayyar, etc.) that are absent
    *  from slot variants (which only contain MIDI 48-59 pitch classes). */
   paoNameMap: Record<string, number>;
+  /** Unique PAO idNames in ascending MIDI note order (first occurrence per name).
+   *  Used to sort transposition tonics in the tuning system's native pitch order. */
+  paoOrder: string[];
+  /** PAO idName → { englishName, solfege } for display in transposition dropdown. */
+  paoNameInfo: Record<string, { englishName: string; solfege: string }>;
 }
 
 export interface StartingNote {

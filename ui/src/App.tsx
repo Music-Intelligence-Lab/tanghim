@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import type { TuningState, TuningSystem, MaqamListEntry, MtsStatusUpdate } from './types'
 import { useJuceBridge, useJuceEvent } from './hooks/useJuceBridge'
 import { useVisibleSliderCount } from './hooks/useVisibleSliderCount'
+import { SLOT_WIDTH_PX } from './constants'
 import './App.css'
 
 import TuningSystemSelector from './components/TuningSystemSelector'
@@ -35,6 +36,8 @@ const EMPTY_STATE: TuningState = {
   noteNames: {},
   perNoteOverrides: {},
   paoNameMap: {},
+  paoOrder: [],
+  paoNameInfo: {},
 }
 
 const EMPTY_SET = new Set<number>()
@@ -77,6 +80,12 @@ function findTonicMidi(
     }
   }
   return undefined
+}
+
+/** Center a maqam's octave (12 notes) within the visible slider viewport. */
+function centerMaqamOctave(tonicMidi: number, visibleCount: number): number {
+  const padding = Math.floor((visibleCount - 12) / 2)
+  return Math.max(0, Math.min(128 - visibleCount, tonicMidi - padding))
 }
 
 export default function App() {
@@ -181,7 +190,7 @@ export default function App() {
   }, [visibleCount, startMidi])
 
   const handleBankWheel = useCallback((e: React.WheelEvent) => {
-    const delta = Math.sign(e.deltaY)
+    const delta = e.deltaY / SLOT_WIDTH_PX
     setStartMidi(prev => Math.max(0, Math.min(128 - visibleCount, prev + delta)))
   }, [visibleCount])
 
@@ -269,14 +278,14 @@ export default function App() {
       // Compute maqam degree highlights using paoNameMap (covers all octaves)
       const degrees = getAscendingDegrees(maqamId, transpositionIndex)
       setMaqamDegreeIndices(computeMaqamDegreeIndices(degrees, newState.paoNameMap))
-      // Set tonic index + scroll so tonic is the leftmost slider
+      // Set tonic index + scroll so maqam octave is centered in viewport
       const tonicInfo = getTonicInfo(maqamId, transpositionIndex)
       if (tonicInfo) {
         const tonic = findTonicMidi(tonicInfo.display, newState.noteNames)
         if (tonic) {
           setMaqamTonicIndex(tonic.chromaticIndex)
           setMaqamTonicMidi(tonic.midi)
-          setStartMidi(Math.max(0, Math.min(128 - visibleCount, tonic.midi)))
+          setStartMidi(centerMaqamOctave(tonic.midi, visibleCount))
         }
       }
     }
@@ -342,14 +351,14 @@ export default function App() {
       if (newState) {
         const degrees = getAscendingDegrees(preset.maqamId, preset.setIndex)
         setMaqamDegreeIndices(computeMaqamDegreeIndices(degrees, newState.paoNameMap))
-        // Set tonic index + scroll so tonic is the leftmost slider
+        // Set tonic index + scroll so maqam octave is centered in viewport
         const tonicInfo = getTonicInfo(preset.maqamId, preset.setIndex)
         if (tonicInfo) {
           const tonic = findTonicMidi(tonicInfo.display, newState.noteNames)
           if (tonic) {
             setMaqamTonicIndex(tonic.chromaticIndex)
             setMaqamTonicMidi(tonic.midi)
-            setStartMidi(Math.max(0, Math.min(128 - visibleCount, tonic.midi)))
+            setStartMidi(centerMaqamOctave(tonic.midi, visibleCount))
           }
         }
       }
@@ -404,7 +413,8 @@ export default function App() {
         maqamList={maqamList}
         selectedMaqamId={selectedMaqamId}
         selectedTranspositionIndex={selectedTransIdx}
-        paoNameMap={tuningState.paoNameMap}
+        paoOrder={tuningState.paoOrder}
+        paoNameInfo={tuningState.paoNameInfo}
         onSelect={handleMaqamSelect}
       />
 

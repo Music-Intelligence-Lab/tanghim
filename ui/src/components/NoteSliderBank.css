@@ -1,12 +1,15 @@
 .note-slider-bank {
-  display: flex;
   flex: 1;
-  gap: 0;
   padding: 8px 0;
-  justify-content: center;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   overflow: hidden;
-  /* Each slider expands to fill available height */
   min-height: 0;
+}
+
+.note-slider-bank-inner {
+  display: flex;
+  gap: 0;
+  height: 100%;
+  will-change: transform;
 }
