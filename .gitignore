@@ -1,0 +1,41 @@
+# Build output
+build/
+build-release/
+cmake-build-*/
+Builds/
+
+# JUCE auto-generated
+JuceLibraryCode/
+
+# macOS
+.DS_Store
+*.dSYM/
+
+# Windows
+Thumbs.db
+*.pdb
+
+# IDE
+.vscode/settings.json
+.idea/
+*.suo
+*.user
+*.sdf
+
+# Compiled plugin
+*.vst3
+*.component
+*.clap
+*.app
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+
+# Catch2 generated
+Testing/
+
+# API cache
+.cache/

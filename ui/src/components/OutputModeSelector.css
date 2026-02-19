@@ -1,0 +1,36 @@
+.output-mode-selector {
+  display: flex;
+  gap: 2px;
+}
+
+.mode-btn {
+  background: var(--surface2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s;
+}
+
+.mode-btn:first-child { border-radius: 4px 0 0 4px; }
+.mode-btn:last-child  { border-radius: 0 4px 4px 0; }
+
+.mode-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.receiver-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  margin-left: 5px;
+}

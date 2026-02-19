@@ -1,0 +1,194 @@
+cmake_minimum_required(VERSION 3.25)
+project(ArabicMaqamTuner VERSION 0.1.1)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# ── Dependencies ──────────────────────────────────────────────────────────────
+add_subdirectory(libs/JUCE)
+add_subdirectory(libs/clap-juce-extensions EXCLUDE_FROM_ALL)
+
+# ── Plugin target ─────────────────────────────────────────────────────────────
+juce_add_plugin(ArabicMaqamTuner
+    COMPANY_NAME            "KhyamAllami"
+    BUNDLE_ID               "com.khyamallami.arabicmaqamtuner"
+    PLUGIN_MANUFACTURER_CODE Khya
+    PLUGIN_CODE             AmqT
+    FORMATS                 VST3 AU Standalone
+    PRODUCT_NAME            "Arabic Maqam Tuner"
+    IS_SYNTH                TRUE     # Instrument category — allows placement on MIDI tracks without a synth before it
+    IS_MIDI_EFFECT          FALSE
+    NEEDS_MIDI_INPUT        TRUE
+    NEEDS_MIDI_OUTPUT       TRUE
+    EDITOR_WANTS_KEYBOARD_FOCUS TRUE
+    NEEDS_WEBVIEW2          TRUE    # Windows WebView2
+    VST3_CATEGORIES         "Instrument" "Tools"
+    # Allow localhost HTTP for Vite dev server (macOS ATS)
+    PLIST_TO_MERGE          "<plist version=\"1.0\"><dict>
+        <key>NSAppTransportSecurity</key>
+        <dict><key>NSAllowsLocalNetworking</key><true/></dict>
+    </dict></plist>"
+)
+
+# CLAP format via clap-juce-extensions
+clap_juce_extensions_plugin(
+    TARGET      ArabicMaqamTuner
+    CLAP_ID     "com.khyamallami.arabicmaqamtuner"
+    CLAP_FEATURES "note-effect" "utility"
+)
+
+# ── Sources ───────────────────────────────────────────────────────────────────
+target_sources(ArabicMaqamTuner
+    PRIVATE
+        # MTS-ESP transmitter (included directly — no separate cmake target)
+        libs/MTS-ESP/Master/libMTSMaster.cpp
+
+        # Plugin entry points
+        source/PluginProcessor.cpp
+        source/PluginEditor.cpp
+        source/NativeBridge.cpp
+
+        # API layer
+        source/api/DiArMaqArClient.cpp
+        source/api/ApiDataCache.cpp
+        source/api/ApiResponseParser.cpp
+        source/api/DataUpdateChecker.cpp
+
+        # Tuning engine
+        source/engine/TuningEngine.cpp
+        source/engine/MtsEspTransmitter.cpp
+        source/engine/MpePitchBendProcessor.cpp
+        source/engine/MonoPitchBendProcessor.cpp
+)
+
+target_include_directories(ArabicMaqamTuner
+    PRIVATE
+        source
+        libs/MTS-ESP/Master
+)
+
+# ── Compile definitions ───────────────────────────────────────────────────────
+target_compile_definitions(ArabicMaqamTuner
+    PUBLIC
+        JUCE_WEB_BROWSER=1
+        JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1
+        JUCE_DISPLAY_SPLASH_SCREEN=0
+        JUCE_REPORT_APP_USAGE=0
+    PRIVATE
+        JUCE_VST3_CAN_REPLACE_VST2=0
+        PLUGIN_VERSION="${PROJECT_VERSION}"
+)
+
+# ── Linked libraries ──────────────────────────────────────────────────────────
+target_link_libraries(ArabicMaqamTuner
+    PRIVATE
+        juce::juce_audio_utils
+        juce::juce_audio_processors
+        juce::juce_gui_extra        # WebBrowserComponent lives here
+        juce::juce_core
+    PUBLIC
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags
+)
+
+# ── Receiver plugin target ────────────────────────────────────────────────────
+# Lightweight MIDI effect that reads MTS-ESP tuning and applies pitch bend/MPE
+juce_add_plugin(ArabicMaqamTunerReceiver
+    COMPANY_NAME            "KhyamAllami"
+    BUNDLE_ID               "com.khyamallami.arabicmaqamtunerreceiver"
+    PLUGIN_MANUFACTURER_CODE Khya
+    PLUGIN_CODE             AmqR
+    FORMATS                 VST3 AU Standalone
+    PRODUCT_NAME            "Arabic Maqam Tuner Receiver"
+    IS_SYNTH                FALSE
+    IS_MIDI_EFFECT          TRUE
+    NEEDS_MIDI_INPUT        TRUE
+    NEEDS_MIDI_OUTPUT       TRUE
+    EDITOR_WANTS_KEYBOARD_FOCUS FALSE
+    VST3_CATEGORIES         "Tools"
+)
+
+clap_juce_extensions_plugin(
+    TARGET      ArabicMaqamTunerReceiver
+    CLAP_ID     "com.khyamallami.arabicmaqamtunerreceiver"
+    CLAP_FEATURES "note-effect" "utility"
+)
+
+target_sources(ArabicMaqamTunerReceiver
+    PRIVATE
+        libs/MTS-ESP/Client/libMTSClient.cpp
+        source/receiver/ReceiverProcessor.cpp
+        source/receiver/ReceiverEditor.cpp
+        source/engine/MpePitchBendProcessor.cpp
+        source/engine/MonoPitchBendProcessor.cpp
+)
+
+target_include_directories(ArabicMaqamTunerReceiver
+    PRIVATE
+        source
+        libs/MTS-ESP/Client
+)
+
+target_compile_definitions(ArabicMaqamTunerReceiver
+    PUBLIC
+        JUCE_WEB_BROWSER=0
+        JUCE_DISPLAY_SPLASH_SCREEN=0
+        JUCE_REPORT_APP_USAGE=0
+    PRIVATE
+        JUCE_VST3_CAN_REPLACE_VST2=0
+        PLUGIN_VERSION="${PROJECT_VERSION}"
+)
+
+target_link_libraries(ArabicMaqamTunerReceiver
+    PRIVATE
+        juce::juce_audio_utils
+        juce::juce_audio_processors
+        juce::juce_gui_basics
+    PUBLIC
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags
+)
+
+# ── Embed UI bundle as BinaryData ─────────────────────────────────────────────
+# In release builds the React dist/ is bundled. In debug we hot-reload from Vite.
+# Run `cd ui && npm run build` before the cmake build in release mode.
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    file(GLOB_RECURSE UI_DIST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/ui/dist/*")
+    if(UI_DIST_FILES)
+        juce_add_binary_data(ArabicMaqamTunerUI
+            SOURCES ${UI_DIST_FILES}
+        )
+        target_link_libraries(ArabicMaqamTuner PRIVATE ArabicMaqamTunerUI)
+        target_compile_definitions(ArabicMaqamTuner PRIVATE EMBED_UI_BUNDLE=1)
+    else()
+        message(WARNING "ui/dist/ not found — run `cd ui && npm run build` for release builds")
+    endif()
+endif()
+
+# ── Tests ─────────────────────────────────────────────────────────────────────
+# Each test file has its own main(), so each gets its own executable.
+include(CTest)
+
+# Shared sources and settings for all test targets
+set(TEST_COMMON_SOURCES
+    source/api/ApiResponseParser.cpp
+    source/engine/TuningEngine.cpp
+    source/engine/MtsEspTransmitter.cpp
+    source/engine/MpePitchBendProcessor.cpp
+    source/engine/MonoPitchBendProcessor.cpp
+    libs/MTS-ESP/Master/libMTSMaster.cpp
+)
+set(TEST_COMMON_INCLUDES source libs/MTS-ESP/Master)
+set(TEST_COMMON_LIBS juce::juce_core juce::juce_audio_basics)
+set(TEST_COMMON_DEFS JUCE_STANDALONE_APPLICATION=0 JUCE_WEB_BROWSER=0)
+
+foreach(TEST_NAME ApiResponseParserTest TuningEngineTest MidiProcessingTest)
+    add_executable(${TEST_NAME}
+        tests/${TEST_NAME}.cpp
+        ${TEST_COMMON_SOURCES}
+    )
+    target_include_directories(${TEST_NAME} PRIVATE ${TEST_COMMON_INCLUDES})
+    target_link_libraries(${TEST_NAME} PRIVATE ${TEST_COMMON_LIBS})
+    target_compile_definitions(${TEST_NAME} PRIVATE ${TEST_COMMON_DEFS})
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+endforeach()

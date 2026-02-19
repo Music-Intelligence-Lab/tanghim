@@ -1,0 +1,9 @@
+.tuning-system-selector {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+}
+
+.select-system { flex: 1; }
+.select-note   { min-width: 100px; }

@@ -1,0 +1,167 @@
+.note-slider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 68px;
+  flex-shrink: 0;
+  height: 100%;
+  padding: 6px 4px;
+  gap: 4px;
+}
+
+.ipn-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin-left: 0; /* nudge toward track center */
+}
+
+.track-wrap {
+  flex: 1;
+  position: relative;
+  cursor: ns-resize;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.snap-markers {
+  position: absolute;
+  right: 100%;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  margin-right: 4px;
+  z-index: 1;
+}
+
+.snap-marker {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.15s;
+}
+
+.snap-marker.active {
+  background: var(--slider-thumb);
+}
+
+.track {
+  position: relative;
+  width: 24px;
+  flex-shrink: 0;
+  background: var(--slider-track);
+  border-radius: 12px;
+  overflow: visible;
+}
+
+.thumb {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: var(--slider-thumb);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(233,69,96,0.25);
+  transition: top 0.1s ease, box-shadow 0.1s;
+  cursor: grab;
+}
+
+.thumb:active { cursor: grabbing; box-shadow: 0 0 0 6px rgba(233,69,96,0.3); }
+
+.thumb.midi-hit {
+  background: #ffc947;
+  box-shadow: 0 0 0 5px rgba(255,201,71,0.45), 0 0 12px rgba(255,201,71,0.4);
+}
+
+.note-slider.locked .track-wrap { cursor: default; }
+
+/* Per-note override indicator */
+.note-slider.has-override .thumb {
+  box-shadow: 0 0 0 3px rgba(80, 180, 255, 0.45);
+}
+.note-slider.has-override .ipn-label {
+  color: var(--accent, #50b4ff);
+}
+
+/* Maqam degree highlight (gold) */
+.note-slider.maqam-degree .ipn-label {
+  color: #ffc947;
+}
+
+.note-slider.maqam-degree .thumb {
+  background: #ffc947;
+  box-shadow: 0 0 0 3px rgba(255, 201, 71, 0.35);
+}
+
+.note-slider.maqam-degree .note-name {
+  color: #ffc947;
+}
+
+.note-slider.maqam-degree .snap-marker.active {
+  background: #ffc947;
+}
+
+/* MIDI hit on maqam degree: white flash so it's visible against the gold thumb */
+.note-slider.maqam-degree .thumb.midi-hit {
+  background: #fff;
+  box-shadow: 0 0 0 5px rgba(255,255,255,0.45), 0 0 12px rgba(255,201,71,0.5);
+}
+
+/* Maqam degree octave equivalent: default thumb colour with gold ring, full gold labels */
+.note-slider.maqam-degree-equiv .thumb {
+  box-shadow: 0 0 0 3px rgba(255, 201, 71, 0.5);
+}
+
+.note-slider.maqam-degree-equiv .ipn-label {
+  color: #ffc947;
+}
+
+.note-slider.maqam-degree-equiv .note-name {
+  color: #ffc947;
+}
+
+.note-slider.maqam-degree-equiv .snap-marker.active {
+  background: #ffc947;
+}
+
+/* Maqam tonic highlight (gold border) */
+.note-slider.maqam-tonic {
+  border: 1px solid #ffc947;
+  border-radius: 6px;
+}
+
+/* Dimmed gold border for octave equivalents of the tonic */
+.note-slider.maqam-tonic-equiv {
+  border: 1px solid rgba(255, 201, 71, 0.3);
+  border-radius: 6px;
+}
+
+.note-name {
+  font-size: 11px;
+  color: var(--text);
+  text-align: center;
+  max-width: 100%;
+  margin-left: 0;
+  line-height: 1.2;
+  height: 2.4em; /* fixed 2-line height so sliders stay equal */
+  word-break: keep-all;
+  overflow-wrap: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cents {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  margin-left: 0;
+}

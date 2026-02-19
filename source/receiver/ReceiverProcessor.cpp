@@ -1,0 +1,177 @@
+#include "ReceiverProcessor.h"
+#include "ReceiverEditor.h"
+#include "libMTSClient.h"
+#include <cmath>
+
+ReceiverProcessor::ReceiverProcessor()
+    : AudioProcessor (BusesProperties()
+                          .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
+                          .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
+      apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
+{
+    modeParam       = dynamic_cast<juce::AudioParameterChoice*> (apvts.getParameter ("mode"));
+    mpePbRangeParam  = dynamic_cast<juce::AudioParameterInt*>   (apvts.getParameter ("mpePbRange"));
+    monoPbRangeParam = dynamic_cast<juce::AudioParameterInt*>   (apvts.getParameter ("monoPbRange"));
+
+    jassert (modeParam != nullptr);
+    jassert (mpePbRangeParam != nullptr);
+    jassert (monoPbRangeParam != nullptr);
+
+    for (int i = 0; i < 128; ++i)
+        centsParams[(size_t) i] = dynamic_cast<juce::AudioParameterFloat*> (
+            apvts.getParameter ("cents_" + juce::String (i)));
+
+    lastCentsValues.fill (0.0f);
+
+    mtsClient = MTS_RegisterClient();
+    DBG ("ReceiverProcessor: MTS-ESP client registered");
+}
+
+ReceiverProcessor::~ReceiverProcessor()
+{
+    if (mtsClient != nullptr)
+        MTS_DeregisterClient (mtsClient);
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout ReceiverProcessor::createParameterLayout()
+{
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
+
+    params.push_back (std::make_unique<juce::AudioParameterChoice> (
+        juce::ParameterID ("mode", 1), "Mode",
+        juce::StringArray { "MPE", "Pitch Bend" }, 0));
+
+    params.push_back (std::make_unique<juce::AudioParameterInt> (
+        juce::ParameterID ("mpePbRange", 1), "MPE PB Range",
+        1, 96, 48));
+
+    params.push_back (std::make_unique<juce::AudioParameterInt> (
+        juce::ParameterID ("monoPbRange", 1), "Mono PB Range",
+        1, 96, 2));
+
+    // 128 cents-deviation parameters for Max/M4L parameter bridge
+    for (int i = 0; i < 128; ++i)
+    {
+        params.push_back (std::make_unique<juce::AudioParameterFloat> (
+            juce::ParameterID ("cents_" + juce::String (i), 1),
+            "Cents " + juce::String (i),
+            juce::NormalisableRange<float> (-4800.0f, 4800.0f, 0.01f),
+            0.0f));
+    }
+
+    return { params.begin(), params.end() };
+}
+
+void ReceiverProcessor::prepareToPlay (double, int)
+{
+    mpeSentZoneConfig = false;
+}
+
+void ReceiverProcessor::processBlock (juce::AudioBuffer<float>& audio,
+                                      juce::MidiBuffer& midi)
+{
+    audio.clear();
+
+    // Update connection status (read by editor on message thread)
+    const bool hasMaster = (mtsClient != nullptr && MTS_HasMaster (mtsClient));
+    connectedToMaster.store (hasMaster, std::memory_order_relaxed);
+
+    if (hasMaster)
+    {
+        const char* name = MTS_GetScaleName (mtsClient);
+        const juce::SpinLock::ScopedLockType lock (scaleNameLock);
+        currentScaleName = (name != nullptr && name[0] != '\0')
+                               ? juce::String::fromUTF8 (name) : "unnamed";
+    }
+
+    if (! hasMaster)
+        return; // pass MIDI through unchanged
+
+    // Sync pitch bend ranges from parameters
+    mpeProcessor.setPitchBendRange (mpePbRangeParam->get());
+    monoProcessor.setPitchBendRange (monoPbRangeParam->get());
+
+    // Build cents deviation table from MTS-ESP transmitter
+    std::array<double, 128> centsTable {};
+    for (int i = 0; i < 128; ++i)
+    {
+        double semitones = MTS_RetuningInSemitones (mtsClient, static_cast<char> (i), -1);
+        if (std::isnan (semitones) || std::isinf (semitones))
+            semitones = 0.0;
+        centsTable[static_cast<size_t> (i)] = semitones * 100.0;
+    }
+
+    // Update cents parameters for Max/M4L bridge (rate-limited)
+    if (++paramUpdateCounter >= 10)
+    {
+        paramUpdateCounter = 0;
+        for (int i = 0; i < 128; ++i)
+        {
+            const float cents = static_cast<float> (centsTable[(size_t) i]);
+            if (std::abs (cents - lastCentsValues[(size_t) i]) > 0.01f)
+            {
+                lastCentsValues[(size_t) i] = cents;
+                if (centsParams[(size_t) i] != nullptr)
+                    centsParams[(size_t) i]->setValueNotifyingHost (
+                        centsParams[(size_t) i]->convertTo0to1 (cents));
+            }
+        }
+    }
+
+    // Filter out notes the transmitter has marked as unmapped
+    juce::MidiBuffer filtered;
+    for (const auto meta : midi)
+    {
+        const auto msg = meta.getMessage();
+        if (msg.isNoteOn())
+        {
+            if (MTS_ShouldFilterNote (mtsClient, static_cast<char> (msg.getNoteNumber()), -1))
+                continue; // skip filtered Note On
+        }
+        filtered.addEvent (msg, meta.samplePosition);
+    }
+
+    // Apply pitch bend based on selected mode
+    const bool isMpe = (modeParam->getIndex() == 0);
+
+    juce::MidiBuffer output;
+    if (isMpe)
+    {
+        if (! mpeSentZoneConfig)
+        {
+            mpeProcessor.sendMpeZoneConfig (output);
+            mpeSentZoneConfig = true;
+        }
+        mpeProcessor.process (filtered, output, centsTable, audio.getNumSamples());
+    }
+    else
+    {
+        monoProcessor.process (filtered, output, centsTable);
+    }
+
+    midi.swapWith (output);
+}
+
+juce::AudioProcessorEditor* ReceiverProcessor::createEditor()
+{
+    return new ReceiverEditor (*this);
+}
+
+void ReceiverProcessor::getStateInformation (juce::MemoryBlock& destData)
+{
+    auto state = apvts.copyState();
+    std::unique_ptr<juce::XmlElement> xml (state.createXml());
+    copyXmlToBinary (*xml, destData);
+}
+
+void ReceiverProcessor::setStateInformation (const void* data, int sizeInBytes)
+{
+    std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
+    if (xml != nullptr && xml->hasTagName (apvts.state.getType()))
+        apvts.replaceState (juce::ValueTree::fromXml (*xml));
+}
+
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
+{
+    return new ReceiverProcessor();
+}
