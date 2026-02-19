@@ -1,7 +1,6 @@
 #pragma once
 #include "../model/PitchClass.h"
 #include "../model/TuningSystem.h"
-#include "../model/TwelvePitchClassSet.h"
 #include "../model/MaqamListEntry.h"
 #include <juce_core/juce_core.h>
 #include <map>
@@ -28,7 +27,6 @@ public:
     struct TuningData
     {
         std::vector<PitchClass>          pitchClasses;       // All pitches (pitchClassDataType=all)
-        std::vector<TwelvePitchClassSet> twelvePitchClassSets;
         std::vector<MaqamListEntry>      maqamList;          // Maqamat with degrees + transpositions
         juce::String                     tuningSystemVersion; // ISO 8601 from API
         juce::String                     lastChecked;         // ISO 8601 when we last polled
@@ -53,13 +51,17 @@ public:
     /** Update only the lastChecked timestamp for an existing entry. */
     void updateLastChecked (const juce::String& systemId, const juce::String& startingNote);
 
-    /** Store fetched 12-pitch-class-sets into an existing cache entry. */
-    void updateSets (const juce::String& systemId, const juce::String& startingNote,
-                     const std::vector<TwelvePitchClassSet>& sets);
-
     /** Store fetched maqam list into an existing cache entry. */
     void updateMaqamList (const juce::String& systemId, const juce::String& startingNote,
                           const std::vector<MaqamListEntry>& maqamList);
+
+    /** Whether data is already in memory (not just a lazy key on disk). */
+    bool isInMemory (const juce::String& systemId, const juce::String& startingNote) const;
+
+    /** Preload a lazy cache entry from disk on the current thread.
+     *  Safe to call from a background thread — reads + parses JSON outside the lock,
+     *  then briefly locks to insert into cache. */
+    void preload (const juce::String& systemId, const juce::String& startingNote);
 
     // ── Disk persistence ──────────────────────────────────────────────────────
     juce::File getCacheDirectory() const;

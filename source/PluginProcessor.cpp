@@ -8,7 +8,7 @@ ArabicMaqamTunerProcessor::ArabicMaqamTunerProcessor()
     : AudioProcessor (BusesProperties()
                           .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
-      updateChecker (apiClient, dataCache)
+      updateChecker (apiClient, dataCache, std::weak_ptr<std::atomic<bool>> (alive))
 {
     dataCache.loadFromDisk();
 
@@ -19,20 +19,27 @@ ArabicMaqamTunerProcessor::ArabicMaqamTunerProcessor()
     }
     else
     {
+        std::weak_ptr<std::atomic<bool>> weak (alive);
         apiClient.fetchTuningSystems (
-            [this] (std::vector<TuningSystem> systems)
+            [this, weak] (std::vector<TuningSystem> systems)
             {
+                if (! isAlive (weak)) return;
                 dataCache.setTuningSystemsList (std::move (systems));
                 if (onTuningSystemsLoaded) onTuningSystemsLoaded();
             },
-            [this] (juce::String err)
+            [this, weak] (juce::String err)
             {
+                if (! isAlive (weak)) return;
                 if (onStatusMessage) onStatusMessage ("Network error: " + err);
             });
     }
 }
 
-ArabicMaqamTunerProcessor::~ArabicMaqamTunerProcessor() = default;
+ArabicMaqamTunerProcessor::~ArabicMaqamTunerProcessor()
+{
+    alive->store (false, std::memory_order_release);
+    apiClient.cancelPending();
+}
 
 // ── AudioProcessor interface ──────────────────────────────────────────────────
 
@@ -204,8 +211,10 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
 
     if (sysId.isNotEmpty() && startNote.isNotEmpty())
     {
-        loadTuningSystem (sysId, startNote, [this, savedPositions, savedPerNote] ()
+        std::weak_ptr<std::atomic<bool>> weak (alive);
+        loadTuningSystem (sysId, startNote, [this, weak, savedPositions, savedPerNote] ()
         {
+            if (! isAlive (weak)) return;
             for (int i = 0; i < 12; ++i)
                 setSliderVariant (i, savedPositions[(size_t) i]);
 
@@ -225,11 +234,7 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
 {
     currentSystemId     = systemId;
     currentStartingNote = startingNote;
-    currentSets.clear();
     currentMaqamList.clear();
-
-    // Kick off maqam list fetch immediately (doesn't depend on pitch classes)
-    fetchMaqamListIfNeeded();
 
     auto doLoad = [this, systemId, startingNote, onComplete] ()
     {
@@ -276,19 +281,42 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
         if (onStatusMessage) onStatusMessage (buildScaleName());
         notifyTuningChanged();
         if (onComplete) onComplete();
-        fetchSetsIfNeeded();
+
+        // Fetch maqam list after sliders are visible (not on the critical path)
+        fetchMaqamListIfNeeded();
     };
 
     if (dataCache.hasData (systemId, startingNote))
     {
-        doLoad();
+        if (dataCache.isInMemory (systemId, startingNote))
+        {
+            // Data already deserialized — use immediately
+            doLoad();
+        }
+        else
+        {
+            // Data on disk but not yet deserialized — preload in background
+            // to avoid blocking the message thread with JSON parsing
+            std::weak_ptr<std::atomic<bool>> weak (alive);
+            apiClient.runOnThread ([this, weak, systemId, startingNote, doLoad]
+            {
+                dataCache.preload (systemId, startingNote);
+                juce::MessageManager::callAsync ([weak, doLoad]
+                {
+                    if (! isAlive (weak)) return;
+                    doLoad();
+                });
+            });
+        }
     }
     else
     {
         if (onStatusMessage) onStatusMessage ("Loading " + systemId + "…");
+        std::weak_ptr<std::atomic<bool>> weak (alive);
         apiClient.fetchPitchClasses (systemId, startingNote,
-            [this, systemId, startingNote, doLoad] (std::vector<PitchClass> pcs)
+            [this, weak, systemId, startingNote, doLoad] (std::vector<PitchClass> pcs)
             {
+                if (! isAlive (weak)) return;
                 ApiDataCache::TuningData td;
                 td.pitchClasses = std::move (pcs);
                 td.lastChecked  = juce::Time::getCurrentTime().toISO8601 (true);
@@ -301,8 +329,9 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
                 dataCache.storeData (systemId, startingNote, std::move (td));
                 doLoad();
             },
-            [this] (juce::String err)
+            [this, weak] (juce::String err)
             {
+                if (! isAlive (weak)) return;
                 if (onStatusMessage) onStatusMessage ("Error: " + err);
             });
     }
@@ -369,31 +398,6 @@ void ArabicMaqamTunerProcessor::assignPreset (int idx,
     p.degreeNames        = degreeNames;
 }
 
-void ArabicMaqamTunerProcessor::applyMaqamFromSet (int setIndex)
-{
-    if (setIndex < 0 || setIndex >= (int) currentSets.size()) return;
-    if (currentSystemId.isEmpty() || currentStartingNote.isEmpty()) return;
-    if (! dataCache.hasData (currentSystemId, currentStartingNote)) return;
-
-    const auto& data = dataCache.getData (currentSystemId, currentStartingNote);
-    const auto variantsPerSlot = ApiResponseParser::buildVariantsPerSlot (data.pitchClasses);
-    const auto positions = currentSets[(size_t) setIndex].resolveSliderPositions (variantsPerSlot);
-
-    activeTuningState.clearPerNoteOverrides();
-
-    for (int i = 0; i < 12; ++i)
-    {
-        if (positions[(size_t) i] >= 0)
-        {
-            auto& slot = activeTuningState.slots[(size_t) i];
-            slot.selectedIndex = juce::jlimit (0, slot.variantCount() - 1, positions[(size_t) i]);
-        }
-    }
-
-    tuningEngine.updateTuning (activeTuningState, buildScaleName());
-    notifyTuningChanged();
-}
-
 void ArabicMaqamTunerProcessor::applyMaqam (const juce::String& maqamId, int transpositionIndex)
 {
     // Find the maqam in the current list
@@ -425,11 +429,6 @@ void ArabicMaqamTunerProcessor::clearPreset (int idx)
 const std::vector<TuningSystem>& ArabicMaqamTunerProcessor::getTuningSystems() const
 {
     return dataCache.getTuningSystemsList();
-}
-
-const std::vector<TwelvePitchClassSet>& ArabicMaqamTunerProcessor::getTwelvePitchClassSets() const
-{
-    return currentSets;
 }
 
 const std::vector<MaqamListEntry>& ArabicMaqamTunerProcessor::getMaqamList() const
@@ -476,41 +475,6 @@ void ArabicMaqamTunerProcessor::checkForDataUpdates (
 
 // ── Private helpers ───────────────────────────────────────────────────────────
 
-void ArabicMaqamTunerProcessor::fetchSetsIfNeeded()
-{
-    DBG ("fetchSetsIfNeeded: system=" + currentSystemId + " note=" + currentStartingNote);
-
-    // Check if cache already has sets for the current system
-    if (dataCache.hasData (currentSystemId, currentStartingNote))
-    {
-        const auto& data = dataCache.getData (currentSystemId, currentStartingNote);
-        DBG ("fetchSetsIfNeeded: cache has data, sets count=" + juce::String ((int) data.twelvePitchClassSets.size()));
-        if (! data.twelvePitchClassSets.empty())
-        {
-            currentSets = data.twelvePitchClassSets;
-            DBG ("fetchSetsIfNeeded: loaded " + juce::String ((int) currentSets.size()) + " sets from cache");
-            if (onMaqamSetsLoaded) onMaqamSetsLoaded();
-            return;
-        }
-    }
-
-    // Fetch from API
-    DBG ("fetchSetsIfNeeded: fetching from API...");
-    apiClient.fetchTwelvePitchClassSets (currentSystemId, currentStartingNote,
-        [this] (std::vector<TwelvePitchClassSet> sets)
-        {
-            DBG ("fetchSetsIfNeeded: API returned " + juce::String ((int) sets.size()) + " sets");
-            currentSets = sets;
-            dataCache.updateSets (currentSystemId, currentStartingNote, sets);
-            if (onMaqamSetsLoaded) onMaqamSetsLoaded();
-        },
-        [this] (juce::String err)
-        {
-            DBG ("fetchSetsIfNeeded: API ERROR: " + err);
-            if (onStatusMessage) onStatusMessage ("Maqam sets: " + err);
-        });
-}
-
 void ArabicMaqamTunerProcessor::fetchMaqamListIfNeeded()
 {
     if (currentSystemId.isEmpty() || currentStartingNote.isEmpty()) return;
@@ -532,16 +496,19 @@ void ArabicMaqamTunerProcessor::fetchMaqamListIfNeeded()
     currentMaqamList.clear();
     DBG ("fetchMaqamListIfNeeded: fetching from API...");
 
+    std::weak_ptr<std::atomic<bool>> weak (alive);
     apiClient.fetchMaqamList (currentSystemId, currentStartingNote,
-        [this] (std::vector<MaqamListEntry> entries)
+        [this, weak] (std::vector<MaqamListEntry> entries)
         {
+            if (! isAlive (weak)) return;
             DBG ("fetchMaqamListIfNeeded: API returned " + juce::String ((int) entries.size()) + " maqamat");
             currentMaqamList = entries;
             dataCache.updateMaqamList (currentSystemId, currentStartingNote, entries);
             if (onMaqamListLoaded) onMaqamListLoaded();
         },
-        [this] (juce::String err)
+        [this, weak] (juce::String err)
         {
+            if (! isAlive (weak)) return;
             DBG ("fetchMaqamListIfNeeded: API ERROR: " + err);
             if (onStatusMessage) onStatusMessage ("Maqam list: " + err);
         });

@@ -53,7 +53,6 @@ ArabicMaqamTunerEditor::ArabicMaqamTunerEditor (ArabicMaqamTunerProcessor& p)
     // Set processor change callbacks
     processor.onTuningStateChanged   = [this] { emitTuningStateChanged(); };
     processor.onTuningSystemsLoaded  = [this] { emitTuningSystemsLoaded(); };
-    processor.onMaqamSetsLoaded      = [this] { emitMaqamSetsLoaded(); };
     processor.onMaqamListLoaded      = [this] { emitMaqamListLoaded(); };
     processor.onStatusMessage        = [this] (juce::String msg) { emitStatusMessage (msg); };
 
@@ -73,7 +72,6 @@ ArabicMaqamTunerEditor::~ArabicMaqamTunerEditor()
     stopTimer();
     processor.onTuningStateChanged  = {};
     processor.onTuningSystemsLoaded = {};
-    processor.onMaqamSetsLoaded     = {};
     processor.onMaqamListLoaded     = {};
     processor.onStatusMessage       = {};
 }
@@ -172,12 +170,6 @@ void ArabicMaqamTunerEditor::emitTuningSystemsLoaded()
 {
     if (browser) browser->emitEventIfBrowserIsVisible ("tuningSystemsLoaded",
                                                         bridge->buildTuningSystemsJson());
-}
-
-void ArabicMaqamTunerEditor::emitMaqamSetsLoaded()
-{
-    if (browser) browser->emitEventIfBrowserIsVisible ("maqamSetsLoaded",
-                                                        bridge->buildSetsJson());
 }
 
 void ArabicMaqamTunerEditor::emitMaqamListLoaded()

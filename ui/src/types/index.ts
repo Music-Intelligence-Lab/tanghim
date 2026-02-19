@@ -73,26 +73,6 @@ export interface TuningSystem {
   startingNotes: StartingNote[];
 }
 
-export interface CompatibleMaqam {
-  maqamId: string;
-  maqamDisplay: string;
-  baseMaqamId: string;
-  isTransposed: boolean;
-  tonicNote: string;
-  tonicIpn: string;
-}
-
-export interface FlattenedMaqam {
-  maqam: CompatibleMaqam;
-  setIndex: number;
-}
-
-export interface MaqamSet {
-  sourceMaqamId: string;
-  sourceMaqamDisplay: string;
-  compatibleMaqamat: CompatibleMaqam[];
-}
-
 // ── Maqam list types (from /tuning-systems/{id}/{note}/maqamat?includeMaqamDegrees=true&includeTranspositions=true) ──
 
 export interface MaqamDegrees {

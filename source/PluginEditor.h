@@ -25,7 +25,6 @@ public:
     /** Called by NativeBridge to push state changes to the WebView. */
     void emitTuningStateChanged();
     void emitTuningSystemsLoaded();
-    void emitMaqamSetsLoaded();
     void emitMaqamListLoaded();
     void emitStatusMessage (const juce::String& msg);
 

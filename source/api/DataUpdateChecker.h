@@ -2,7 +2,9 @@
 #include "DiArMaqArClient.h"
 #include "ApiDataCache.h"
 #include <juce_core/juce_core.h>
+#include <atomic>
 #include <functional>
+#include <memory>
 #include <vector>
 
 /**
@@ -19,7 +21,8 @@
 class DataUpdateChecker
 {
 public:
-    DataUpdateChecker (DiArMaqArClient& client, ApiDataCache& cache);
+    DataUpdateChecker (DiArMaqArClient& client, ApiDataCache& cache,
+                       std::weak_ptr<std::atomic<bool>> alive = {});
 
     /**
      * Async check for updates. Calls onUpdatesFound with a list of system IDs
@@ -42,6 +45,7 @@ public:
 private:
     DiArMaqArClient& client;
     ApiDataCache&    cache;
+    std::weak_ptr<std::atomic<bool>> alive;
     std::atomic<bool> checking { false };
 
     static bool isVersionNewer (const juce::String& apiVersion,

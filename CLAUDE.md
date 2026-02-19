@@ -25,11 +25,15 @@ cd ui && npm run dev
 # Tests
 cd build && ctest --output-on-failure
 
-# Re-sign + copy VST3s to system plugin dir for DAW testing after each C++ rebuild
-codesign --force --deep --sign - "build/ArabicMaqamTuner_artefacts/Debug/VST3/Tanghim.vst3"
-codesign --force --deep --sign - "build/ArabicMaqamTunerReceiver_artefacts/Debug/VST3/Tanghim Receiver.vst3"
+# Re-sign + install VST3s for DAW testing after each C++ rebuild
+# IMPORTANT: Must rm old VST3 before copying — cp -R over existing corrupts the
+# kernel's code signature cache, causing SIGKILL (Code Signature Invalid) in
+# Ableton's Rosetta plugin scanner.
+rm -rf ~/Library/Audio/Plug-Ins/VST3/Tanghim.vst3 ~/Library/Audio/Plug-Ins/VST3/Tanghim\ Receiver.vst3
 cp -R "build/ArabicMaqamTuner_artefacts/Debug/VST3/Tanghim.vst3" ~/Library/Audio/Plug-Ins/VST3/
 cp -R "build/ArabicMaqamTunerReceiver_artefacts/Debug/VST3/Tanghim Receiver.vst3" ~/Library/Audio/Plug-Ins/VST3/
+codesign --force --deep --sign - ~/Library/Audio/Plug-Ins/VST3/Tanghim.vst3
+codesign --force --deep --sign - ~/Library/Audio/Plug-Ins/VST3/Tanghim\ Receiver.vst3
 ```
 
 ## Project Structure
@@ -42,7 +46,7 @@ source/
   model/
     PitchClass.h             Single pitch with IPN reference logic
     TuningSystem.h           Tuning system metadata
-    TwelvePitchClassSet.h    12-note set with compatible maqamat
+    TwelvePitchClassSet.h    12-note set with compatible maqamat (unused, kept for reference)
     ActiveTuningState.h      Current slider positions → 128-note frequency table
     MaqamPreset.h            Stored preset (maqam + 12 slider positions)
   api/
@@ -139,14 +143,13 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - Preset compatibility: when switching tuning systems, presets are checked against `maqamList` — if `preset.maqamId` doesn't exist or `transpositionIndex` is out of bounds, preset is disabled (opacity 0.35, cursor not-allowed)
 - `degreeNames` (ascending PAO names) stored in presets for degree highlighting
 
-### Maqam List & Sets Caching
-- `ApiDataCache` caches both maqam list and twelve-pitch-class sets per tuning system
+### Maqam List Caching
+- `ApiDataCache` caches maqam list per tuning system
 - **Lazy loading**: `loadFromDisk()` only scans filenames into `lazyKeys` set — actual JSON deserialization happens on first `getData()` call via `ensureLoaded()`
 - **Incremental saves**: each `storeData()`, `updateSets()`, `updateMaqamList()`, `updateLastChecked()` immediately writes the modified entry to disk (no destructor-only saving)
 - Cache directory: `~/Library/Tanghim/cache/` (JUCE `userApplicationDataDirectory` + child dirs)
-- `fetchMaqamListIfNeeded()` runs at the **start** of `loadTuningSystem()` (parallel with pitch class fetch, not sequential)
-- `fetchSetsIfNeeded()` runs at the **end** of the `doLoad()` lambda (after pitch classes are processed)
-- Both check cache first, fall back to API, then update cache on success
+- `fetchMaqamListIfNeeded()` runs **after** pitch classes are loaded in `doLoad()` (pitch classes are the critical path for slider display)
+- Checks cache first, falls back to API, then updates cache on success
 
 ## JUCE 8 WebView Bridge
 
@@ -177,7 +180,6 @@ Base URL: `https://diarmaqar.netlify.app/api`
 Key endpoints:
 - `GET /tuning-systems` — list all systems
 - `GET /tuning-systems/{id}/{startingNote}/pitch-classes?pitchClassDataType=all` — all pitch data
-- `GET /maqamat/classification/12-pitch-class-sets?tuningSystem={id}&startingNote={note}&pitchClassDataType=midiNoteDeviation` — classification sets
 - `GET /maqamat?tuningSystem={id}&startingNote={note}` — maqam list with transpositions and degrees
 
 ### Response structure (important for parsing)
@@ -185,8 +187,6 @@ Key endpoints:
 **`/tuning-systems`**: `{ count, data: [{ tuningSystem: { id, idName, displayName, version, year }, startingNotes: { idNames: [...], displayNames: [...] }, stats: {...} }] }`
 
 **`/pitch-classes`**: `{ tuningSystem: {...}, pitchClasses: [...] }` — field is `midiNotePlusCentsDeviation` (not `midiNoteDeviation`), and `ipnReferenceNoteName` is provided by the API
-
-**`/12-pitch-class-sets`**: `{ statistics: {...}, sets: [{ sourceMaqam: { idName, displayName }, pitchClassSet: [...], compatibleMaqamat: [{ tonic: { ipnReferenceNoteName, ... } }] }] }`
 
 MIDI deviation format: `"48 -5.9"` = MIDI note 48, -5.9 cents from 12-EDO.
 
@@ -246,13 +246,15 @@ The Transmitter's 30Hz editor timer includes a 2Hz MTS-ESP status poll that emit
 
 ## Conventions
 
+- **Lifetime guard pattern**: All `MessageManager::callAsync` lambdas capturing `this` (Processor) must capture `std::weak_ptr<std::atomic<bool>> weak(alive)` and check `if (!isAlive(weak)) return;` at the top. This prevents use-after-free when Processor is destroyed while async callbacks are pending. The `alive` flag is declared BEFORE `apiClient` so it outlives the background thread.
+- **Background cache preloading**: When warm cache has data on disk but not in memory (`hasData` but `!isInMemory`), use `apiClient.runOnThread()` to deserialize JSON on the background thread, then `callAsync` back to message thread. This avoids blocking the message thread during JSON parsing.
 - JUCE `MidiBufferIterator` has no `operator->`. Use `(*it).getMessage()` or range-for with `meta.getMessage()`.
 - Test executables: one per test file (each has its own `main()`), `JUCE_STANDALONE_APPLICATION=0`.
 - `DiArMaqArClient` needs `<juce_events/juce_events.h>` for `MessageManager::callAsync`.
 - **Transmitter plugin classification**: `IS_SYNTH=TRUE`, `IS_MIDI_EFFECT=FALSE`, `isMidiEffect()=false`, `VST3_CATEGORIES "Instrument" "Tools"`. This allows placement on MIDI tracks without requiring another instrument before it (like ODDSound MTS-ESP Master).
 - **Receiver plugin classification**: `IS_SYNTH=FALSE`, `IS_MIDI_EFFECT=TRUE`, `isMidiEffect()=true`, `VST3_CATEGORIES "Tools"`. MIDI effect placed before synths in the signal chain.
 - **Audio bus config**: constructor uses `BusesProperties().withInput("Input", stereo, true).withOutput("Output", stereo, true)`. Ableton requires at least one audio bus to load any VST3. Both `processBlock` overloads call `audio.clear()` to silence the buffer (as an instrument, the DAW sends uninitialized audio data).
-- **Post-build codesign**: CMake builds leave a broken code signature ("sealed resource missing"). Must re-sign before Ableton can load: `codesign --force --deep --sign - "build/ArabicMaqamTuner_artefacts/Debug/VST3/Tanghim.vst3"`
+- **Post-build codesign**: CMake builds leave a broken code signature ("sealed resource missing"). Must `rm -rf` the old VST3 in `~/Library/Audio/Plug-Ins/VST3/` before `cp -R` (overwriting in-place corrupts kernel signature cache → SIGKILL under Rosetta), then `codesign --force --deep --sign -` the installed copy.
 - **Ableton MIDI routing limitation**: MPE/Pitch Bend data does not pass between tracks (Ableton merges all MIDI to channel 1). MTS-ESP is the recommended output mode for Ableton — it works globally without MIDI routing. MPE/Pitch Bend modes are for DAWs that support placing MIDI effects before instruments (Logic, Reaper, etc.).
 
 ## Max for Live Wrapper

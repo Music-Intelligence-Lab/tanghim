@@ -9,7 +9,16 @@
 #include "receiver/ReceiverRegistry.h"
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <array>
+#include <atomic>
+#include <memory>
 #include <vector>
+
+/** Check whether a Processor is still alive (for use in callAsync lambdas). */
+inline bool isAlive (const std::weak_ptr<std::atomic<bool>>& w)
+{
+    auto f = w.lock();
+    return f && f->load (std::memory_order_acquire);
+}
 
 class ArabicMaqamTunerProcessor : public juce::AudioProcessor
 {
@@ -58,12 +67,10 @@ public:
                            const std::array<int, 12>& sliderPositions,
                            const std::vector<juce::String>& degreeNames);
     void clearPreset      (int presetIndex);
-    void applyMaqamFromSet (int setIndex);
     void applyMaqam       (const juce::String& maqamId, int transpositionIndex);
 
     // ── State accessors ───────────────────────────────────────────────────────
     const std::vector<TuningSystem>&         getTuningSystems()        const;
-    const std::vector<TwelvePitchClassSet>&  getTwelvePitchClassSets() const;
     const std::vector<MaqamListEntry>&       getMaqamList()            const;
     const ActiveTuningState&                 getActiveTuningState()    const;
     const std::array<MaqamPreset, 12>&       getPresets()              const;
@@ -82,7 +89,6 @@ public:
     // ── Change notifications (for NativeBridge → WebView) ────────────────────
     std::function<void()> onTuningStateChanged;
     std::function<void()> onTuningSystemsLoaded;
-    std::function<void()> onMaqamSetsLoaded;
     std::function<void()> onMaqamListLoaded;
     std::function<void (juce::String)> onStatusMessage;
 
@@ -99,8 +105,10 @@ private:
     juce::String              currentStartingNote;
     ActiveTuningState         activeTuningState;
     std::array<MaqamPreset, 12> presets;
-    std::vector<TwelvePitchClassSet> currentSets;
     std::vector<MaqamListEntry>      currentMaqamList;
+
+    // ── Lifetime guard (must be declared before apiClient so it outlives it) ─
+    std::shared_ptr<std::atomic<bool>> alive = std::make_shared<std::atomic<bool>> (true);
 
     // ── Subsystems ────────────────────────────────────────────────────────────
     DiArMaqArClient  apiClient;
@@ -110,7 +118,6 @@ private:
 
     // ── Internal helpers ──────────────────────────────────────────────────────
     void rebuildTuningStateFromCache();
-    void fetchSetsIfNeeded();
     void fetchMaqamListIfNeeded();
     void applyMaqamDegrees (const MaqamDegrees& degrees);
     void notifyTuningChanged();

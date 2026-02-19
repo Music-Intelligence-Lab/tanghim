@@ -1,5 +1,4 @@
 #include "ApiDataCache.h"
-#include "ApiResponseParser.h"
 
 ApiDataCache::ApiDataCache()
 {
@@ -78,21 +77,6 @@ void ApiDataCache::updateLastChecked (const juce::String& systemId,
     if (it != cache.end())
     {
         it->second.lastChecked = juce::Time::getCurrentTime().toISO8601 (true);
-        saveEntryToDisk (key, it->second);
-    }
-}
-
-void ApiDataCache::updateSets (const juce::String& systemId,
-                                const juce::String& startingNote,
-                                const std::vector<TwelvePitchClassSet>& sets)
-{
-    juce::ScopedLock sl (lock);
-    const auto key = makeKey (systemId, startingNote);
-    ensureLoaded (key);
-    auto it = cache.find (key);
-    if (it != cache.end())
-    {
-        it->second.twelvePitchClassSets = sets;
         saveEntryToDisk (key, it->second);
     }
 }
@@ -224,6 +208,54 @@ void ApiDataCache::clearAll()
     getCacheDirectory().deleteRecursively();
 }
 
+bool ApiDataCache::isInMemory (const juce::String& systemId,
+                                const juce::String& startingNote) const
+{
+    juce::ScopedLock sl (lock);
+    return cache.count (makeKey (systemId, startingNote)) > 0;
+}
+
+void ApiDataCache::preload (const juce::String& systemId,
+                             const juce::String& startingNote)
+{
+    const auto key = makeKey (systemId, startingNote);
+
+    // Check under lock whether preloading is needed
+    {
+        juce::ScopedLock sl (lock);
+        if (cache.count (key) > 0) return;         // already in memory
+        if (lazyKeys.count (key) == 0) return;      // not on disk either
+    }
+
+    // Read + parse JSON outside the lock (expensive part)
+    const auto startTime = juce::Time::getMillisecondCounterHiRes();
+    const auto file = getCacheFile (key);
+    TuningData loaded;
+    bool ok = false;
+
+    if (file.existsAsFile())
+    {
+        const auto json = juce::JSON::parse (file.loadFileAsString());
+        if (json.getDynamicObject() != nullptr)
+        {
+            loaded = jsonToTuningData (json);
+            ok = true;
+        }
+    }
+
+    // Briefly lock to insert into cache
+    {
+        juce::ScopedLock sl (lock);
+        lazyKeys.erase (key);
+        if (ok)
+            cache[key] = std::move (loaded);
+    }
+
+    const auto elapsed = juce::Time::getMillisecondCounterHiRes() - startTime;
+    DBG ("ApiDataCache::preload: deserialized '" + key + "' in "
+         + juce::String (elapsed, 1) + " ms (background)");
+}
+
 // ── Lazy loading ─────────────────────────────────────────────────────────────
 
 void ApiDataCache::ensureLoaded (const juce::String& key) const
@@ -347,37 +379,6 @@ juce::var ApiDataCache::tuningDataToJson (const TuningData& data)
         pcs.add (pitchClassToJson (pc));
     obj->setProperty ("pitchClasses", pcs);
 
-    // Serialize TwelvePitchClassSets
-    juce::Array<juce::var> setsArr;
-    for (const auto& set : data.twelvePitchClassSets)
-    {
-        auto* setObj = new juce::DynamicObject();
-        setObj->setProperty ("sourceMaqamIdName",      set.sourceMaqamIdName);
-        setObj->setProperty ("sourceMaqamDisplayName",  set.sourceMaqamDisplayName);
-
-        juce::Array<juce::var> slotsArr;
-        for (int i = 0; i < 12; ++i)
-            slotsArr.add (pitchClassToJson (set.slots[(size_t) i]));
-        setObj->setProperty ("slots", slotsArr);
-
-        juce::Array<juce::var> compatArr;
-        for (const auto& m : set.compatibleMaqamat)
-        {
-            auto* mObj = new juce::DynamicObject();
-            mObj->setProperty ("maqamIdName",      m.maqamIdName);
-            mObj->setProperty ("maqamDisplayName",  m.maqamDisplayName);
-            mObj->setProperty ("baseMaqamIdName",   m.baseMaqamIdName);
-            mObj->setProperty ("isTransposed",      m.isTransposed);
-            mObj->setProperty ("tonicNoteName",     m.tonicNoteName);
-            mObj->setProperty ("tonicIpnRef",       m.tonicIpnRef);
-            mObj->setProperty ("version",           m.version);
-            compatArr.add (juce::var (mObj));
-        }
-        setObj->setProperty ("compatibleMaqamat", compatArr);
-        setsArr.add (juce::var (setObj));
-    }
-    obj->setProperty ("twelvePitchClassSets", setsArr);
-
     // Serialize MaqamList
     juce::Array<juce::var> maqamArr;
     for (const auto& mle : data.maqamList)
@@ -441,53 +442,6 @@ ApiDataCache::TuningData ApiDataCache::jsonToTuningData (const juce::var& json)
         data.pitchClasses.reserve ((size_t) pcs->size());
         for (int i = 0; i < pcs->size(); ++i)
             data.pitchClasses.push_back (jsonToPitchClass ((*pcs)[i]));
-    }
-
-    // Deserialize TwelvePitchClassSets
-    const juce::var* setsArr = p.getVarPointer ("twelvePitchClassSets");
-    if (setsArr && setsArr->isArray())
-    {
-        data.twelvePitchClassSets.reserve ((size_t) setsArr->size());
-        for (int i = 0; i < setsArr->size(); ++i)
-        {
-            const auto& setObj = (*setsArr)[i];
-            if (setObj.getDynamicObject() == nullptr) continue;
-            const auto& sp = setObj.getDynamicObject()->getProperties();
-            auto sGet = [&] (const char* k) { const juce::var* v = sp.getVarPointer (k); return v ? *v : juce::var(); };
-
-            TwelvePitchClassSet set;
-            set.sourceMaqamIdName      = sGet ("sourceMaqamIdName").toString();
-            set.sourceMaqamDisplayName = sGet ("sourceMaqamDisplayName").toString();
-
-            const juce::var* slotsV = sp.getVarPointer ("slots");
-            if (slotsV && slotsV->isArray())
-                for (int j = 0; j < std::min (12, slotsV->size()); ++j)
-                    set.slots[(size_t) j] = jsonToPitchClass ((*slotsV)[j]);
-
-            const juce::var* compatV = sp.getVarPointer ("compatibleMaqamat");
-            if (compatV && compatV->isArray())
-            {
-                set.compatibleMaqamat.reserve ((size_t) compatV->size());
-                for (int j = 0; j < compatV->size(); ++j)
-                {
-                    const auto& mObj = (*compatV)[j];
-                    if (mObj.getDynamicObject() == nullptr) continue;
-                    const auto& mp = mObj.getDynamicObject()->getProperties();
-                    auto mGet = [&] (const char* k) { const juce::var* v = mp.getVarPointer (k); return v ? *v : juce::var(); };
-
-                    CompatibleMaqam m;
-                    m.maqamIdName      = mGet ("maqamIdName").toString();
-                    m.maqamDisplayName = mGet ("maqamDisplayName").toString();
-                    m.baseMaqamIdName  = mGet ("baseMaqamIdName").toString();
-                    m.isTransposed     = (bool) mGet ("isTransposed");
-                    m.tonicNoteName    = mGet ("tonicNoteName").toString();
-                    m.tonicIpnRef      = mGet ("tonicIpnRef").toString();
-                    m.version          = mGet ("version").toString();
-                    set.compatibleMaqamat.push_back (std::move (m));
-                }
-            }
-            data.twelvePitchClassSets.push_back (std::move (set));
-        }
     }
 
     // Deserialize MaqamList

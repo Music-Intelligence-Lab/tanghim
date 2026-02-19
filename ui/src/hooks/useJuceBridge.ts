@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef, useMemo } from 'react'
-import type { TuningState, TuningSystem, MaqamSet, MaqamListEntry } from '../types'
+import type { TuningState, TuningSystem, MaqamListEntry } from '../types'
 
 // ── JUCE native integration (no ./juce module import needed) ─────────────────
 //
@@ -142,16 +142,8 @@ export function useJuceBridge() {
       baseMaqamId, isTransposed, tonicNote, tonicIpn, setIndex, sliderPositions, degreeNames)
   }, [])
 
-  const applyMaqamFromSet = useCallback(async (setIndex: number): Promise<TuningState | undefined> => {
-    return callNative<TuningState>('applyMaqamFromSet', setIndex)
-  }, [])
-
   const clearPreset = useCallback(async (presetIndex: number) => {
     await callNative('clearPreset', presetIndex)
-  }, [])
-
-  const getMaqamSets = useCallback(async (): Promise<MaqamSet[]> => {
-    return (await callNative<MaqamSet[]>('getMaqamSets')) ?? []
   }, [])
 
   const getMaqamList = useCallback(async (): Promise<MaqamListEntry[]> => {
@@ -175,14 +167,12 @@ export function useJuceBridge() {
     setSliderVariant,
     setNoteVariant,
     applyPreset,
-    applyMaqamFromSet,
     assignPreset,
     clearPreset,
-    getMaqamSets,
     getMaqamList,
     applyMaqam,
     checkForUpdates,
   }), [getTuningSystems, selectTuningSystem, setSliderVariant, setNoteVariant,
-       applyPreset, applyMaqamFromSet, assignPreset, clearPreset,
-       getMaqamSets, getMaqamList, applyMaqam, checkForUpdates])
+       applyPreset, assignPreset, clearPreset,
+       getMaqamList, applyMaqam, checkForUpdates])
 }

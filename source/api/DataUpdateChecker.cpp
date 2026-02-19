@@ -1,7 +1,15 @@
 #include "DataUpdateChecker.h"
 
-DataUpdateChecker::DataUpdateChecker (DiArMaqArClient& c, ApiDataCache& ch)
-    : client (c), cache (ch) {}
+DataUpdateChecker::DataUpdateChecker (DiArMaqArClient& c, ApiDataCache& ch,
+                                      std::weak_ptr<std::atomic<bool>> a)
+    : client (c), cache (ch), alive (std::move (a)) {}
+
+// Local copy of the isAlive helper (also defined in PluginProcessor.h)
+static bool isAlive (const std::weak_ptr<std::atomic<bool>>& w)
+{
+    auto f = w.lock();
+    return f && f->load (std::memory_order_acquire);
+}
 
 void DataUpdateChecker::checkForUpdates (
     std::function<void (std::vector<juce::String>)> onUpdatesFound,
@@ -10,9 +18,11 @@ void DataUpdateChecker::checkForUpdates (
 {
     if (checking.exchange (true)) return; // already running
 
+    auto weak = alive;
     client.fetchTuningSystems (
-        [this, onUpdatesFound, onNoUpdates] (std::vector<TuningSystem> systems)
+        [this, weak, onUpdatesFound, onNoUpdates] (std::vector<TuningSystem> systems)
         {
+            if (! isAlive (weak)) { checking.store (false); return; }
             // Update the systems list in cache regardless
             cache.setTuningSystemsList (systems);
 
@@ -56,9 +66,10 @@ void DataUpdateChecker::checkForUpdates (
                 if (startingNote.isEmpty()) { --(*remaining); continue; }
 
                 client.fetchPitchClasses (systemId, startingNote,
-                    [this, systemId, startingNote, systemVersion, remaining, updated, onUpdatesFound]
+                    [this, weak, systemId, startingNote, systemVersion, remaining, updated, onUpdatesFound]
                     (std::vector<PitchClass> pcs)
                     {
+                        if (! isAlive (weak)) { checking.store (false); return; }
                         ApiDataCache::TuningData data;
                         data.pitchClasses        = std::move (pcs);
                         data.tuningSystemVersion = systemVersion;
@@ -73,9 +84,10 @@ void DataUpdateChecker::checkForUpdates (
                     });
             }
         },
-        [this, onError] (juce::String err)
+        [this, weak, onError] (juce::String err)
         {
             checking.store (false);
+            if (! isAlive (weak)) return;
             if (onError) onError (err);
         });
 }
@@ -91,9 +103,11 @@ void DataUpdateChecker::forceRefresh (
     for (const auto& ts : cache.getTuningSystemsList())
         if (ts.id == systemId) { systemVersion = ts.version; break; }
 
+    auto weak = alive;
     client.fetchPitchClasses (systemId, startingNote,
-        [this, systemId, startingNote, systemVersion, onComplete] (std::vector<PitchClass> pcs)
+        [this, weak, systemId, startingNote, systemVersion, onComplete] (std::vector<PitchClass> pcs)
         {
+            if (! isAlive (weak)) return;
             ApiDataCache::TuningData data;
             data.pitchClasses        = std::move (pcs);
             data.tuningSystemVersion = systemVersion;
@@ -102,19 +116,6 @@ void DataUpdateChecker::forceRefresh (
             if (onComplete) onComplete();
         },
         std::move (onError));
-
-    // Also re-fetch 12-pitch-class sets
-    client.fetchTwelvePitchClassSets (systemId, startingNote,
-        [this, systemId, startingNote] (std::vector<TwelvePitchClassSet> sets)
-        {
-            // Merge into existing cache entry
-            if (cache.hasData (systemId, startingNote))
-            {
-                // Rebuild entry with updated sets
-                // (TuningData doesn't store sets directly; the processor fetches them
-                //  separately. This triggers a cache-miss next time sets are needed.)
-            }
-        });
 }
 
 bool DataUpdateChecker::isVersionNewer (const juce::String& apiVersion,

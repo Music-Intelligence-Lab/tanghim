@@ -12,7 +12,7 @@ DiArMaqArClient::~DiArMaqArClient()
     cancelPending();
     signalThreadShouldExit();
     notify();
-    stopThread (3000);
+    stopThread (15000);
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -56,33 +56,6 @@ void DiArMaqArClient::fetchPitchClasses (
             juce::MessageManager::callAsync ([onSuccess, pcs = std::move(pcs)] () mutable
             {
                 onSuccess (std::move (pcs));
-            });
-        },
-        std::move (onError)
-    });
-}
-
-void DiArMaqArClient::fetchTwelvePitchClassSets (
-    const juce::String& systemId,
-    const juce::String& startingNote,
-    std::function<void (std::vector<TwelvePitchClassSet>)> onSuccess,
-    ErrorCb onError)
-{
-    const juce::URL url {
-        juce::String (BASE_URL) + "/maqamat/classification/12-pitch-class-sets"
-        + "?tuningSystem=" + systemId
-        + "&startingNote=" + startingNote
-        + "&pitchClassDataType=midiNoteDeviation"
-    };
-
-    enqueue ({
-        url,
-        [onSuccess = std::move (onSuccess)] (const juce::var& json)
-        {
-            auto sets = ApiResponseParser::parseTwelvePitchClassSets (json);
-            juce::MessageManager::callAsync ([onSuccess, sets = std::move(sets)] () mutable
-            {
-                onSuccess (std::move (sets));
             });
         },
         std::move (onError)
@@ -142,11 +115,22 @@ void DiArMaqArClient::fetchMaqamDetail (
     });
 }
 
+void DiArMaqArClient::runOnThread (std::function<void()> job)
+{
+    {
+        juce::ScopedLock sl (queueLock);
+        jobQueue.push (std::move (job));
+    }
+    notify();
+}
+
 void DiArMaqArClient::cancelPending()
 {
     juce::ScopedLock sl (queueLock);
     while (! requestQueue.empty())
         requestQueue.pop();
+    while (! jobQueue.empty())
+        jobQueue.pop();
 }
 
 // ── Background thread ─────────────────────────────────────────────────────────
@@ -164,11 +148,28 @@ void DiArMaqArClient::run()
 {
     while (! threadShouldExit())
     {
-        // Wait for a request or exit signal
+        // Wait for a request/job or exit signal
         wait (-1);
 
         while (! threadShouldExit())
         {
+            // Drain generic jobs first (e.g. cache preloading)
+            std::function<void()> job;
+            {
+                juce::ScopedLock sl (queueLock);
+                if (! jobQueue.empty())
+                {
+                    job = std::move (jobQueue.front());
+                    jobQueue.pop();
+                }
+            }
+            if (job)
+            {
+                job();
+                continue;
+            }
+
+            // Then drain HTTP requests
             Request req;
             {
                 juce::ScopedLock sl (queueLock);
@@ -183,6 +184,8 @@ void DiArMaqArClient::run()
 
 void DiArMaqArClient::performRequest (Request req)
 {
+    if (threadShouldExit()) return;
+
     juce::String errorMsg;
 
     {
@@ -196,6 +199,8 @@ void DiArMaqArClient::performRequest (Request req)
                 .withExtraHeaders ("Accept: application/json")
                 .withHttpRequestCmd ("GET")
                 .withStatusCode (&statusCode));
+
+        if (threadShouldExit()) return;
 
         if (stream != nullptr && statusCode == 200)
         {

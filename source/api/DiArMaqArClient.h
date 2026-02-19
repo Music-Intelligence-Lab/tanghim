@@ -1,7 +1,6 @@
 #pragma once
 #include "../model/PitchClass.h"
 #include "../model/TuningSystem.h"
-#include "../model/TwelvePitchClassSet.h"
 #include "../model/MaqamListEntry.h"
 #include <juce_core/juce_core.h>
 #include <juce_events/juce_events.h>
@@ -45,16 +44,6 @@ public:
         ErrorCb onError = {});
 
     /**
-     * GET /maqamat/classification/12-pitch-class-sets
-     *     ?tuningSystem={id}&startingNote={note}&pitchClassDataType=midiNoteDeviation
-     */
-    void fetchTwelvePitchClassSets (
-        const juce::String& systemId,
-        const juce::String& startingNote,
-        std::function<void (std::vector<TwelvePitchClassSet>)> onSuccess,
-        ErrorCb onError = {});
-
-    /**
      * GET /tuning-systems/{id}/{startingNote}/maqamat
      * Returns the list of maqamat available in a tuning system.
      */
@@ -76,7 +65,10 @@ public:
         std::function<void (std::vector<PitchClass>)> onSuccess,
         ErrorCb onError = {});
 
-    /** Cancel any pending requests (does not cancel in-flight request). */
+    /** Run a generic job on the background thread (e.g. cache preloading). */
+    void runOnThread (std::function<void()> job);
+
+    /** Cancel any pending requests and jobs (does not cancel in-flight request). */
     void cancelPending();
 
 private:
@@ -90,6 +82,7 @@ private:
 
     juce::CriticalSection  queueLock;
     std::queue<Request>    requestQueue;
+    std::queue<std::function<void()>> jobQueue;
 
     void enqueue (Request req);
     void run() override;   // Thread::run — processes queue in background

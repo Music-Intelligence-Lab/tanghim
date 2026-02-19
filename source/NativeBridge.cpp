@@ -93,22 +93,6 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
             complete (buildPresetsJson());
         });
 
-    // ── getMaqamSets() ────────────────────────────────────────────────────────
-    opts = opts.withNativeFunction ("getMaqamSets",
-        [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
-        {
-            complete (buildSetsJson());
-        });
-
-    // ── applyMaqamFromSet(setIndex) ────────────────────────────────────────
-    opts = opts.withNativeFunction ("applyMaqamFromSet",
-        [this] (const juce::Array<juce::var>& args, Completion complete)
-        {
-            if (args.size() >= 1)
-                processor.applyMaqamFromSet ((int) args[0]);
-            complete (buildTuningStateJson());
-        });
-
     // ── getMaqamList() ─────────────────────────────────────────────────────────
     opts = opts.withNativeFunction ("getMaqamList",
         [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
@@ -311,36 +295,6 @@ juce::var NativeBridge::buildPresetsJson() const
         for (const auto& name : p.degreeNames) dn.add (juce::var (name));
         obj->setProperty ("degreeNames", dn);
 
-        arr.add (juce::var (obj));
-    }
-
-    return juce::var (arr);
-}
-
-juce::var NativeBridge::buildSetsJson() const
-{
-    const auto& sets = processor.getTwelvePitchClassSets();
-    juce::Array<juce::var> arr;
-
-    for (const auto& set : sets)
-    {
-        auto* obj = new juce::DynamicObject();
-        obj->setProperty ("sourceMaqamId",      set.sourceMaqamIdName);
-        obj->setProperty ("sourceMaqamDisplay", set.sourceMaqamDisplayName);
-
-        juce::Array<juce::var> compat;
-        for (const auto& m : set.compatibleMaqamat)
-        {
-            auto* mo = new juce::DynamicObject();
-            mo->setProperty ("maqamId",      m.maqamIdName);
-            mo->setProperty ("maqamDisplay", m.maqamDisplayName);
-            mo->setProperty ("baseMaqamId",  m.baseMaqamIdName);
-            mo->setProperty ("isTransposed", m.isTransposed);
-            mo->setProperty ("tonicNote",    m.tonicNoteName);
-            mo->setProperty ("tonicIpn",     m.tonicIpnRef);
-            compat.add (juce::var (mo));
-        }
-        obj->setProperty ("compatibleMaqamat", compat);
         arr.add (juce::var (obj));
     }
 

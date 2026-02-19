@@ -1,7 +1,6 @@
 #pragma once
 #include "../model/PitchClass.h"
 #include "../model/TuningSystem.h"
-#include "../model/TwelvePitchClassSet.h"
 #include "../model/MaqamListEntry.h"
 #include <juce_core/juce_core.h>
 #include <vector>
@@ -26,13 +25,6 @@ public:
      * cents, frequency etc.
      */
     static std::vector<PitchClass> parsePitchClasses (const juce::var& json);
-
-    // ── 12-pitch-class sets ───────────────────────────────────────────────────
-    /**
-     * Parse GET /maqamat/classification/12-pitch-class-sets response.
-     * Returns a list of sets, each with 12 slots and compatible maqamat.
-     */
-    static std::vector<TwelvePitchClassSet> parseTwelvePitchClassSets (const juce::var& json);
 
     // ── Maqam list & detail ────────────────────────────────────────────────────
     /**
@@ -67,7 +59,5 @@ public:
 private:
     static PitchClass parseSinglePitchClass (const juce::var& obj);
     static TuningSystem parseSingleTuningSystem (const juce::var& obj);
-    static TwelvePitchClassSet parseSingleTwelvePitchClassSet (const juce::var& obj);
-    static CompatibleMaqam parseCompatibleMaqam (const juce::var& obj);
     static MaqamDegrees parseMaqamDegrees (const juce::var& obj);
 };

@@ -19,7 +19,6 @@
  *   Juce.getNativeFunction("applyPreset")(presetIndex)
  *   Juce.getNativeFunction("assignPreset")(presetIndex, maqamId, maqamDisplay, sliderPositions[12])
  *   Juce.getNativeFunction("clearPreset")(presetIndex)
- *   Juce.getNativeFunction("getMaqamSets")()
  *   Juce.getNativeFunction("checkForUpdates")()
  */
 class NativeBridge
@@ -40,9 +39,6 @@ public:
 
     /** Build the tuning systems list as a JSON var. */
     juce::var buildTuningSystemsJson() const;
-
-    /** Build the maqam sets list as a JSON var. */
-    juce::var buildSetsJson() const;
 
     /** Build the maqam list (with degrees + transpositions) as a JSON var. */
     juce::var buildMaqamListJson() const;
