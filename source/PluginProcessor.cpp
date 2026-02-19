@@ -460,8 +460,9 @@ const std::vector<PitchClass>& ArabicMaqamTunerProcessor::getCurrentPitchClasses
     return dataCache.getData (currentSystemId, currentStartingNote).pitchClasses;
 }
 
-bool ArabicMaqamTunerProcessor::isMtsTransmitter()            const { return tuningEngine.isMtsTransmitter(); }
-int  ArabicMaqamTunerProcessor::mtsNumReceivers()             const { return tuningEngine.mtsNumReceivers(); }
+bool           ArabicMaqamTunerProcessor::isMtsTransmitter()   const { return tuningEngine.isMtsTransmitter(); }
+int            ArabicMaqamTunerProcessor::mtsNumReceivers()   const { return tuningEngine.mtsNumReceivers(); }
+ReceiverCounts ArabicMaqamTunerProcessor::getReceiverCounts() const { return ReceiverRegistry::scan(); }
 
 void ArabicMaqamTunerProcessor::checkForDataUpdates (
     std::function<void (std::vector<juce::String>)> onUpdatesFound,

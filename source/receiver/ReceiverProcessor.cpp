@@ -25,10 +25,20 @@ ReceiverProcessor::ReceiverProcessor()
 
     mtsClient = MTS_RegisterClient();
     DBG ("ReceiverProcessor: MTS-ESP client registered");
+
+    // Register with file-based registry for Transmitter discovery
+    registryIsMpe = (modeParam->getIndex() == 0);
+    registryUuid = ReceiverRegistry::announce (registryIsMpe);
+    apvts.addParameterListener ("mode", this);
+    startTimerHz (1);
 }
 
 ReceiverProcessor::~ReceiverProcessor()
 {
+    stopTimer();
+    apvts.removeParameterListener ("mode", this);
+    ReceiverRegistry::deannounce (registryUuid, registryIsMpe);
+
     if (mtsClient != nullptr)
         MTS_DeregisterClient (mtsClient);
 }
@@ -169,6 +179,26 @@ void ReceiverProcessor::setStateInformation (const void* data, int sizeInBytes)
     std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
     if (xml != nullptr && xml->hasTagName (apvts.state.getType()))
         apvts.replaceState (juce::ValueTree::fromXml (*xml));
+}
+
+// ── Registry heartbeat + mode change ──────────────────────────────────────────
+
+void ReceiverProcessor::timerCallback()
+{
+    ReceiverRegistry::heartbeat (registryUuid, registryIsMpe);
+}
+
+void ReceiverProcessor::parameterChanged (const juce::String& parameterID, float newValue)
+{
+    if (parameterID == "mode")
+    {
+        const bool newIsMpe = (static_cast<int> (newValue) == 0);
+        if (newIsMpe != registryIsMpe)
+        {
+            ReceiverRegistry::switchMode (registryUuid, registryIsMpe, newIsMpe);
+            registryIsMpe = newIsMpe;
+        }
+    }
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

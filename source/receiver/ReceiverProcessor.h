@@ -2,10 +2,13 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "engine/MpePitchBendProcessor.h"
 #include "engine/MonoPitchBendProcessor.h"
+#include "receiver/ReceiverRegistry.h"
 
 struct MTSClient;
 
-class ReceiverProcessor : public juce::AudioProcessor
+class ReceiverProcessor : public juce::AudioProcessor,
+                          private juce::Timer,
+                          private juce::AudioProcessorValueTreeState::Listener
 {
 public:
     ReceiverProcessor();
@@ -67,6 +70,13 @@ private:
     std::atomic<bool>    connectedToMaster { false };
     mutable juce::SpinLock scaleNameLock;
     juce::String         currentScaleName;
+
+    // ── File-based registry for Transmitter discovery ─────────────────────
+    juce::String registryUuid;
+    bool registryIsMpe = true;
+
+    void timerCallback() override;
+    void parameterChanged (const juce::String& parameterID, float newValue) override;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ReceiverProcessor)
 };

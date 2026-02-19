@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { TuningState, TuningSystem, MaqamListEntry } from './types'
+import type { TuningState, TuningSystem, MaqamListEntry, MtsStatusUpdate } from './types'
 import { useJuceBridge, useJuceEvent } from './hooks/useJuceBridge'
 import { useVisibleSliderCount } from './hooks/useVisibleSliderCount'
 import './App.css'
@@ -17,6 +17,9 @@ const EMPTY_STATE: TuningState = {
   startingNote: '',
   isMtsTransmitter: false,
   mtsReceivers: 0,
+  mtsNativeCount: 0,
+  mpeCount: 0,
+  monoPbCount: 0,
   pluginVersion: '',
   slots: Array.from({ length: 12 }, (_, i) => ({
     ipnRef: ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'][i],
@@ -144,6 +147,18 @@ export default function App() {
     if (Array.isArray(data)) setMaqamList(data as MaqamListEntry[])
   }, [])
 
+  const onMtsStatusChanged = useCallback((data: unknown) => {
+    if (!data || typeof data !== 'object') return
+    const update = data as MtsStatusUpdate
+    setTuningState(prev => ({
+      ...prev,
+      isMtsTransmitter: update.isMtsTransmitter,
+      mtsNativeCount: update.mtsNativeCount,
+      mpeCount: update.mpeCount,
+      monoPbCount: update.monoPbCount,
+    }))
+  }, [])
+
   // ── Fetch maqam list once after first tuning state arrives ──────────────
   useEffect(() => {
     if (tuningState.systemId && !maqamListRequested.current) {
@@ -192,6 +207,7 @@ export default function App() {
   useJuceEvent('statusMessage',       onStatusMessage)
   useJuceEvent('midiActivity',        onMidiActivity)
   useJuceEvent('maqamListLoaded',     onMaqamListLoaded)
+  useJuceEvent('mtsStatusChanged',   onMtsStatusChanged)
 
   // ── Maqam degree + scroll helpers ───────────────────────────────────────
 
@@ -378,7 +394,9 @@ export default function App() {
         />
         <OutputModeSelector
           isMtsTransmitter={tuningState.isMtsTransmitter}
-          mtsReceivers={tuningState.mtsReceivers}
+          mtsNativeCount={tuningState.mtsNativeCount}
+          mpeCount={tuningState.mpeCount}
+          monoPbCount={tuningState.monoPbCount}
         />
       </div>
 

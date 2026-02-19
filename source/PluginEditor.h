@@ -1,5 +1,6 @@
 #pragma once
 #include "PluginProcessor.h"
+#include "receiver/ReceiverRegistry.h"
 #include <juce_gui_extra/juce_gui_extra.h>
 
 class NativeBridge;
@@ -40,6 +41,13 @@ private:
 
     /** Serve a resource from BinaryData (release builds). */
     juce::WebBrowserComponent::Resource getResourceForPath (const juce::String& path);
+
+    // MTS-ESP status polling (~2Hz via frame counter in 30Hz timer)
+    int            mtsStatusFrameCounter = 0;
+    int            lastMtsTotal = -1;
+    bool           lastIsMtsTransmitter = false;
+    ReceiverCounts lastReceiverCounts;
+    int            staleCleanupCounter = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ArabicMaqamTunerEditor)
 };

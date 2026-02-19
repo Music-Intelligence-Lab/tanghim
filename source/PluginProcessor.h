@@ -6,6 +6,7 @@
 #include "api/ApiDataCache.h"
 #include "api/DataUpdateChecker.h"
 #include "engine/TuningEngine.h"
+#include "receiver/ReceiverRegistry.h"
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <array>
 #include <vector>
@@ -71,6 +72,7 @@ public:
     const std::vector<PitchClass>&           getCurrentPitchClasses()  const;
     bool                                     isMtsTransmitter()        const;
     int                                      mtsNumReceivers()         const;
+    ReceiverCounts                           getReceiverCounts()       const;
 
     // ── Data update checker ───────────────────────────────────────────────────
     void checkForDataUpdates (std::function<void (std::vector<juce::String>)> onUpdatesFound,

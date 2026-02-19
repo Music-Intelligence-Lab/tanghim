@@ -88,37 +88,76 @@ void ArabicMaqamTunerEditor::resized()
     if (browser) browser->setBounds (getLocalBounds());
 }
 
-// ── MIDI activity polling ─────────────────────────────────────────────────────
+// ── MIDI activity + MTS-ESP status polling ───────────────────────────────────
 
 void ArabicMaqamTunerEditor::timerCallback()
 {
-    // Exchange all 4 words of the 128-bit on/off bitmasks
-    uint32_t ons[4], offs[4];
-    bool any = false;
-    for (int i = 0; i < 4; ++i)
-    {
-        ons[i]  = processor.noteOnBits[i].exchange (0, std::memory_order_relaxed);
-        offs[i] = processor.noteOffBits[i].exchange (0, std::memory_order_relaxed);
-        if (ons[i] | offs[i]) any = true;
-    }
-    if (! any || ! browser) return;
+    if (! browser) return;
 
-    // Convert bitmasks to arrays of MIDI note numbers
-    juce::Array<juce::var> onArr, offArr;
-    for (int w = 0; w < 4; ++w)
+    // ── MIDI activity (~30Hz) ─────────────────────────────────────────────
     {
-        for (int b = 0; b < 32; ++b)
+        uint32_t ons[4], offs[4];
+        bool any = false;
+        for (int i = 0; i < 4; ++i)
         {
-            const int note = w * 32 + b;
-            if (ons[w]  & (1u << b)) onArr.add (note);
-            if (offs[w] & (1u << b)) offArr.add (note);
+            ons[i]  = processor.noteOnBits[i].exchange (0, std::memory_order_relaxed);
+            offs[i] = processor.noteOffBits[i].exchange (0, std::memory_order_relaxed);
+            if (ons[i] | offs[i]) any = true;
+        }
+        if (any)
+        {
+            juce::Array<juce::var> onArr, offArr;
+            for (int w = 0; w < 4; ++w)
+            {
+                for (int b = 0; b < 32; ++b)
+                {
+                    const int note = w * 32 + b;
+                    if (ons[w]  & (1u << b)) onArr.add (note);
+                    if (offs[w] & (1u << b)) offArr.add (note);
+                }
+            }
+            auto* obj = new juce::DynamicObject();
+            obj->setProperty ("on",  juce::var (onArr));
+            obj->setProperty ("off", juce::var (offArr));
+            browser->emitEventIfBrowserIsVisible ("midiActivity", juce::var (obj));
         }
     }
 
-    auto* obj = new juce::DynamicObject();
-    obj->setProperty ("on",  juce::var (onArr));
-    obj->setProperty ("off", juce::var (offArr));
-    browser->emitEventIfBrowserIsVisible ("midiActivity", juce::var (obj));
+    // ── MTS-ESP status polling (~2Hz) ─────────────────────────────────────
+    if (++mtsStatusFrameCounter >= 15)
+    {
+        mtsStatusFrameCounter = 0;
+
+        const int  totalReceivers   = processor.mtsNumReceivers();
+        const bool isMtsTransmitter = processor.isMtsTransmitter();
+        const auto receiverCounts   = processor.getReceiverCounts();
+
+        if (totalReceivers != lastMtsTotal
+            || isMtsTransmitter != lastIsMtsTransmitter
+            || receiverCounts != lastReceiverCounts)
+        {
+            lastMtsTotal          = totalReceivers;
+            lastIsMtsTransmitter  = isMtsTransmitter;
+            lastReceiverCounts    = receiverCounts;
+
+            const int tanghimTotal = receiverCounts.mpeReceivers + receiverCounts.monoPbReceivers;
+            const int mtsNative    = std::max (0, totalReceivers - tanghimTotal);
+
+            auto* obj = new juce::DynamicObject();
+            obj->setProperty ("isMtsTransmitter", isMtsTransmitter);
+            obj->setProperty ("mtsNativeCount",   mtsNative);
+            obj->setProperty ("mpeCount",         receiverCounts.mpeReceivers);
+            obj->setProperty ("monoPbCount",      receiverCounts.monoPbReceivers);
+            browser->emitEventIfBrowserIsVisible ("mtsStatusChanged", juce::var (obj));
+        }
+
+        // Periodic stale file cleanup (~every 30 seconds)
+        if (++staleCleanupCounter >= 60)
+        {
+            staleCleanupCounter = 0;
+            ReceiverRegistry::cleanStale (10.0);
+        }
+    }
 }
 
 // ── Push state to WebView ─────────────────────────────────────────────────────

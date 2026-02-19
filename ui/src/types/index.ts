@@ -31,11 +31,21 @@ export interface MaqamPreset {
   degreeNames: string[];   // ascending degree PAO names for compatibility checking
 }
 
+export interface MtsStatusUpdate {
+  isMtsTransmitter: boolean;
+  mtsNativeCount: number;
+  mpeCount: number;
+  monoPbCount: number;
+}
+
 export interface TuningState {
   systemId: string;
   startingNote: string;
   isMtsTransmitter: boolean;
   mtsReceivers: number;
+  mtsNativeCount: number;
+  mpeCount: number;
+  monoPbCount: number;
   pluginVersion: string;
   slots: ChromaticSlot[];
   presets: MaqamPreset[];

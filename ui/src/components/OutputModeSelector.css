@@ -1,7 +1,7 @@
 .mts-esp-status {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 4px 10px;
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -22,4 +22,37 @@
 .mts-warning {
   color: var(--text-muted);
   opacity: 0.6;
+}
+
+/* ── Badge chips ─────────────────────────────────────────────────────── */
+.mts-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.mts-badge-count {
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.mts-badge-native {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.mts-badge-mpe {
+  color: #64b5f6;
+  border-color: rgba(100, 181, 246, 0.4);
+}
+
+.mts-badge-mono {
+  color: #81c784;
+  border-color: rgba(129, 199, 132, 0.4);
 }

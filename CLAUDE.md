@@ -58,6 +58,7 @@ source/
   receiver/
     ReceiverProcessor.h/.cpp MTS-ESP client + pitch bend MIDI effect processor
     ReceiverEditor.h/.cpp    Minimal JUCE-native editor (mode, PB range, status)
+    ReceiverRegistry.h       File-based IPC for receiver type discovery (header-only)
 ui/
   src/
     App.tsx                  Main app with state management
@@ -199,8 +200,9 @@ MIDI deviation format: `"48 -5.9"` = MIDI note 48, -5.9 cents from 12-EDO.
 **Terminology**: We use **Transmitter** (not Master) and **Receiver** (not Client/Slave) throughout our codebase. The underlying MTS-ESP C API still uses `MTS_RegisterMaster`, `MTS_GetNumClients`, etc. — those are third-party and unchanged.
 
 - C++ wrapper: `MtsEspTransmitter` (in `source/engine/MtsEspTransmitter.h/.cpp`)
-- JSON keys: `isMtsTransmitter`, `mtsReceivers`
-- TS types: `tuningState.isMtsTransmitter`, `tuningState.mtsReceivers`
+- JSON keys: `isMtsTransmitter`, `mtsReceivers`, `mtsNativeCount`, `mpeCount`, `monoPbCount`
+- TS types: `tuningState.isMtsTransmitter`, `tuningState.mtsNativeCount`, `tuningState.mpeCount`, `tuningState.monoPbCount`
+- Lightweight event: `mtsStatusChanged` (polled at 2Hz, separate from full `tuningStateChanged`)
 
 ## Receiver Plugin
 
@@ -215,6 +217,23 @@ The **Receiver** plugin (`ArabicMaqamTunerReceiver` CMake target) is a lightweig
 - Simple JUCE-native editor (~360×210px): mode combo, PB range slider, connection status
 - Status updates at 5Hz: checks `MTS_HasMaster()` + `MTS_GetScaleName()`
 - **Ableton**: Needs a Max for Live wrapper (future work) — Ableton doesn't support VST3 MIDI effects natively
+- **Registry**: Writes `{uuid}.mpe` or `{uuid}.monopb` to `~/Library/Tanghim/receivers/` for Transmitter discovery (file-based IPC since plugins are separate shared libraries)
+
+### Receiver Type Discovery (File-Based Registry)
+
+MTS-ESP only provides `MTS_GetNumClients()` — a single integer count with no client enumeration. To distinguish MTS-ESP-native synths from our Receivers (and their modes), we use a file-based registry:
+
+- **Directory**: `~/Library/Tanghim/receivers/`
+- **File naming**: `{uuid}.mpe` or `{uuid}.monopb` — extension encodes mode
+- **Receiver side**: announce on construct, 1Hz heartbeat (mtime touch), switchMode on APVTS change, deannounce on destruct
+- **Transmitter side**: 2Hz scan in editor timer, stale files (>5s mtime) ignored, periodic cleanup (>10s) every ~30 seconds
+- **Count computation**: MTS-ESP native = `MTS_GetNumClients()` - (MPE count + Mono PB count)
+- **UI**: 3 conditional badge chips with color coding (MTS-ESP=accent, MPE=blue, Mono PB=green)
+- **Crash recovery**: Heartbeat stops → file becomes stale → ignored by scanner → deleted by cleanup
+
+### MTS-ESP Status Polling
+
+The Transmitter's 30Hz editor timer includes a 2Hz MTS-ESP status poll that emits a lightweight `mtsStatusChanged` event to the WebView when any count changes. This is separate from the full `tuningStateChanged` event to avoid pushing the entire tuning state (12 slots, 128 overrides, etc.) on every status check.
 
 ## Plugin Naming
 

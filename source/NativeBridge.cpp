@@ -155,7 +155,16 @@ juce::var NativeBridge::buildTuningStateJson() const
     root->setProperty ("systemId",     processor.getCurrentSystemId());
     root->setProperty ("startingNote", processor.getCurrentStartingNote());
     root->setProperty ("isMtsTransmitter", processor.isMtsTransmitter());
-    root->setProperty ("mtsReceivers",     processor.mtsNumReceivers());
+
+    const int totalReceivers = processor.mtsNumReceivers();
+    const auto receiverCounts = processor.getReceiverCounts();
+    const int tanghimTotal = receiverCounts.mpeReceivers + receiverCounts.monoPbReceivers;
+    const int mtsNative    = std::max (0, totalReceivers - tanghimTotal);
+
+    root->setProperty ("mtsReceivers",    totalReceivers);
+    root->setProperty ("mtsNativeCount",  mtsNative);
+    root->setProperty ("mpeCount",        receiverCounts.mpeReceivers);
+    root->setProperty ("monoPbCount",     receiverCounts.monoPbReceivers);
     root->setProperty ("pluginVersion",    juce::String (PLUGIN_VERSION) + " (" + __DATE__ + " " + __TIME__ + ")");
 
     // 12 slider slots
