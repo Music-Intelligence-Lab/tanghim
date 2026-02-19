@@ -15,7 +15,6 @@ import StatusBar from './components/StatusBar'
 const EMPTY_STATE: TuningState = {
   systemId: '',
   startingNote: '',
-  outputMode: 'mts-esp',
   isMtsTransmitter: false,
   mtsReceivers: 0,
   pluginVersion: '',
@@ -360,11 +359,6 @@ export default function App() {
     }
   }
 
-  const handleOutputModeChange = async (mode: 'mts-esp' | 'mpe' | 'pitch-bend') => {
-    await bridge.setOutputMode(mode)
-    setTuningState(prev => ({ ...prev, outputMode: mode }))
-  }
-
   const handleCheckForUpdates = async () => {
     showStatus('Checking for updates…', 10000)
     const updated = await bridge.checkForUpdates()
@@ -383,10 +377,8 @@ export default function App() {
           onSelect={handleSystemSelect}
         />
         <OutputModeSelector
-          mode={tuningState.outputMode}
           isMtsTransmitter={tuningState.isMtsTransmitter}
           mtsReceivers={tuningState.mtsReceivers}
-          onChange={handleOutputModeChange}
         />
       </div>
 

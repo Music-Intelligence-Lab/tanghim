@@ -93,24 +93,6 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
             complete (buildPresetsJson());
         });
 
-    // ── setOutputMode("mts-esp" | "mpe" | "pitch-bend") ──────────────────────
-    opts = opts.withNativeFunction ("setOutputMode",
-        [this] (const juce::Array<juce::var>& args, Completion complete)
-        {
-            if (args.size() >= 1)
-                processor.setOutputMode (outputModeFromString (args[0].toString()));
-            complete (juce::var (outputModeToString (processor.getOutputMode())));
-        });
-
-    // ── setMonoPitchBendRange(semitones) ──────────────────────────────────────
-    opts = opts.withNativeFunction ("setMonoPitchBendRange",
-        [this] (const juce::Array<juce::var>& args, Completion complete)
-        {
-            if (args.size() >= 1)
-                processor.setMonoPitchBendRange ((int) args[0]);
-            complete (juce::var (true));
-        });
-
     // ── getMaqamSets() ────────────────────────────────────────────────────────
     opts = opts.withNativeFunction ("getMaqamSets",
         [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
@@ -172,7 +154,6 @@ juce::var NativeBridge::buildTuningStateJson() const
 
     root->setProperty ("systemId",     processor.getCurrentSystemId());
     root->setProperty ("startingNote", processor.getCurrentStartingNote());
-    root->setProperty ("outputMode",   outputModeToString (processor.getOutputMode()));
     root->setProperty ("isMtsTransmitter", processor.isMtsTransmitter());
     root->setProperty ("mtsReceivers",     processor.mtsNumReceivers());
     root->setProperty ("pluginVersion",    juce::String (PLUGIN_VERSION) + " (" + __DATE__ + " " + __TIME__ + ")");
@@ -415,19 +396,3 @@ juce::var NativeBridge::pitchClassToVar (const PitchClass& pc) const
     return juce::var (obj);
 }
 
-OutputMode NativeBridge::outputModeFromString (const juce::String& s)
-{
-    if (s == "mpe")        return OutputMode::Mpe;
-    if (s == "pitch-bend") return OutputMode::MonoPitchBend;
-    return OutputMode::MtsEsp;
-}
-
-juce::String NativeBridge::outputModeToString (OutputMode m)
-{
-    switch (m)
-    {
-        case OutputMode::Mpe:           return "mpe";
-        case OutputMode::MonoPitchBend: return "pitch-bend";
-        default:                        return "mts-esp";
-    }
-}

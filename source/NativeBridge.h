@@ -19,8 +19,6 @@
  *   Juce.getNativeFunction("applyPreset")(presetIndex)
  *   Juce.getNativeFunction("assignPreset")(presetIndex, maqamId, maqamDisplay, sliderPositions[12])
  *   Juce.getNativeFunction("clearPreset")(presetIndex)
- *   Juce.getNativeFunction("setOutputMode")("mts-esp" | "mpe" | "pitch-bend")
- *   Juce.getNativeFunction("setMonoPitchBendRange")(semitones)
  *   Juce.getNativeFunction("getMaqamSets")()
  *   Juce.getNativeFunction("checkForUpdates")()
  */
@@ -56,6 +54,4 @@ private:
     juce::var buildPresetsJson()    const;
     juce::var pitchClassToVar (const PitchClass& pc) const;
 
-    static OutputMode  outputModeFromString (const juce::String& s);
-    static juce::String outputModeToString  (OutputMode m);
 };

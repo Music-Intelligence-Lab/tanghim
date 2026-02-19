@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Arabic Maqam Tuner Receiver M4L patch using py2max.
+"""Generate the Tanghīm – receiver M4L patch using py2max.
 
 This produces a valid .maxpat JSON with correct object metadata,
 avoiding hand-written JSON errors that cause Max to crash.
@@ -13,8 +13,8 @@ import py2max as px
 from py2max import Box
 from py2max.core.common import Rect
 
-OUTPUT_MAXPAT = "m4l/Arabic Maqam Tuner Receiver.maxpat"
-OUTPUT_AMXD = "m4l/Arabic Maqam Tuner Receiver.amxd"
+OUTPUT_MAXPAT = "m4l/Tanghim Receiver.maxpat"
+OUTPUT_AMXD = "m4l/Tanghim Receiver.amxd"
 
 p = px.Patcher(OUTPUT_MAXPAT)
 p.openinpresentation = 1
@@ -31,7 +31,7 @@ title = p.add_box(Box(
     patching_rect=[30, 460, 200, 22],
     presentation=1, presentation_rect=[10, 8, 200, 22],
     fontsize=14.0,
-    text="Arabic Maqam Tuner",
+    text="Tanghim",
     textcolor=[1, 1, 1, 1],
 ))
 
@@ -115,7 +115,7 @@ plug_msg = p.add_box(Box(
     id=p.get_id(), maxclass="message",
     numinlets=2, numoutlets=1, outlettype=[""],
     patching_rect=[450, 150, 240, 22],
-    text='plug_vst3 "Arabic Maqam Tuner Receiver"',
+    text='plug_vst3 "Tanghim Receiver"',
 ))
 
 delay_metro = p.add("delay 3000",
@@ -302,7 +302,7 @@ patcher = data["patcher"]
 patcher["openrect"] = [0.0, 0.0, 400.0, 170.0]
 
 # M4L device metadata (required for Ableton to load the .amxd)
-patcher["title"] = "Arabic Maqam Tuner Receiver"
+patcher["title"] = "Tanghim Receiver"
 patcher["latency"] = 0
 patcher["project"] = {
     "version": 1,

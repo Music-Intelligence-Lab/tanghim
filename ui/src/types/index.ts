@@ -34,7 +34,6 @@ export interface MaqamPreset {
 export interface TuningState {
   systemId: string;
   startingNote: string;
-  outputMode: 'mts-esp' | 'mpe' | 'pitch-bend';
   isMtsTransmitter: boolean;
   mtsReceivers: number;
   pluginVersion: string;

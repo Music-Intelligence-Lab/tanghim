@@ -57,7 +57,8 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<float>& audio,
             noteOffBits[word].fetch_or (bit, std::memory_order_relaxed);
     }
 
-    tuningEngine.processMidi (midi, audio.getNumSamples());
+    // MIDI passes through unchanged — tuning is applied via MTS-ESP shared memory.
+    // Pitch bend output (MPE / mono) is handled exclusively by the Receiver plugin.
 }
 
 void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<double>& audio,
@@ -76,8 +77,6 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<double>& audio,
         else if (msg.isNoteOff())
             noteOffBits[word].fetch_or (bit, std::memory_order_relaxed);
     }
-
-    tuningEngine.processMidi (midi, audio.getNumSamples());
 }
 
 juce::AudioProcessorEditor* ArabicMaqamTunerProcessor::createEditor()
@@ -92,9 +91,6 @@ void ArabicMaqamTunerProcessor::getStateInformation (juce::MemoryBlock& dest)
     auto state = juce::ValueTree ("ArabicMaqamTunerState");
     state.setProperty ("tuningSystemId",   currentSystemId,     nullptr);
     state.setProperty ("startingNote",     currentStartingNote, nullptr);
-    state.setProperty ("outputMode",       (int) tuningEngine.getOutputMode(), nullptr);
-    state.setProperty ("monoPitchBendRange", tuningEngine.getMonoPitchBendRange(), nullptr);
-
     // Slider positions
     auto slidersNode = juce::ValueTree ("SliderPositions");
     for (int i = 0; i < 12; ++i)
@@ -153,9 +149,6 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
     if (! xml) return;
     auto state = juce::ValueTree::fromXml (*xml);
     if (! state.isValid()) return;
-
-    tuningEngine.setOutputMode  (static_cast<OutputMode> ((int) state.getProperty ("outputMode", 0)));
-    tuningEngine.setMonoPitchBendRange ((int) state.getProperty ("monoPitchBendRange", 2));
 
     // Restore presets immediately (they're just data)
     auto presetsNode = state.getChildWithName ("Presets");
@@ -427,16 +420,6 @@ void ArabicMaqamTunerProcessor::clearPreset (int idx)
     if (idx >= 0 && idx < 12) presets[(size_t) idx].clear();
 }
 
-void ArabicMaqamTunerProcessor::setOutputMode (OutputMode mode)
-{
-    tuningEngine.setOutputMode (mode);
-}
-
-void ArabicMaqamTunerProcessor::setMonoPitchBendRange (int semitones)
-{
-    tuningEngine.setMonoPitchBendRange (semitones);
-}
-
 // ── Accessors ─────────────────────────────────────────────────────────────────
 
 const std::vector<TuningSystem>& ArabicMaqamTunerProcessor::getTuningSystems() const
@@ -464,7 +447,6 @@ const std::array<MaqamPreset, 12>& ArabicMaqamTunerProcessor::getPresets() const
     return presets;
 }
 
-OutputMode ArabicMaqamTunerProcessor::getOutputMode()         const { return tuningEngine.getOutputMode(); }
 juce::String ArabicMaqamTunerProcessor::getCurrentSystemId()  const { return currentSystemId; }
 juce::String ArabicMaqamTunerProcessor::getCurrentStartingNote() const { return currentStartingNote; }
 
@@ -646,7 +628,7 @@ void ArabicMaqamTunerProcessor::notifyTuningChanged()
 
 juce::String ArabicMaqamTunerProcessor::buildScaleName() const
 {
-    if (currentSystemId.isEmpty()) return "Arabic Maqam Tuner";
+    if (currentSystemId.isEmpty()) return "Tanghim";
     const auto& systems = dataCache.getTuningSystemsList();
     for (const auto& ts : systems)
         if (ts.id == currentSystemId)

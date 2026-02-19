@@ -1,10 +1,10 @@
-# Arabic Maqam Tuner
+# Tanghīm
 
-Cross-platform VST3/AU/CLAP microtuning plugin using JUCE 8 (C++) with a React/TypeScript WebView UI. Fetches tuning data from the DiArMaqAr API and applies maqam-based microtuning via MTS-ESP, MPE, and 14-bit monophonic pitch bend.
+Cross-platform VST3/AU/CLAP MIDI tuning plugin using JUCE 8 (C++) with a React/TypeScript WebView UI. Fetches tuning data from the DiArMaqAr API and applies maqam-based microtuning via MTS-ESP (Transmitter), with MPE and 14-bit pitch bend output handled by the Receiver plugin.
 
 **Two plugins in one project:**
-- **Transmitter** (Arabic Maqam Tuner) — main plugin with full UI, broadcasts tuning via MTS-ESP
-- **Receiver** (Arabic Maqam Tuner Receiver) — lightweight MIDI effect, reads MTS-ESP tuning and applies pitch bend/MPE to MIDI for non-MTS-ESP synths
+- **Tanghim** (Transmitter) — main plugin with full UI, broadcasts tuning via MTS-ESP
+- **Tanghim Receiver** — lightweight MIDI effect, reads MTS-ESP tuning and applies pitch bend/MPE to MIDI for non-MTS-ESP synths
 
 ## Build
 
@@ -25,9 +25,11 @@ cd ui && npm run dev
 # Tests
 cd build && ctest --output-on-failure
 
-# Copy VST3s to system plugin dir for DAW testing after each C++ rebuild
-cp -R "build/ArabicMaqamTuner_artefacts/Debug/VST3/Arabic Maqam Tuner.vst3" ~/Library/Audio/Plug-Ins/VST3/
-cp -R "build/ArabicMaqamTunerReceiver_artefacts/Debug/VST3/Arabic Maqam Tuner Receiver.vst3" ~/Library/Audio/Plug-Ins/VST3/
+# Re-sign + copy VST3s to system plugin dir for DAW testing after each C++ rebuild
+codesign --force --deep --sign - "build/ArabicMaqamTuner_artefacts/Debug/VST3/Tanghim.vst3"
+codesign --force --deep --sign - "build/ArabicMaqamTunerReceiver_artefacts/Debug/VST3/Tanghim Receiver.vst3"
+cp -R "build/ArabicMaqamTuner_artefacts/Debug/VST3/Tanghim.vst3" ~/Library/Audio/Plug-Ins/VST3/
+cp -R "build/ArabicMaqamTunerReceiver_artefacts/Debug/VST3/Tanghim Receiver.vst3" ~/Library/Audio/Plug-Ins/VST3/
 ```
 
 ## Project Structure
@@ -49,7 +51,7 @@ source/
     ApiResponseParser.h/.cpp JSON → model structs
     DataUpdateChecker.h/.cpp Version-based update detection
   engine/
-    TuningEngine.h/.cpp      Builds 128-note tables, routes to output mode
+    TuningEngine.h/.cpp      Builds 128-note tables, broadcasts via MTS-ESP
     MtsEspTransmitter.h/.cpp MTS-ESP transmitter wrapper (libMTSMaster.h)
     MpePitchBendProcessor.h/.cpp   MPE channel allocation + per-note pitch bend (shared with Receiver)
     MonoPitchBendProcessor.h/.cpp  14-bit mono pitch bend (shared with Receiver)
@@ -71,7 +73,7 @@ tests/
 m4l/
   generate_patch.py          py2max script to regenerate .maxpat
   mts_midi_effect.js         Max js object for MIDI processing
-  Arabic Maqam Tuner Receiver.maxpat  Generated Max patch
+  Tanghim Receiver.maxpat      Generated Max patch
 libs/
   JUCE/                      Git submodule
   clap-juce-extensions/      Git submodule
@@ -140,7 +142,7 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - `ApiDataCache` caches both maqam list and twelve-pitch-class sets per tuning system
 - **Lazy loading**: `loadFromDisk()` only scans filenames into `lazyKeys` set — actual JSON deserialization happens on first `getData()` call via `ensureLoaded()`
 - **Incremental saves**: each `storeData()`, `updateSets()`, `updateMaqamList()`, `updateLastChecked()` immediately writes the modified entry to disk (no destructor-only saving)
-- Cache directory: `~/Library/ArabicMaqamTuner/cache/` (JUCE `userApplicationDataDirectory` + child dirs)
+- Cache directory: `~/Library/Tanghim/cache/` (JUCE `userApplicationDataDirectory` + child dirs)
 - `fetchMaqamListIfNeeded()` runs at the **start** of `loadTuningSystem()` (parallel with pitch class fetch, not sequential)
 - `fetchSetsIfNeeded()` runs at the **end** of the `doLoad()` lambda (after pitch classes are processed)
 - Both check cache first, fall back to API, then update cache on success
@@ -214,6 +216,15 @@ The **Receiver** plugin (`ArabicMaqamTunerReceiver` CMake target) is a lightweig
 - Status updates at 5Hz: checks `MTS_HasMaster()` + `MTS_GetScaleName()`
 - **Ableton**: Needs a Max for Live wrapper (future work) — Ableton doesn't support VST3 MIDI effects natively
 
+## Plugin Naming
+
+**DAW-facing names must be pure ASCII.** Ableton's VST3 scanner cannot handle UTF-8 in plugin names — non-ASCII characters (ī, en-dash, etc.) display as garbled CJK characters. Additionally, JUCE's CMake post-build scripts break with parentheses `()` in PRODUCT_NAME (shell syntax error in `cmake -E remove`).
+
+- **PRODUCT_NAME**: `"Tanghim"` / `"Tanghim Receiver"` (ASCII only)
+- **WebView UI title**: `"Tanghīm"` (UTF-8 fine — rendered by WebKit, not the DAW)
+- **CMake targets**: `ArabicMaqamTuner` / `ArabicMaqamTunerReceiver` (internal, unchanged)
+- **Extended ASCII** (ISO 8859-1 / Windows-1252) does NOT contain ī (U+012B, Latin i with macron). Macron vowels only exist in ISO 8859-4 (Baltic), which DAWs don't use.
+
 ## Conventions
 
 - JUCE `MidiBufferIterator` has no `operator->`. Use `(*it).getMessage()` or range-for with `meta.getMessage()`.
@@ -222,7 +233,7 @@ The **Receiver** plugin (`ArabicMaqamTunerReceiver` CMake target) is a lightweig
 - **Transmitter plugin classification**: `IS_SYNTH=TRUE`, `IS_MIDI_EFFECT=FALSE`, `isMidiEffect()=false`, `VST3_CATEGORIES "Instrument" "Tools"`. This allows placement on MIDI tracks without requiring another instrument before it (like ODDSound MTS-ESP Master).
 - **Receiver plugin classification**: `IS_SYNTH=FALSE`, `IS_MIDI_EFFECT=TRUE`, `isMidiEffect()=true`, `VST3_CATEGORIES "Tools"`. MIDI effect placed before synths in the signal chain.
 - **Audio bus config**: constructor uses `BusesProperties().withInput("Input", stereo, true).withOutput("Output", stereo, true)`. Ableton requires at least one audio bus to load any VST3. Both `processBlock` overloads call `audio.clear()` to silence the buffer (as an instrument, the DAW sends uninitialized audio data).
-- **Post-build codesign**: CMake builds leave a broken code signature ("sealed resource missing"). Must re-sign before Ableton can load: `codesign --force --deep --sign - "build/ArabicMaqamTuner_artefacts/Debug/VST3/Arabic Maqam Tuner.vst3"`
+- **Post-build codesign**: CMake builds leave a broken code signature ("sealed resource missing"). Must re-sign before Ableton can load: `codesign --force --deep --sign - "build/ArabicMaqamTuner_artefacts/Debug/VST3/Tanghim.vst3"`
 - **Ableton MIDI routing limitation**: MPE/Pitch Bend data does not pass between tracks (Ableton merges all MIDI to channel 1). MTS-ESP is the recommended output mode for Ableton — it works globally without MIDI routing. MPE/Pitch Bend modes are for DAWs that support placing MIDI effects before instruments (Logic, Reaper, etc.).
 
 ## Max for Live Wrapper
@@ -232,7 +243,7 @@ The M4L wrapper is needed because Ableton doesn't support VST3 MIDI effects nati
 ### Architecture
 1. **Receiver VST3** (`vst~`) — pure MTS-ESP data bridge: reads tuning, exposes 128 cents parameters (`cents_0`–`cents_127`, range ±4800)
 2. **Max `js` object** (`m4l/mts_midi_effect.js`) — all MIDI processing: note tracking, MPE channel allocation (ch 2-16 round-robin), 14-bit pitch bend, Mono PB mode
-3. **Max patch** (`m4l/Arabic Maqam Tuner Receiver.maxpat`) — `midiin` → `midiparse` → `js` → `midiout`; `midiformat` for CC passthrough; `vst~` parameter polling for tuning data
+3. **Max patch** (`m4l/Tanghim Receiver.maxpat`) — `midiin` → `midiparse` → `js` → `midiout`; `midiformat` for CC passthrough; `vst~` parameter polling for tuning data
 
 ### Patch Generation
 - Generated via **py2max** (`pip3 install py2max`) — `python3 m4l/generate_patch.py`
@@ -255,6 +266,6 @@ For interactive Max patch development via Claude: `/Users/khyamallami/code_proje
 m4l/
   generate_patch.py                    py2max script to regenerate .maxpat
   mts_midi_effect.js                   Max js object (MIDI processing)
-  Arabic Maqam Tuner Receiver.maxpat   Generated Max patch
-  Arabic Maqam Tuner Receiver.amxd     Frozen M4L device (for distribution)
+  Tanghim Receiver.maxpat               Generated Max patch
+  Tanghim Receiver.amxd                 Frozen M4L device (for distribution)
 ```

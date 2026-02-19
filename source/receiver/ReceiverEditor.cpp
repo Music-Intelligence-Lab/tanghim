@@ -7,7 +7,7 @@ ReceiverEditor::ReceiverEditor (ReceiverProcessor& p)
     setSize (360, 210);
 
     // Title
-    titleLabel.setText ("Arabic Maqam Tuner Receiver", juce::dontSendNotification);
+    titleLabel.setText ("Tanghim Receiver", juce::dontSendNotification);
     titleLabel.setFont (juce::FontOptions (18.0f, juce::Font::bold));
     titleLabel.setJustificationType (juce::Justification::centred);
     addAndMakeVisible (titleLabel);

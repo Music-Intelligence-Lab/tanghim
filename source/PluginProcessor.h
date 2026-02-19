@@ -25,7 +25,7 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
 
-    const juce::String getName() const override { return "Arabic Maqam Tuner"; }
+    const juce::String getName() const override { return "Tanghim"; }
     bool   acceptsMidi()   const override { return true; }
     bool   producesMidi()  const override { return true; }
     bool   isMidiEffect()  const override { return false; }
@@ -59,8 +59,6 @@ public:
     void clearPreset      (int presetIndex);
     void applyMaqamFromSet (int setIndex);
     void applyMaqam       (const juce::String& maqamId, int transpositionIndex);
-    void setOutputMode    (OutputMode mode);
-    void setMonoPitchBendRange (int semitones);
 
     // ── State accessors ───────────────────────────────────────────────────────
     const std::vector<TuningSystem>&         getTuningSystems()        const;
@@ -68,7 +66,6 @@ public:
     const std::vector<MaqamListEntry>&       getMaqamList()            const;
     const ActiveTuningState&                 getActiveTuningState()    const;
     const std::array<MaqamPreset, 12>&       getPresets()              const;
-    OutputMode                               getOutputMode()           const;
     juce::String                             getCurrentSystemId()      const;
     juce::String                             getCurrentStartingNote()  const;
     const std::vector<PitchClass>&           getCurrentPitchClasses()  const;

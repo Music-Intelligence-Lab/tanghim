@@ -11,11 +11,11 @@ add_subdirectory(libs/clap-juce-extensions EXCLUDE_FROM_ALL)
 # ── Plugin target ─────────────────────────────────────────────────────────────
 juce_add_plugin(ArabicMaqamTuner
     COMPANY_NAME            "KhyamAllami"
-    BUNDLE_ID               "com.khyamallami.arabicmaqamtuner"
+    BUNDLE_ID               "com.khyamallami.tanghim"
     PLUGIN_MANUFACTURER_CODE Khya
     PLUGIN_CODE             AmqT
     FORMATS                 VST3 AU Standalone
-    PRODUCT_NAME            "Arabic Maqam Tuner"
+    PRODUCT_NAME            "Tanghim"
     IS_SYNTH                TRUE     # Instrument category — allows placement on MIDI tracks without a synth before it
     IS_MIDI_EFFECT          FALSE
     NEEDS_MIDI_INPUT        TRUE
@@ -33,7 +33,7 @@ juce_add_plugin(ArabicMaqamTuner
 # CLAP format via clap-juce-extensions
 clap_juce_extensions_plugin(
     TARGET      ArabicMaqamTuner
-    CLAP_ID     "com.khyamallami.arabicmaqamtuner"
+    CLAP_ID     "com.khyamallami.tanghim"
     CLAP_FEATURES "note-effect" "utility"
 )
 
@@ -95,11 +95,11 @@ target_link_libraries(ArabicMaqamTuner
 # Lightweight MIDI effect that reads MTS-ESP tuning and applies pitch bend/MPE
 juce_add_plugin(ArabicMaqamTunerReceiver
     COMPANY_NAME            "KhyamAllami"
-    BUNDLE_ID               "com.khyamallami.arabicmaqamtunerreceiver"
+    BUNDLE_ID               "com.khyamallami.tanghimreceiver"
     PLUGIN_MANUFACTURER_CODE Khya
     PLUGIN_CODE             AmqR
     FORMATS                 VST3 AU Standalone
-    PRODUCT_NAME            "Arabic Maqam Tuner Receiver"
+    PRODUCT_NAME            "Tanghim Receiver"
     IS_SYNTH                FALSE
     IS_MIDI_EFFECT          TRUE
     NEEDS_MIDI_INPUT        TRUE
@@ -110,7 +110,7 @@ juce_add_plugin(ArabicMaqamTunerReceiver
 
 clap_juce_extensions_plugin(
     TARGET      ArabicMaqamTunerReceiver
-    CLAP_ID     "com.khyamallami.arabicmaqamtunerreceiver"
+    CLAP_ID     "com.khyamallami.tanghimreceiver"
     CLAP_FEATURES "note-effect" "utility"
 )
 

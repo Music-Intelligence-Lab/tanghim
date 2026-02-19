@@ -28,7 +28,7 @@ ArabicMaqamTunerEditor::ArabicMaqamTunerEditor (ArabicMaqamTunerProcessor& p)
                    juce::WebBrowserComponent::Options::WinWebView2Options()
                        .withUserDataFolder (
                            juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-                               .getChildFile ("ArabicMaqamTuner/webview")));
+                               .getChildFile ("Tanghim/webview")));
 #endif
 
 #if EMBED_UI_BUNDLE

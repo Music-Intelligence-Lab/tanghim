@@ -66,7 +66,7 @@
 						22
 					],
 					"fontsize": 14.0,
-					"text": "Arabic Maqam Tuner",
+					"text": "Tanghim",
 					"textcolor": [
 						1,
 						1,
@@ -297,7 +297,7 @@
 					"outlettype": [
 						""
 					],
-					"text": "plug_vst3 \"Arabic Maqam Tuner Receiver\""
+					"text": "plug_vst3 \"Tanghim Receiver\""
 				}
 			},
 			{
@@ -1074,7 +1074,7 @@
 			400.0,
 			170.0
 		],
-		"title": "Arabic Maqam Tuner Receiver",
+		"title": "Tanghim Receiver",
 		"latency": 0,
 		"project": {
 			"version": 1,

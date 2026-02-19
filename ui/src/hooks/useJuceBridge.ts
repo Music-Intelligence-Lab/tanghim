@@ -150,14 +150,6 @@ export function useJuceBridge() {
     await callNative('clearPreset', presetIndex)
   }, [])
 
-  const setOutputMode = useCallback(async (mode: 'mts-esp' | 'mpe' | 'pitch-bend') => {
-    await callNative('setOutputMode', mode)
-  }, [])
-
-  const setMonoPitchBendRange = useCallback(async (semitones: number) => {
-    await callNative('setMonoPitchBendRange', semitones)
-  }, [])
-
   const getMaqamSets = useCallback(async (): Promise<MaqamSet[]> => {
     return (await callNative<MaqamSet[]>('getMaqamSets')) ?? []
   }, [])
@@ -186,13 +178,11 @@ export function useJuceBridge() {
     applyMaqamFromSet,
     assignPreset,
     clearPreset,
-    setOutputMode,
-    setMonoPitchBendRange,
     getMaqamSets,
     getMaqamList,
     applyMaqam,
     checkForUpdates,
   }), [getTuningSystems, selectTuningSystem, setSliderVariant, setNoteVariant,
-       applyPreset, applyMaqamFromSet, assignPreset, clearPreset, setOutputMode,
-       setMonoPitchBendRange, getMaqamSets, getMaqamList, applyMaqam, checkForUpdates])
+       applyPreset, applyMaqamFromSet, assignPreset, clearPreset,
+       getMaqamSets, getMaqamList, applyMaqam, checkForUpdates])
 }

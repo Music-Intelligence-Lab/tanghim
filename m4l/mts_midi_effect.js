@@ -1,4 +1,4 @@
-// mts_midi_effect.js — MIDI processing for Arabic Maqam Tuner M4L device
+// mts_midi_effect.js — MIDI processing for Tanghīm M4L device
 // Inlet 0: MIDI notes (pitch vel) from midiparse outlet 0
 // Inlet 1: tuning data (note cents) from vst~ parameter polling
 // Outlet 0: processed MIDI bytes → midiout

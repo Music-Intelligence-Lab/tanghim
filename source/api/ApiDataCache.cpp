@@ -117,7 +117,7 @@ void ApiDataCache::updateMaqamList (const juce::String& systemId,
 juce::File ApiDataCache::getCacheDirectory() const
 {
     return juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-               .getChildFile ("ArabicMaqamTuner")
+               .getChildFile ("Tanghim")
                .getChildFile ("cache");
 }
 
