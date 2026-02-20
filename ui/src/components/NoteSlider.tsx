@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, memo } from 'react'
 import type { ChromaticSlot } from '../types'
 import './NoteSlider.css'
 
@@ -8,7 +8,6 @@ interface Props {
   midiNote: number
   effectiveIndex: number
   hasOverride: boolean
-  midiActive: boolean
   isMaqamDegree: boolean
   isMaqamDegreeEquiv: boolean
   isMaqamTonic: boolean
@@ -18,7 +17,7 @@ interface Props {
   onVariantChange: (chromaticIndex: number, variantIndex: number, midiNote: number, perNoteOnly: boolean) => void
 }
 
-export default function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, midiActive, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, ipnLabel, paoName, onVariantChange }: Props) {
+const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, ipnLabel, paoName, onVariantChange }: Props) {
   const trackRef = useRef<HTMLDivElement>(null)
   const dragging  = useRef(false)
 
@@ -74,7 +73,7 @@ export default function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIn
   const thumbPct = selected ? devToPct(selected.midiCentsDeviation) : 50
 
   return (
-    <div className={`note-slider ${isLocked ? 'locked' : ''} ${hasOverride ? 'has-override' : ''} ${isMaqamDegree ? 'maqam-degree' : ''} ${isMaqamDegreeEquiv ? 'maqam-degree-equiv' : ''} ${isMaqamTonic ? 'maqam-tonic' : ''} ${isMaqamTonicEquiv ? 'maqam-tonic-equiv' : ''}`}>
+    <div data-midi={midiNote} className={`note-slider ${isLocked ? 'locked' : ''} ${hasOverride ? 'has-override' : ''} ${isMaqamDegree ? 'maqam-degree' : ''} ${isMaqamDegreeEquiv ? 'maqam-degree-equiv' : ''} ${isMaqamTonic ? 'maqam-tonic' : ''} ${isMaqamTonicEquiv ? 'maqam-tonic-equiv' : ''}`}>
       <div className="ipn-label">{ipnLabel}</div>
 
       <div className="track-wrap" ref={trackRef} onMouseDown={handleMouseDown}>
@@ -91,7 +90,7 @@ export default function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIn
           </div>
           {/* Thumb */}
           <div
-            className={`thumb ${midiActive ? 'midi-hit' : ''}`}
+            className="thumb"
             style={{ top: `${thumbPct}%` }}
           />
         </div>
@@ -112,4 +111,6 @@ export default function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIn
       </div>
     </div>
   )
-}
+})
+
+export default NoteSlider

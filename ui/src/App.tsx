@@ -195,7 +195,10 @@ export default function App() {
   }, [visibleCount])
 
   // ── MIDI activity (note on / note off tracking) ─────────────────────────
-  const [midiActiveNotes, setMidiActiveNotes] = useState<Set<number>>(new Set())
+  // Stored in a ref — NOT React state — so MIDI events never trigger re-renders.
+  // The gold thumb glow is applied via direct DOM classList manipulation using
+  // data-midi attributes on each NoteSlider element.
+  const midiActiveNotesRef = useRef(new Set<number>())
 
   const onMidiActivity = useCallback((data: unknown) => {
     if (!data || typeof data !== 'object') return
@@ -203,13 +206,40 @@ export default function App() {
     const onNotes  = Array.isArray(on)  ? on  : []
     const offNotes = Array.isArray(off) ? off : []
     if (!onNotes.length && !offNotes.length) return
-    setMidiActiveNotes(prev => {
-      const next = new Set(prev)
-      for (const n of onNotes)  next.add(n)
-      for (const n of offNotes) next.delete(n)
-      return next
-    })
+
+    // Update ref first — this is the source of truth for the final state.
+    // When rapid repeated notes cause the same note to appear in BOTH on[] and off[],
+    // the ref resolves to the correct final state (off wins, since it's processed last).
+    for (const n of onNotes)  midiActiveNotesRef.current.add(n)
+    for (const n of offNotes) midiActiveNotesRef.current.delete(n)
+
+    // Apply final state to DOM — only mutate if the element's class doesn't already
+    // match the ref. This eliminates redundant style recalcs when rapid repeated notes
+    // cause the same note to appear in both on[] and off[] within a single timer tick.
+    for (const n of onNotes) {
+      if (!midiActiveNotesRef.current.has(n)) continue // cancelled by a later off
+      const thumb = document.querySelector(`[data-midi="${n}"] .thumb`)
+      if (thumb && !thumb.classList.contains('midi-hit')) thumb.classList.add('midi-hit')
+    }
+    for (const n of offNotes) {
+      if (midiActiveNotesRef.current.has(n)) continue // re-added by a later on
+      const thumb = document.querySelector(`[data-midi="${n}"] .thumb`)
+      if (thumb && thumb.classList.contains('midi-hit')) thumb.classList.remove('midi-hit')
+    }
   }, [])
+
+  // Sync MIDI hit state when sliders scroll into view (new DOM elements
+  // won't have the class applied yet). Runs after React commits to DOM.
+  useEffect(() => {
+    const start = Math.floor(startMidi)
+    for (let i = 0; i < visibleCount + 1 && start + i < 128; i++) {
+      const midi = start + i
+      const thumb = document.querySelector(`[data-midi="${midi}"] .thumb`)
+      if (!thumb) continue
+      if (midiActiveNotesRef.current.has(midi)) thumb.classList.add('midi-hit')
+      else thumb.classList.remove('midi-hit')
+    }
+  }, [startMidi, visibleCount])
 
   useJuceEvent('tuningSystemsLoaded', onTuningSystemsLoaded)
   useJuceEvent('tuningStateChanged',  onTuningStateChanged)
@@ -253,7 +283,7 @@ export default function App() {
     await bridge.selectTuningSystem(systemId, startingNote)
   }
 
-  const handleSliderChange = async (
+  const handleSliderChange = useCallback(async (
     chromaticIndex: number, variantIndex: number,
     midiNote: number, perNoteOnly: boolean
   ) => {
@@ -266,7 +296,7 @@ export default function App() {
     setMaqamDegreeIndices(EMPTY_SET)
     setMaqamTonicIndex(-1)
     setMaqamTonicMidi(-1)
-  }
+  }, [bridge])
 
   const handleMaqamSelect = async (maqamId: string, transpositionIndex: number) => {
     setSelectedMaqamId(maqamId)
@@ -432,7 +462,6 @@ export default function App() {
       <div className="slider-bank-container" ref={bankContainerRef} onWheel={handleBankWheel}>
         <NoteSliderBank
           slots={tuningState.slots}
-          midiActiveNotes={midiActiveNotes}
           startMidi={startMidi}
           visibleCount={visibleCount}
           noteNames={tuningState.noteNames}

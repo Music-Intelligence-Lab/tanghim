@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type { ChromaticSlot } from '../types'
 import { SLOT_WIDTH_PX } from '../constants'
 import NoteSlider from './NoteSlider'
@@ -7,7 +8,6 @@ const IPN_NAMES = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B']
 
 interface Props {
   slots: ChromaticSlot[]
-  midiActiveNotes: Set<number>
   startMidi: number
   visibleCount: number
   noteNames: Record<string, Record<string, string>>
@@ -18,7 +18,7 @@ interface Props {
   onSliderChange: (chromaticIndex: number, variantIndex: number, midiNote: number, perNoteOnly: boolean) => void
 }
 
-export default function NoteSliderBank({ slots, midiActiveNotes, startMidi, visibleCount, noteNames, perNoteOverrides, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, onSliderChange }: Props) {
+const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, visibleCount, noteNames, perNoteOverrides, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, onSliderChange }: Props) {
   const renderStart = Math.floor(startMidi)
   const pixelOffset = (startMidi - renderStart) * SLOT_WIDTH_PX
   // Render one extra slider to fill the gap when partially scrolled
@@ -52,7 +52,6 @@ export default function NoteSliderBank({ slots, midiActiveNotes, startMidi, visi
               midiNote={midi}
               effectiveIndex={effectiveIndex}
               hasOverride={hasOverride}
-              midiActive={midiActiveNotes.has(midi)}
               isMaqamDegree={isDegree && inHomeOctave}
               isMaqamDegreeEquiv={isDegree && !inHomeOctave}
               isMaqamTonic={midi === maqamTonicMidi}
@@ -66,4 +65,6 @@ export default function NoteSliderBank({ slots, midiActiveNotes, startMidi, visi
       </div>
     </div>
   )
-}
+})
+
+export default NoteSliderBank
