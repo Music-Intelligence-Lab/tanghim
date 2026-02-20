@@ -68,7 +68,8 @@ function processMonoPB(pitch, vel) {
         outlet(0, 0x90, pitch, vel);         // Note On ch1
     } else {
         outlet(0, 0x80, pitch, 64);          // Note Off ch1
-        outlet(0, 0xE0, 0, 64);             // PB reset to center
+        // Don't reset PB — synth release tail should stay at correct pitch.
+        // Next Note On always sets PB before sounding.
     }
 }
 
@@ -92,7 +93,8 @@ function processMPE(pitch, vel) {
         var ch = noteToChannel[pitch];
         if (ch !== undefined) {
             outlet(0, 0x80 + ch - 1, pitch, 64);  // Note Off
-            outlet(0, 0xE0 + ch - 1, 0, 64);      // PB reset to center
+            // Don't reset PB — synth release tail should stay at correct pitch.
+            // Next Note On on this channel always sets PB before sounding.
             delete noteToChannel[pitch];
         }
     }

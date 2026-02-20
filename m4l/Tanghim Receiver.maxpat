@@ -368,7 +368,7 @@
 						36,
 						22
 					],
-					"text": "+ 3",
+					"text": "+ 4",
 					"outlettype": [
 						"int"
 					]
@@ -484,7 +484,7 @@
 						36,
 						22
 					],
-					"text": "- 3",
+					"text": "- 4",
 					"outlettype": [
 						"int"
 					]
@@ -1074,6 +1074,7 @@
 			400.0,
 			170.0
 		],
+		"is_mpe": 1,
 		"title": "Tanghim Receiver",
 		"latency": 0,
 		"project": {

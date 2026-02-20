@@ -130,7 +130,7 @@ uzi = p.add("uzi 128 0",
     numinlets=1, numoutlets=3, outlettype=["bang", "int", "int"],
     patching_rect=[560, 185, 72, 22])
 
-plus3 = p.add("+ 3",
+plus4 = p.add("+ 4",
     numinlets=2, numoutlets=1, outlettype=["int"],
     patching_rect=[610, 220, 36, 22])
 
@@ -167,9 +167,10 @@ p.add_line(trig, delay_metro, outlet=1, inlet=0)
 p.add_line(delay_metro, metro)
 p.add_line(metro, uzi)
 
-# uzi outlet 2 (count) → +3 → prepend get → vst~
-p.add_line(uzi, plus3, outlet=2, inlet=0)
-p.add_line(plus3, prepend_get)
+# uzi outlet 2 (count) → +4 → prepend get → vst~
+# Offset 4 = bypass(0) + mode(1) + mpePbRange(2) + monoPbRange(3), so cents_0 = param 4
+p.add_line(uzi, plus4, outlet=2, inlet=0)
+p.add_line(plus4, prepend_get)
 p.add_line(prepend_get, vst)
 
 # sig~ → vst~ inlet 0 (audio)
@@ -181,14 +182,14 @@ p.add_line(open_msg, vst)
 # ═══════════════════════════════════════════════════════════════════════
 # Parameter denormalization: vst~ outlet 3 → unpack → denorm → js inlet 1
 # vst~ get response: "index normalized_value" (list)
-# Convert: index-3 = MIDI note, value * 9600 - 4800 = cents
+# Convert: index-4 = MIDI note, value * 9600 - 4800 = cents
 # ═══════════════════════════════════════════════════════════════════════
 
 unpack = p.add("unpack 0 0.",
     numinlets=2, numoutlets=2, outlettype=["int", "float"],
     patching_rect=[530, 340, 72, 22])
 
-minus3 = p.add("- 3",
+minus4 = p.add("- 4",
     numinlets=2, numoutlets=1, outlettype=["int"],
     patching_rect=[530, 375, 36, 22])
 
@@ -207,14 +208,14 @@ trig_list = p.add("t l",
 # vst~ outlet 3 (param dump) → unpack
 p.add_line(vst, unpack, outlet=3, inlet=0)
 
-# unpack left (index int) → -3
-p.add_line(unpack, minus3, outlet=0, inlet=0)
+# unpack left (index int) → -4
+p.add_line(unpack, minus4, outlet=0, inlet=0)
 
 # unpack right (value float) → expr denormalize
 p.add_line(unpack, denorm, outlet=1, inlet=0)
 
-# -3 → pack left (note index)
-p.add_line(minus3, pack_tuning, outlet=0, inlet=0)
+# -4 → pack left (note index)
+p.add_line(minus4, pack_tuning, outlet=0, inlet=0)
 
 # expr → pack right (cents value)
 p.add_line(denorm, pack_tuning, outlet=0, inlet=1)
@@ -300,6 +301,10 @@ with open(OUTPUT_MAXPAT) as f:
 
 patcher = data["patcher"]
 patcher["openrect"] = [0.0, 0.0, 400.0, 170.0]
+# Tell Ableton this device outputs MPE (multi-channel MIDI on ch 2-16).
+# Without this flag, Ableton normalizes all MIDI output to channel 1.
+# ODDSound's MPE M4L device sets this to 1; their non-MPE version sets it to 0.
+patcher["is_mpe"] = 1
 
 # M4L device metadata (required for Ableton to load the .amxd)
 patcher["title"] = "Tanghim Receiver"

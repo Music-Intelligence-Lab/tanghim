@@ -280,7 +280,23 @@ The M4L wrapper is needed because Ableton doesn't support VST3 MIDI effects nati
 - 128 `AudioParameterFloat` params in Receiver APVTS (`cents_0`–`cents_127`)
 - Updated from audio thread via `setValueNotifyingHost()` — VST3 spec allows this
 - Rate-limited: every 10 processBlock calls, only changed values (>0.01 cents threshold)
-- Max polling: `uzi 128 0` → `+ 3` → `prepend get` → `vst~` outlet 3 → `unpack` → denormalize (`$f1 * 9600 - 4800`) → `js` inlet 1
+- **JUCE VST3 bypass parameter**: JUCE adds an automatic bypass param at index 0, so APVTS params start at index 1. With 3 control params (mode, mpePbRange, monoPbRange), `cents_0` is at **VST3 index 4** (not 3)
+- Max polling: `uzi 128 0` → `+ 4` → `prepend get` → `vst~` outlet 3 → `unpack` → `- 4` (MIDI note) + denormalize (`$f1 * 9600 - 4800` = cents) → `pack` → `js` inlet 1
+
+### Ableton MPE Flag
+- **`is_mpe: 1`** must be set on the M4L patcher metadata — without it, Ableton normalizes all MIDI output to channel 1, breaking MPE
+- ODDSound's two M4L devices (MPE/non-MPE) are structurally identical; only `is_mpe` and default voice mode differ
+- Safe to always set `is_mpe: 1` even when using Mono PB mode (channel 1 only)
+
+### Note Off Pitch Bend
+- **Never reset pitch bend on Note Off** — causes audible snap during synth release tail
+- Next Note On always sets PB before sounding, so no stale value issue
+
+### M4L Install & Deploy
+- **Install folder**: `~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim/`
+- Files needed: `Tanghim Receiver.amxd` + `mts_midi_effect.js`
+- **Must delete old files before copying new** (same as VST3 install pattern)
+- Regenerate: `python3 m4l/generate_patch.py` then copy `.amxd` + `.js` to install folder
 
 ### MaxMSP MCP Server
 For interactive Max patch development via Claude: `/Users/khyamallami/code_projects/MaxMSP-MCP-Server`
