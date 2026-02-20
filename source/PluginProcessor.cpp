@@ -334,14 +334,27 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
                     prevPaoNames.insert (prev->noteName);
         }
 
-        // Rebuild all slots with new variants, default to first variant
+        // Rebuild all slots with new variants, default to variant closest to 0 cents
         activeTuningState.clearPerNoteOverrides();
         for (int i = 0; i < 12; ++i)
         {
             auto& slot = activeTuningState.slots[(size_t) i];
             slot.ipnReference  = kChromaticIpnRefs[i];
             slot.variants      = variants[(size_t) i];
-            slot.selectedIndex = 0;
+
+            // Select the variant with the smallest absolute cents deviation from 12-EDO
+            int bestIdx = 0;
+            double bestDist = std::numeric_limits<double>::max();
+            for (int v = 0; v < (int) slot.variants.size(); ++v)
+            {
+                const double dist = std::abs (slot.variants[(size_t) v].midiCentsDeviation);
+                if (dist < bestDist)
+                {
+                    bestDist = dist;
+                    bestIdx  = v;
+                }
+            }
+            slot.selectedIndex = bestIdx;
         }
 
         // PAO name matching: for each slot, if any variant's PAO name
