@@ -20,6 +20,8 @@ var mode = 0;        // 0 = MPE, 1 = Mono PB (matches live.menu index)
 
 // MPE channel allocation (channels 2-16)
 var noteToChannel = {};  // note → channel
+var channelInUse = new Array(15);  // index 0-14 → channels 2-16
+for (var i = 0; i < 15; i++) channelInUse[i] = false;
 var nextCh = 0;
 
 // ── Inlet handlers ──────────────────────────────────────────────────
@@ -49,6 +51,7 @@ function set_mode(m) {
     mode = m;
     // Reset MPE state on mode switch
     noteToChannel = {};
+    for (var i = 0; i < 15; i++) channelInUse[i] = false;
     nextCh = 0;
 }
 
@@ -77,9 +80,23 @@ function processMonoPB(pitch, vel) {
 
 function processMPE(pitch, vel) {
     if (vel > 0) {
-        // Allocate member channel (2-16)
-        var ch = (nextCh % 15) + 2;
-        nextCh = (nextCh + 1) % 15;
+        // Allocate a free member channel (2-16), round-robin with in-use check
+        var ch = -1;
+        for (var i = 0; i < 15; i++) {
+            var idx = (nextCh + i) % 15;
+            if (!channelInUse[idx]) {
+                ch = idx + 2;
+                nextCh = (idx + 1) % 15;
+                channelInUse[idx] = true;
+                break;
+            }
+        }
+        if (ch === -1) {
+            // All 15 channels in use — steal oldest (round-robin position)
+            ch = nextCh + 2;
+            channelInUse[nextCh] = true;
+            nextCh = (nextCh + 1) % 15;
+        }
         noteToChannel[pitch] = ch;
 
         var cents = (pitch >= 0 && pitch < 128) ? table[pitch] : 0;
@@ -94,7 +111,7 @@ function processMPE(pitch, vel) {
         if (ch !== undefined) {
             outlet(0, 0x80 + ch - 1, pitch, 64);  // Note Off
             // Don't reset PB — synth release tail should stay at correct pitch.
-            // Next Note On on this channel always sets PB before sounding.
+            channelInUse[ch - 2] = false;
             delete noteToChannel[pitch];
         }
     }

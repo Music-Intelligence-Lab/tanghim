@@ -112,7 +112,7 @@ void ReceiverProcessor::processBlock (juce::AudioBuffer<float>& audio,
     }
 
     // Update cents parameters for Max/M4L bridge (rate-limited)
-    if (++paramUpdateCounter >= 10)
+    if (++paramUpdateCounter >= 2)
     {
         paramUpdateCounter = 0;
         for (int i = 0; i < 128; ++i)

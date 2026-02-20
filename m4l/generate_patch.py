@@ -122,7 +122,7 @@ delay_metro = p.add("delay 3000",
     numinlets=2, numoutlets=1, outlettype=["bang"],
     patching_rect=[560, 115, 72, 22])
 
-metro = p.add("metro 1000",
+metro = p.add("metro 100",
     numinlets=2, numoutlets=1, outlettype=["bang"],
     patching_rect=[560, 150, 72, 22])
 
