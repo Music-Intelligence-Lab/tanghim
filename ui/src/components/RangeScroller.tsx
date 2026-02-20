@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import './RangeScroller.css'
 
 const IPN_NAMES = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B']
@@ -23,6 +24,9 @@ export default function RangeScroller({ startMidi, visibleCount, maqamTonicMidi,
   const endMidi = displayStart + visibleCount - 1
   const maxStart = 128 - visibleCount
 
+  // Track the first mousedown of a double-click to detect thumb hits
+  const mouseDownRef = useRef<{ x: number; thumbMidi: number; time: number } | null>(null)
+
   // Build tick marks at every G, A, and C within the slider range
   const ticks: { midi: number; pct: number }[] = []
   if (maxStart > 0) {
@@ -36,15 +40,7 @@ export default function RangeScroller({ startMidi, visibleCount, maqamTonicMidi,
   return (
     <div className="range-scroller">
       <label>Range</label>
-      <div
-        className="range-track-wrap"
-        onDoubleClick={() => {
-          if (maqamTonicMidi >= 0) {
-            const padding = Math.floor((visibleCount - 12) / 2)
-            onChange(Math.max(0, Math.min(maxStart, maqamTonicMidi - padding)))
-          }
-        }}
-      >
+      <div className="range-track-wrap">
         <div className="range-ticks">
           {ticks.map(t => (
             <div
@@ -61,6 +57,26 @@ export default function RangeScroller({ startMidi, visibleCount, maqamTonicMidi,
           step="any"
           value={startMidi}
           onChange={e => onChange(Number(e.target.value))}
+          onMouseDown={e => {
+            const now = Date.now()
+            // Only record on the first mousedown — ignore the second click of a dblclick
+            if (!mouseDownRef.current || now - mouseDownRef.current.time > 400) {
+              mouseDownRef.current = { x: e.clientX, thumbMidi: startMidi, time: now }
+            }
+          }}
+          onDoubleClick={e => {
+            if (maqamTonicMidi < 0 || maxStart <= 0) return
+            const info = mouseDownRef.current
+            if (!info) return
+            // Check if the first click was on the thumb (before it moved)
+            const rect = e.currentTarget.getBoundingClientRect()
+            const thumbHalf = 6
+            const trackWidth = rect.width - thumbHalf * 2
+            const thumbX = thumbHalf + (info.thumbMidi / maxStart) * trackWidth
+            if (Math.abs(info.x - rect.left - thumbX) > thumbHalf + 4) return
+            const padding = Math.floor((visibleCount - 12) / 2)
+            onChange(Math.max(0, Math.min(maxStart, maqamTonicMidi - padding)))
+          }}
         />
       </div>
       <div className="range-label">

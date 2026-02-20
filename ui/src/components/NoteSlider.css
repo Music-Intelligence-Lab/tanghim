@@ -43,7 +43,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--border);
+  background: #555580;
   transition: background 0.15s;
 }
 
