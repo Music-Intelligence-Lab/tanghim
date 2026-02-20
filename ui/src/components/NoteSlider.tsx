@@ -14,63 +14,78 @@ interface Props {
   isMaqamTonicEquiv: boolean
   ipnLabel: string       // e.g. "C3", "A4"
   paoName: string        // e.g. "rāst", "—"
-  onVariantChange: (chromaticIndex: number, variantIndex: number, midiNote: number, perNoteOnly: boolean) => void
+  onVariantSelect: (chromaticIndex: number, variantIndex: number) => void
+  onCentsDrag: (chromaticIndex: number, centsValue: number) => void
+  onCentsDragEnd: (chromaticIndex: number, centsValue: number) => void
 }
 
-const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, ipnLabel, paoName, onVariantChange }: Props) {
+const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, ipnLabel, paoName, onVariantSelect, onCentsDrag, onCentsDragEnd }: Props) {
   const trackRef = useRef<HTMLDivElement>(null)
-  const dragging  = useRef(false)
+  const thumbRef = useRef<HTMLDivElement>(null)
+  const dragging = useRef(false)
 
   const variantCount = slot.variants.length
   const isLocked     = slot.isLocked || variantCount <= 1
 
-  // ── Deviation-based positioning ────────────────────────────────────────────
+  // Derive centsOffset from selected variant if C++ hasn't sent it yet
+  const centsOffset = slot.centsOffset ?? slot.variants[slot.selectedIndex]?.midiCentsDeviation ?? 0
+
+  // ── Deviation-based positioning (±200 cents range) ──────────────────────────
   // 0 cents deviation = 50% (vertical center of track)
   // Positive deviation (sharper) → above center (lower %)
   // Negative deviation (flatter) → below center (higher %)
-  // Fixed ±100 cents range so positions stay consistent across tuning systems
-  const devToPct = (dev: number) => 50 - (dev / 100) * 45
+  const devToPct = (dev: number) => 50 - (dev / 200) * 45
 
-  // Pre-compute positions for each variant
+  // Inverse: convert track percentage to cents deviation
+  const pctToDev = (pct: number): number => -(pct - 50) * 200 / 45
+
+  // Pre-compute positions for each variant (for snap markers)
   const variantPcts = slot.variants.map(v => devToPct(v.midiCentsDeviation))
 
-  /** Find the variant whose track position is closest to the click Y. */
-  const yToVariantIndex = (clientY: number): number => {
-    if (!trackRef.current || variantCount <= 1) return 0
+  /** Convert mouse clientY to a clamped cents value. */
+  const yToCents = (clientY: number): number => {
+    if (!trackRef.current) return 0
     const rect = trackRef.current.getBoundingClientRect()
-    const clickPct = ((clientY - rect.top) / rect.height) * 100
-
-    let bestIdx = 0
-    let bestDist = Infinity
-    for (let i = 0; i < variantPcts.length; i++) {
-      const dist = Math.abs(variantPcts[i] - clickPct)
-      if (dist < bestDist) {
-        bestDist = dist
-        bestIdx = i
-      }
-    }
-    return bestIdx
+    const pct = ((clientY - rect.top) / rect.height) * 100
+    const cents = pctToDev(pct)
+    return Math.max(-200, Math.min(200, cents))
   }
 
+  /** Free drag on track/thumb — continuous cents update. */
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isLocked) return
     dragging.current = true
-    const perNoteOnly = e.shiftKey  // Shift = per-note override only
-    const newIdx = yToVariantIndex(e.clientY)
-    if (newIdx !== effectiveIndex) onVariantChange(chromaticIndex, newIdx, midiNote, perNoteOnly)
+    thumbRef.current?.classList.add('dragging')
+
+    const cents = yToCents(e.clientY)
+    onCentsDrag(chromaticIndex, cents)
 
     const onMove = (ev: MouseEvent) => {
       if (!dragging.current) return
-      const idx = yToVariantIndex(ev.clientY)
-      if (idx !== effectiveIndex) onVariantChange(chromaticIndex, idx, midiNote, perNoteOnly)
+      const c = yToCents(ev.clientY)
+      onCentsDrag(chromaticIndex, c)
     }
-    const onUp = () => { dragging.current = false; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+    const onUp = (ev: MouseEvent) => {
+      dragging.current = false
+      thumbRef.current?.classList.remove('dragging')
+      const c = yToCents(ev.clientY)
+      onCentsDragEnd(chromaticIndex, c)
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
   }
 
-  const selected = slot.variants[effectiveIndex]
-  const thumbPct = selected ? devToPct(selected.midiCentsDeviation) : 50
+  /** Snap marker click — select a specific variant. */
+  const handleSnapMarkerClick = (e: React.MouseEvent, variantIndex: number) => {
+    e.stopPropagation()
+    if (isLocked) return
+    onVariantSelect(chromaticIndex, variantIndex)
+  }
+
+  // Thumb position driven by centsOffset (source of truth)
+  const thumbPct = devToPct(centsOffset)
 
   return (
     <div data-midi={midiNote} className={`note-slider ${isLocked ? 'locked' : ''} ${hasOverride ? 'has-override' : ''} ${isMaqamDegree ? 'maqam-degree' : ''} ${isMaqamDegreeEquiv ? 'maqam-degree-equiv' : ''} ${isMaqamTonic ? 'maqam-tonic' : ''} ${isMaqamTonicEquiv ? 'maqam-tonic-equiv' : ''}`}>
@@ -78,18 +93,20 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
 
       <div className="track-wrap" ref={trackRef} onMouseDown={handleMouseDown}>
         <div className="track">
-          {/* Snap markers on the left */}
+          {/* Snap markers on the left — clickable to snap to variant */}
           <div className="snap-markers">
             {variantPcts.map((pct, i) => (
               <div
                 key={i}
                 className={`snap-marker ${i === effectiveIndex ? 'active' : ''}`}
                 style={{ top: `${pct}%` }}
+                onMouseDown={(e) => handleSnapMarkerClick(e, i)}
               />
             ))}
           </div>
           {/* Thumb */}
           <div
+            ref={thumbRef}
             className="thumb"
             style={{ top: `${thumbPct}%` }}
           />
@@ -97,14 +114,12 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
       </div>
 
       {/* Cents deviation above note name */}
-      {selected && (
-        <div className="cents">
-          {selected.midiCentsDeviation >= 0 ? '+' : ''}{selected.midiCentsDeviation.toFixed(1)}¢
-        </div>
-      )}
+      <div className="cents">
+        {centsOffset >= 0 ? '+' : ''}{centsOffset.toFixed(1)}¢
+      </div>
 
       {/* PAO note name — allowed to wrap to two lines, break at "/" */}
-      <div className="note-name" title={selected?.englishName}>
+      <div className="note-name" title={slot.variants[effectiveIndex]?.englishName}>
         {paoName.includes('/') ? paoName.split('/').map((part, i, arr) => (
           <span key={i}>{part}{i < arr.length - 1 && <>/<wbr/></>}</span>
         )) : paoName}

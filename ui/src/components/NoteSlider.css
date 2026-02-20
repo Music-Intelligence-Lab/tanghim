@@ -40,11 +40,17 @@
   position: absolute;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 5px;
-  height: 5px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #555580;
-  transition: background 0.15s;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.snap-marker:hover {
+  background: var(--slider-thumb);
+  transform: translate(-50%, -50%) scale(1.4);
 }
 
 .snap-marker.active {
@@ -70,10 +76,12 @@
   border-radius: 50%;
   box-shadow: 0 0 0 3px rgba(233,69,96,0.25);
   transition: top 0.1s ease;
-  cursor: grab;
+  cursor: ns-resize;
 }
 
-.thumb:active { cursor: grabbing; box-shadow: 0 0 0 6px rgba(233,69,96,0.3); }
+.thumb:active { cursor: ns-resize; box-shadow: 0 0 0 6px rgba(233,69,96,0.3); }
+
+.thumb.dragging { transition: none; }
 
 .thumb.midi-hit {
   background: #ffc947;

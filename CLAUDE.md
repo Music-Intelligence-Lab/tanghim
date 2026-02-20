@@ -118,6 +118,11 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - Sliders have a **fixed width** of 68px (`ui/src/constants.ts: SLOT_WIDTH_PX`)
 - The number of visible sliders is computed dynamically via `ResizeObserver` in `useVisibleSliderCount` hook
 - Widening the plugin window reveals more sliders; narrowing hides them — no CSS scrolling, virtual render only
+- **Continuous tuning**: Slider thumbs are freely draggable within ±200 cents range. `centsOffset` (per chromatic slot) is the **source of truth** for frequency/cents table computation. `selectedIndex` is retained for snap marker highlighting and PAO name display
+- **Snap markers**: Clickable dots to the left of each slider track — snap to exact tuning system variant values with 0.1s CSS transition. Cursor: `pointer`
+- **Thumb cursor**: `ns-resize` (double-arrow vertical) — indicates free drag
+- **Live MTS-ESP update**: Tuning updates on every mousemove via fire-and-forget `setSlotCents` bridge call (RAF-throttled ~60fps). `setSlotCentsFinalize` on mouseup returns full TuningState for React state sync
+- **Persistence**: `centsOffset` saved per slot in DAW session state. Backward-compatible: old sessions derive `centsOffset` from selected variant's `midiCentsDeviation`
 - **Smooth scrolling**: `startMidi` is fractional (not integer), mouse wheel delta proportional to `deltaY / SLOT_WIDTH_PX`. NoteSliderBank renders an extra slider and uses CSS `translateX(-pixelOffset)` for sub-pixel offset
 - `RangeScroller` pans smoothly with `step="any"`, tick marks at every C, G, A. Double-click centers viewport on the maqam's octave
 - When selecting a maqam, the viewport auto-centers on the maqam's octave: `startMidi = tonicMidi - floor((visibleCount - 12) / 2)`
@@ -127,7 +132,7 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - Default window: 900×590, default start MIDI: 48 (C3), default 13 visible sliders
 
 ### Per-Note Overrides
-- Shift+click/drag on a slider creates a per-MIDI-note variant override (different from the chromatic slot default)
+- Per-MIDI-note variant overrides allow different variants for the same pitch class in different octaves
 - Override indicator: blue thumb glow + accent-coloured IPN label
 - Stored in `ActiveTuningState::perNoteVariantOverrides[128]`
 
@@ -355,3 +360,10 @@ m4l/
   Tanghim Receiver.maxpat               Generated Max patch
   Tanghim Receiver.amxd                 Frozen M4L device (for distribution)
 ```
+
+## Planned Features
+
+### MIDI-Mappable & Automatable Sliders + Presets (ON HOLD)
+**Plan file**: `~/.claude/plans/tranquil-giggling-thimble.md`
+
+Adds 13 APVTS parameters to the Transmitter plugin: 12 `AudioParameterFloat` params (`slot_0`–`slot_11`, ±100 cents, snap to nearest variant) + 1 `AudioParameterChoice` (`preset`, "None"/1–12). Enables DAW automation lanes and MIDI CC mapping. Bidirectional sync between WebView UI and APVTS with gesture marking. Per-note overrides remain UI-only. Prerequisite: continuous slider tuning (free pitch bend on slider drag) should be implemented first.

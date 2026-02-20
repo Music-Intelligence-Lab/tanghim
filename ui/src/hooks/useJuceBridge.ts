@@ -122,6 +122,20 @@ export function useJuceBridge() {
     return callNative<TuningState>('setNoteVariant', midiNote, variantIndex)
   }, [])
 
+  const setSlotCents = useCallback(async (
+    chromaticIndex: number,
+    centsValue: number
+  ): Promise<void> => {
+    await callNative('setSlotCents', chromaticIndex, centsValue)
+  }, [])
+
+  const setSlotCentsFinalize = useCallback(async (
+    chromaticIndex: number,
+    centsValue: number
+  ): Promise<TuningState | undefined> => {
+    return callNative<TuningState>('setSlotCentsFinalize', chromaticIndex, centsValue)
+  }, [])
+
   const applyPreset = useCallback(async (presetIndex: number): Promise<TuningState | undefined> => {
     return callNative<TuningState>('applyPreset', presetIndex)
   }, [])
@@ -174,6 +188,8 @@ export function useJuceBridge() {
     selectTuningSystem,
     setSliderVariant,
     setNoteVariant,
+    setSlotCents,
+    setSlotCentsFinalize,
     applyPreset,
     assignPreset,
     clearPreset,
@@ -183,6 +199,7 @@ export function useJuceBridge() {
     getCurrentState,
     setStartMidi,
   }), [getTuningSystems, selectTuningSystem, setSliderVariant, setNoteVariant,
+       setSlotCents, setSlotCentsFinalize,
        applyPreset, assignPreset, clearPreset,
        getMaqamList, applyMaqam, checkForUpdates, getCurrentState, setStartMidi])
 }

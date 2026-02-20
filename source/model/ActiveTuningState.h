@@ -20,6 +20,7 @@ struct ChromaticNoteVariants
     juce::String ipnReference;          // "C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"
     std::vector<PitchClass> variants;   // Ordered by pitch (ascending cents)
     int selectedIndex = 0;
+    double centsOffset = 0.0;           // Arbitrary cents deviation from 12-EDO; source of truth for tuning output
 
     bool isLocked()     const { return variants.size() <= 1; }
     int  variantCount() const { return (int) variants.size(); }
@@ -86,21 +87,21 @@ struct ActiveTuningState
 
     /**
      * Build a 128-entry frequency table (Hz) for MTS-ESP.
-     * Each MIDI note maps to the frequency of the effective variant for that
-     * note (per-note override if set, otherwise the chromatic slot default),
-     * transposed to the correct octave.
+     * Each MIDI note uses the chromatic slot's centsOffset (the source of truth
+     * for tuning output — set by free slider drag or synced from variant selection).
      */
     std::array<double, 128> buildFrequencyTable() const
     {
         std::array<double, 128> table;
         for (int midi = 0; midi < 128; ++midi)
         {
-            const auto* v = effectiveVariant (midi);
+            const int chromaticIdx = midi % 12;
+            const double cents = slots[(size_t) chromaticIdx].centsOffset;
 
             double freq;
-            if (v != nullptr && v->midiCentsDeviation != 0.0)
+            if (cents != 0.0)
             {
-                const double centsFromA440 = (midi - 69) * 100.0 + v->midiCentsDeviation;
+                const double centsFromA440 = (midi - 69) * 100.0 + cents;
                 freq = 440.0 * std::pow (2.0, centsFromA440 / 1200.0);
             }
             else
@@ -114,7 +115,8 @@ struct ActiveTuningState
 
     /**
      * Build a 128-entry cents-deviation table.
-     * Each entry is the deviation in cents from standard 12-EDO for that MIDI note.
+     * Each entry is the deviation in cents from standard 12-EDO for that MIDI note,
+     * taken from the chromatic slot's centsOffset.
      */
     std::array<double, 128> buildCentsDeviationTable() const
     {
@@ -122,9 +124,8 @@ struct ActiveTuningState
         table.fill (0.0);
         for (int midi = 0; midi < 128; ++midi)
         {
-            const auto* v = effectiveVariant (midi);
-            if (v != nullptr)
-                table[(size_t) midi] = v->midiCentsDeviation;
+            const int chromaticIdx = midi % 12;
+            table[(size_t) midi] = slots[(size_t) chromaticIdx].centsOffset;
         }
         return table;
     }

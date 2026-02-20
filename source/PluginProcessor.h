@@ -54,8 +54,10 @@ public:
                            const juce::String& startingNote,
                            std::function<void()> onComplete = {});
 
-    void setSliderVariant (int chromaticIndex, int variantIndex);
-    void setNoteVariant   (int midiNote, int variantIndex);
+    void setSliderVariant  (int chromaticIndex, int variantIndex);
+    void setNoteVariant    (int midiNote, int variantIndex);
+    void setSlotCents      (int chromaticIndex, double centsValue);
+    void finalizeSlotCents (int chromaticIndex, double centsValue);
     void applyPreset      (int presetIndex);
     void assignPreset     (int presetIndex, const juce::String& maqamIdName,
                            const juce::String& maqamDisplayName,

@@ -1,6 +1,8 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "api/ApiResponseParser.h"
+#include <cmath>
+#include <limits>
 #include <map>
 #include <set>
 
@@ -100,12 +102,17 @@ void ArabicMaqamTunerProcessor::getStateInformation (juce::MemoryBlock& dest)
     auto state = juce::ValueTree ("ArabicMaqamTunerState");
     state.setProperty ("tuningSystemId",   currentSystemId,     nullptr);
     state.setProperty ("startingNote",     currentStartingNote, nullptr);
-    // Slider positions
+    // Slider positions + cents offsets
     auto slidersNode = juce::ValueTree ("SliderPositions");
     for (int i = 0; i < 12; ++i)
+    {
         slidersNode.setProperty ("s" + juce::String (i),
                                  activeTuningState.slots[(size_t) i].selectedIndex,
                                  nullptr);
+        slidersNode.setProperty ("c" + juce::String (i),
+                                 activeTuningState.slots[(size_t) i].centsOffset,
+                                 nullptr);
+    }
     state.addChild (slidersNode, -1, nullptr);
 
     // Presets
@@ -242,8 +249,15 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
 
     auto slidersNode = state.getChildWithName ("SliderPositions");
     std::array<int, 12> savedPositions;
+    std::array<double, 12> savedCentsOffsets;
+    savedCentsOffsets.fill (std::numeric_limits<double>::quiet_NaN());
     for (int i = 0; i < 12; ++i)
+    {
         savedPositions[(size_t) i] = (int) slidersNode.getProperty ("s" + juce::String (i), 0);
+        auto centsProp = slidersNode.getProperty ("c" + juce::String (i), juce::var());
+        if (! centsProp.isVoid())
+            savedCentsOffsets[(size_t) i] = (double) centsProp;
+    }
 
     // Read per-note overrides (sparse)
     auto perNoteNode = state.getChildWithName ("PerNoteOverrides");
@@ -263,16 +277,22 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
     {
         std::weak_ptr<std::atomic<bool>> weak (alive);
         loadTuningSystem (sysId, startNote,
-            [this, weak, savedPositions, savedPerNote,
+            [this, weak, savedPositions, savedCentsOffsets, savedPerNote,
              savedMaqamId, savedTransIdx, savedPresetIdx, savedStartMidi, savedDegreeNames] ()
         {
             if (! isAlive (weak)) return;
 
-            // Restore slider positions directly (avoid clearing maqam state)
+            // Restore slider positions and cents offsets directly (avoid clearing maqam state)
             for (int i = 0; i < 12; ++i)
             {
                 auto& slot = activeTuningState.slots[(size_t) i];
                 slot.selectedIndex = juce::jlimit (0, slot.variantCount() - 1, savedPositions[(size_t) i]);
+
+                if (! std::isnan (savedCentsOffsets[(size_t) i]))
+                    slot.centsOffset = savedCentsOffsets[(size_t) i];
+                else if (const auto* v = slot.selectedVariant())
+                    slot.centsOffset = v->midiCentsDeviation;
+
                 for (int midi = i; midi < 128; midi += 12)
                     activeTuningState.perNoteVariantOverrides[(size_t) midi] = -1;
             }
@@ -374,6 +394,14 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
             }
         }
 
+        // Sync centsOffset from selected variants
+        for (int i = 0; i < 12; ++i)
+        {
+            auto& sl = activeTuningState.slots[(size_t) i];
+            if (const auto* v = sl.selectedVariant())
+                sl.centsOffset = v->midiCentsDeviation;
+        }
+
         tuningEngine.updateTuning (activeTuningState, buildScaleName());
         if (onStatusMessage) onStatusMessage (buildScaleName());
         notifyTuningChanged();
@@ -442,6 +470,10 @@ void ArabicMaqamTunerProcessor::setSliderVariant (int chromaticIndex, int varian
     auto& slot = activeTuningState.slots[(size_t) chromaticIndex];
     slot.selectedIndex = juce::jlimit (0, slot.variantCount() - 1, variantIndex);
 
+    // Sync centsOffset to the selected variant's deviation
+    if (const auto* v = slot.selectedVariant())
+        slot.centsOffset = v->midiCentsDeviation;
+
     // Clear per-note overrides for this chromatic position (all-octaves reset)
     for (int midi = chromaticIndex; midi < 128; midi += 12)
         activeTuningState.perNoteVariantOverrides[(size_t) midi] = -1;
@@ -453,6 +485,38 @@ void ArabicMaqamTunerProcessor::setSliderVariant (int chromaticIndex, int varian
     currentDegreeNames.clear();
 
     tuningEngine.updateTuning (activeTuningState, buildScaleName());
+    notifyTuningChanged();
+}
+
+void ArabicMaqamTunerProcessor::setSlotCents (int chromaticIndex, double centsValue)
+{
+    if (chromaticIndex < 0 || chromaticIndex >= 12) return;
+    auto& slot = activeTuningState.slots[(size_t) chromaticIndex];
+    slot.centsOffset = juce::jlimit (-200.0, 200.0, centsValue);
+
+    // Update selectedIndex to nearest variant (for display/highlighting)
+    int bestIdx = 0;
+    double bestDist = std::numeric_limits<double>::max();
+    for (int v = 0; v < slot.variantCount(); ++v)
+    {
+        const double dist = std::abs (slot.variants[(size_t) v].midiCentsDeviation - centsValue);
+        if (dist < bestDist) { bestDist = dist; bestIdx = v; }
+    }
+    slot.selectedIndex = bestIdx;
+
+    // Manual slider change breaks maqam association
+    currentMaqamId.clear();
+    currentTranspositionIdx = -1;
+    currentActivePresetIdx  = -1;
+    currentDegreeNames.clear();
+
+    // Update MTS-ESP immediately (live pitch change) — no WebView push
+    tuningEngine.updateTuning (activeTuningState, buildScaleName());
+}
+
+void ArabicMaqamTunerProcessor::finalizeSlotCents (int chromaticIndex, double centsValue)
+{
+    setSlotCents (chromaticIndex, centsValue);
     notifyTuningChanged();
 }
 
@@ -486,6 +550,8 @@ void ArabicMaqamTunerProcessor::applyPreset (int idx)
     {
         auto& slot = activeTuningState.slots[(size_t) i];
         slot.selectedIndex = juce::jlimit (0, slot.variantCount() - 1, preset.sliderPositions[(size_t) i]);
+        if (const auto* v = slot.selectedVariant())
+            slot.centsOffset = v->midiCentsDeviation;
     }
 
     // Restore maqam state from preset
@@ -737,7 +803,12 @@ void ArabicMaqamTunerProcessor::applyMaqamDegrees (const MaqamDegrees& degrees)
     // so we don't accumulate selections from previously applied maqamat
     activeTuningState.clearPerNoteOverrides();
     for (int ci = 0; ci < 12; ++ci)
-        activeTuningState.slots[(size_t) ci].selectedIndex = 0;
+    {
+        auto& sl = activeTuningState.slots[(size_t) ci];
+        sl.selectedIndex = 0;
+        if (const auto* v = sl.selectedVariant())
+            sl.centsOffset = v->midiCentsDeviation;
+    }
 
     // Apply ascending degrees: for each PAO name in the scale,
     // find the matching slider variant by chromatic index and cents deviation.
@@ -765,6 +836,8 @@ void ArabicMaqamTunerProcessor::applyMaqamDegrees (const MaqamDegrees& degrees)
             }
         }
         slot.selectedIndex = bestVariant;
+        if (const auto* v = slot.selectedVariant())
+            slot.centsOffset = v->midiCentsDeviation;
     }
 
     tuningEngine.updateTuning (activeTuningState, buildScaleName());
@@ -785,6 +858,8 @@ void ArabicMaqamTunerProcessor::rebuildTuningStateFromCache()
         const int prevIdx = slot.selectedIndex;
         slot.variants = variants[(size_t) i];
         slot.selectedIndex = juce::jlimit (0, std::max (0, slot.variantCount() - 1), prevIdx);
+        if (const auto* v = slot.selectedVariant())
+            slot.centsOffset = v->midiCentsDeviation;
     }
 }
 

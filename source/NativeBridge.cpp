@@ -46,6 +46,27 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
             complete (buildTuningStateJson());
         });
 
+    // ── setSlotCents(chromaticIndex, centsValue) ────────────────────────────
+    // Fire-and-forget during continuous drag — updates MTS-ESP immediately
+    // but does NOT push full state JSON back (too heavy at ~60fps).
+    opts = opts.withNativeFunction ("setSlotCents",
+        [this] (const juce::Array<juce::var>& args, Completion complete)
+        {
+            if (args.size() >= 2)
+                processor.setSlotCents ((int) args[0], (double) args[1]);
+            complete (juce::var());
+        });
+
+    // ── setSlotCentsFinalize(chromaticIndex, centsValue) ────────────────────
+    // Called on mouseup — updates tuning + returns full state for WebView sync.
+    opts = opts.withNativeFunction ("setSlotCentsFinalize",
+        [this] (const juce::Array<juce::var>& args, Completion complete)
+        {
+            if (args.size() >= 2)
+                processor.finalizeSlotCents ((int) args[0], (double) args[1]);
+            complete (buildTuningStateJson());
+        });
+
     // ── applyPreset(presetIndex) ──────────────────────────────────────────────
     opts = opts.withNativeFunction ("applyPreset",
         [this] (const juce::Array<juce::var>& args, Completion complete)
@@ -176,6 +197,7 @@ juce::var NativeBridge::buildTuningStateJson() const
         s->setProperty ("ipnRef",        slot.ipnReference);
         s->setProperty ("selectedIndex", slot.selectedIndex);
         s->setProperty ("isLocked",      slot.isLocked());
+        s->setProperty ("centsOffset",   slot.centsOffset);
 
         juce::Array<juce::var> variants;
         for (const auto& v : slot.variants)

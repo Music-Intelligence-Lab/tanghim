@@ -15,10 +15,12 @@ interface Props {
   maqamDegreeIndices: Set<number>
   maqamTonicIndex: number
   maqamTonicMidi: number
-  onSliderChange: (chromaticIndex: number, variantIndex: number, midiNote: number, perNoteOnly: boolean) => void
+  onVariantSelect: (chromaticIndex: number, variantIndex: number) => void
+  onCentsDrag: (chromaticIndex: number, centsValue: number) => void
+  onCentsDragEnd: (chromaticIndex: number, centsValue: number) => void
 }
 
-const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, visibleCount, noteNames, perNoteOverrides, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, onSliderChange }: Props) {
+const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, visibleCount, noteNames, perNoteOverrides, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, onVariantSelect, onCentsDrag, onCentsDragEnd }: Props) {
   const renderStart = Math.floor(startMidi)
   const pixelOffset = (startMidi - renderStart) * SLOT_WIDTH_PX
   // Render one extra slider to fill the gap when partially scrolled
@@ -58,7 +60,9 @@ const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, visibleC
               isMaqamTonicEquiv={chromaticIndex === maqamTonicIndex && midi !== maqamTonicMidi}
               ipnLabel={ipnLabel}
               paoName={paoName}
-              onVariantChange={onSliderChange}
+              onVariantSelect={onVariantSelect}
+              onCentsDrag={onCentsDrag}
+              onCentsDragEnd={onCentsDragEnd}
             />
           )
         })}

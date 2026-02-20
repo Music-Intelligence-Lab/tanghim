@@ -16,6 +16,7 @@ export interface ChromaticSlot {
   selectedIndex: number;
   isLocked: boolean;
   variants: PitchClassVariant[];
+  centsOffset: number;       // Current cents deviation from 12-EDO (source of truth for tuning output)
 }
 
 export interface MaqamPreset {

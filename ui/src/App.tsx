@@ -27,6 +27,7 @@ const EMPTY_STATE: TuningState = {
     selectedIndex: 0,
     isLocked: true,
     variants: [],
+    centsOffset: 0,
   })),
   presets: Array.from({ length: 12 }, () => ({
     isAssigned: false, maqamId: '', maqamDisplay: '', tonicIpn: '',
@@ -371,19 +372,74 @@ export default function App() {
     await bridge.selectTuningSystem(systemId, startingNote)
   }
 
-  const handleSliderChange = useCallback(async (
-    chromaticIndex: number, variantIndex: number,
-    midiNote: number, perNoteOnly: boolean
+  /** Snap marker click: select a specific variant. */
+  const handleVariantSelect = useCallback(async (
+    chromaticIndex: number,
+    variantIndex: number
   ) => {
-    const newState = perNoteOnly
-      ? await bridge.setNoteVariant(midiNote, variantIndex)
-      : await bridge.setSliderVariant(chromaticIndex, variantIndex)
+    const newState = await bridge.setSliderVariant(chromaticIndex, variantIndex)
     if (newState) setTuningState(newState)
     // Manual slider change breaks preset/maqam association
     setActivePresetIndex(-1)
     setMaqamDegreeIndices(EMPTY_SET)
     setMaqamTonicIndex(-1)
     setMaqamTonicMidi(-1)
+  }, [bridge])
+
+  /** Continuous drag: fire-and-forget update to C++ (MTS-ESP updates live).
+   *  Uses requestAnimationFrame to throttle C++ calls to ~60fps. */
+  const pendingDragRef = useRef<{ ci: number; cents: number } | null>(null)
+  const dragRafRef = useRef<number>(0)
+  const maqamClearedRef = useRef(false)
+
+  const handleCentsDrag = useCallback((
+    chromaticIndex: number,
+    centsValue: number
+  ) => {
+    // Optimistic local state update for responsive UI
+    setTuningState(prev => {
+      const slots = [...prev.slots]
+      slots[chromaticIndex] = { ...slots[chromaticIndex], centsOffset: centsValue }
+      return { ...prev, slots }
+    })
+
+    // Clear maqam association once per drag gesture
+    if (!maqamClearedRef.current) {
+      maqamClearedRef.current = true
+      setActivePresetIndex(-1)
+      setMaqamDegreeIndices(EMPTY_SET)
+      setMaqamTonicIndex(-1)
+      setMaqamTonicMidi(-1)
+    }
+
+    // Throttle C++ calls to one per animation frame
+    pendingDragRef.current = { ci: chromaticIndex, cents: centsValue }
+    if (!dragRafRef.current) {
+      dragRafRef.current = requestAnimationFrame(() => {
+        dragRafRef.current = 0
+        if (pendingDragRef.current) {
+          bridge.setSlotCents(pendingDragRef.current.ci, pendingDragRef.current.cents)
+          pendingDragRef.current = null
+        }
+      })
+    }
+  }, [bridge])
+
+  /** Drag end: finalize + get full state sync from C++. */
+  const handleCentsDragEnd = useCallback(async (
+    chromaticIndex: number,
+    centsValue: number
+  ) => {
+    // Cancel any pending RAF
+    if (dragRafRef.current) {
+      cancelAnimationFrame(dragRafRef.current)
+      dragRafRef.current = 0
+    }
+    pendingDragRef.current = null
+    maqamClearedRef.current = false
+
+    const newState = await bridge.setSlotCentsFinalize(chromaticIndex, centsValue)
+    if (newState) setTuningState(newState)
   }, [bridge])
 
   const handleMaqamSelect = async (maqamId: string, transpositionIndex: number) => {
@@ -557,7 +613,9 @@ export default function App() {
           maqamDegreeIndices={maqamDegreeIndices}
           maqamTonicIndex={maqamTonicIndex}
           maqamTonicMidi={maqamTonicMidi}
-          onSliderChange={handleSliderChange}
+          onVariantSelect={handleVariantSelect}
+          onCentsDrag={handleCentsDrag}
+          onCentsDragEnd={handleCentsDragEnd}
         />
       </div>
 

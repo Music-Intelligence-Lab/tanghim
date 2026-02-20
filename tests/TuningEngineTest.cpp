@@ -48,6 +48,7 @@ int main()
             pc.midiCentsDeviation = 50.0;
             pc.ipnReference      = kChromaticIpnRefs[i];
             state.slots[(size_t) i].variants.push_back (pc);
+            state.slots[(size_t) i].centsOffset = 50.0;
         }
         const auto freqs = state.buildFrequencyTable();
         const double expected = 440.0 * std::pow (2.0, ((69 * 100.0) + 50.0 - 69 * 100.0) / 1200.0);
@@ -67,6 +68,7 @@ int main()
         pc.midiCentsDeviation = -5.87;
         pc.ipnReference       = "E";
         state.slots[4].variants.push_back (pc); // slot 4 = E
+        state.slots[4].centsOffset = -5.87;
 
         const auto cents = state.buildCentsDeviationTable();
         // All E notes (4, 16, 28, 40, 52, 64, 76, 88, 100, 112, 124) should have -5.87
@@ -92,6 +94,54 @@ int main()
         slot.variants.push_back (PitchClass{});
         slot.variants.push_back (PitchClass{});
         CHECK (! slot.isLocked());
+        END_TEST;
+    }
+
+    // ── centsOffset as source of truth ─────────────────────────────────────
+    {
+        TEST("centsOffset drives frequency table independently of selectedIndex")
+        ActiveTuningState state;
+        // Add two variants for slot 9 (A): one at 0 cents, one at -10 cents
+        PitchClass v0;
+        v0.noteName = "test0"; v0.midiNoteNumber = 9;
+        v0.midiCentsDeviation = 0.0; v0.ipnReference = "A";
+        PitchClass v1;
+        v1.noteName = "test1"; v1.midiNoteNumber = 9;
+        v1.midiCentsDeviation = -10.0; v1.ipnReference = "A";
+        state.slots[9].variants.push_back (v0);
+        state.slots[9].variants.push_back (v1);
+        state.slots[9].selectedIndex = 1;  // points to -10 cents variant
+        state.slots[9].centsOffset = 30.0; // but centsOffset says +30
+        const auto freqs = state.buildFrequencyTable();
+        const double expected = 440.0 * std::pow (2.0, 30.0 / 1200.0);
+        CHECK_NEAR (freqs[69], expected, 0.01); // A4 = MIDI 69
+        END_TEST;
+    }
+    {
+        TEST("centsOffset drives cents deviation table independently of variant")
+        ActiveTuningState state;
+        PitchClass pc;
+        pc.noteName = "test"; pc.midiNoteNumber = 0;
+        pc.midiCentsDeviation = -20.0; pc.ipnReference = "C";
+        state.slots[0].variants.push_back (pc);
+        state.slots[0].selectedIndex = 0;
+        state.slots[0].centsOffset = 15.5; // different from variant's -20
+        const auto cents = state.buildCentsDeviationTable();
+        for (int midi = 0; midi < 128; midi += 12)
+            CHECK_NEAR (cents[(size_t) midi], 15.5, 0.001);
+        END_TEST;
+    }
+    {
+        TEST("default centsOffset (0.0) produces 12-EDO")
+        ActiveTuningState state;
+        // Add a variant with non-zero deviation but leave centsOffset at default 0
+        PitchClass pc;
+        pc.noteName = "test"; pc.midiNoteNumber = 9;
+        pc.midiCentsDeviation = -50.0; pc.ipnReference = "A";
+        state.slots[9].variants.push_back (pc);
+        // centsOffset remains 0.0 (default)
+        const auto freqs = state.buildFrequencyTable();
+        CHECK_NEAR (freqs[69], 440.0, 0.001); // A4 still 12-EDO
         END_TEST;
     }
 
