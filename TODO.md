@@ -1,5 +1,6 @@
 ## Features
 - Fix the Max for Live Receiver for Ableton 
+/Users/khyamallami/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim
 
 - Add an internal oscillator (triangle wave) with ADSR and allow computer keyboard input so user can play the tuner without needing MIDI input if desired. This should be activated by a button named "Oscillator" or "Osc" next to the MTS-ESP, MPE and Pitch Bend buttons. The oscillator should be **enableable alongside** the other output modes (not mutually exclusive) so the user can play both the internal oscillator and their synth simultaneously to verify the synth is producing the correct tuning
 
@@ -7,11 +8,9 @@
 
 - Add **cache status icons** to tuning system dropdown items (aligned far-right) showing whether the data related to each tuning system is already cached or needs to be downloaded (this includes maqamat and transpositions not just the tuning system data)
 
-- Make Slider thumbs create pitchbend when being moved up or down but keep the snap to markers so user can retune intervals to their liking whilst also being able to access the proper tuning if needed.
 
-- Make sure all plugin settings and preset list persist with the plugin so that on reload they are the same as where user left off
+- Make Slider thumbs create pitchbend when being moved up or down but keep the snap to markers so user can retune intervals to their liking whilst also being able to access the proper value if needed.
 
-- Update the Receiver UI so it matches the Transmitter
 
 - Update all references to Arabic Maqam Tuner including C++ class names and any styling etc... we should have none, everything should be Tanghīm. And change our project directory name to "tanghim".
 
@@ -19,11 +18,7 @@ _ Double Click range slider to reset it should only work when reclicking the ran
 
 - sometimes changing maqamat whilst playing causes midi notes to hang. we should find out why and fix.
 
-- list maqam transpositions in dropdown menu based on their pitch class order from low to hight (the maqam tonic can be referenced against our pitch classes index in the tuning system data for the correct order)
-
-- maqam transpositions menu: (base) should be (qarār) instead
-
-
+- I need you to document your research about enabeling "tuning" in Max and M4L devices in our diary. This will be useful for later so we can create a guide for how to do it and save ourselves this work in the future.
 
 ## Performance
 

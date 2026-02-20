@@ -28,6 +28,23 @@ void MpePitchBendProcessor::sendMpeZoneConfig (juce::MidiBuffer& out, int sample
     }
 }
 
+// ── Flush all active notes ────────────────────────────────────────────────────
+
+void MpePitchBendProcessor::allNotesOff (juce::MidiBuffer& out, int samplePos)
+{
+    for (int i = 0; i < 15; ++i)
+    {
+        if (channels[(size_t) i].active)
+        {
+            const int ch = i + 2;
+            out.addEvent (juce::MidiMessage::noteOff (ch, channels[(size_t) i].noteNumber), samplePos);
+            out.addEvent (juce::MidiMessage::pitchWheel (ch, 8192), samplePos);
+            channels[(size_t) i] = { -1, false };
+        }
+    }
+    nextChannel = 0;
+}
+
 // ── Per-block processing ──────────────────────────────────────────────────────
 
 void MpePitchBendProcessor::process (const juce::MidiBuffer&          in,

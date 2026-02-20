@@ -65,6 +65,7 @@ private:
     int paramUpdateCounter = 0;
 
     bool mpeSentZoneConfig = false;
+    bool lastWasMpe = true;  // tracks mode across processBlock calls for Note Off flush
 
     // Status updated in processBlock, read by editor
     std::atomic<bool>    connectedToMaster { false };

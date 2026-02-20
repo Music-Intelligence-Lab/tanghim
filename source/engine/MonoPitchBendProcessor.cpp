@@ -5,6 +5,16 @@
 MonoPitchBendProcessor::MonoPitchBendProcessor (int pitchBendRangeSemitones)
     : pbRange (pitchBendRangeSemitones) {}
 
+void MonoPitchBendProcessor::allNotesOff (juce::MidiBuffer& out, int samplePos)
+{
+    if (activeNote >= 0)
+    {
+        out.addEvent (juce::MidiMessage::noteOff (activeChannel, activeNote), samplePos);
+        out.addEvent (juce::MidiMessage::pitchWheel (activeChannel, 8192), samplePos);
+        activeNote = -1;
+    }
+}
+
 void MonoPitchBendProcessor::process (const juce::MidiBuffer&       in,
                                        juce::MidiBuffer&              out,
                                        const std::array<double, 128>& centsDeviationTable)

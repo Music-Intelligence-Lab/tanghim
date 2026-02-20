@@ -33,6 +33,9 @@ public:
                   const std::array<double, 128>& centsDeviationTable,
                   int numSamples);
 
+    /** Send Note Off + PB reset for all active notes (used on mode switch). */
+    void allNotesOff (juce::MidiBuffer& out, int samplePosition = 0);
+
     void setPitchBendRange (int semitones) { pbRange = semitones; }
     int  getPitchBendRange() const         { return pbRange; }
 

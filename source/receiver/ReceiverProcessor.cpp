@@ -145,6 +145,17 @@ void ReceiverProcessor::processBlock (juce::AudioBuffer<float>& audio,
     const bool isMpe = (modeParam->getIndex() == 0);
 
     juce::MidiBuffer output;
+
+    // Mode switch: flush active notes from the OLD processor
+    if (isMpe != lastWasMpe)
+    {
+        if (lastWasMpe)
+            mpeProcessor.allNotesOff (output);
+        else
+            monoProcessor.allNotesOff (output);
+        lastWasMpe = isMpe;
+    }
+
     if (isMpe)
     {
         if (! mpeSentZoneConfig)

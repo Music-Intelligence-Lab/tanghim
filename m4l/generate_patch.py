@@ -35,19 +35,10 @@ title = p.add_box(Box(
     textcolor=[1, 1, 1, 1],
 ))
 
-mode_label = p.add_box(Box(
-    id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
-    patching_rect=[30, 490, 60, 18],
-    presentation=1, presentation_rect=[10, 80, 60, 18],
-    fontsize=10.0,
-    text="Mode:",
-    textcolor=[0.7, 0.7, 0.7, 1],
-))
-
 status_label = p.add_box(Box(
     id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
-    patching_rect=[200, 460, 200, 18],
-    presentation=1, presentation_rect=[10, 100, 200, 18],
+    patching_rect=[200, 460, 350, 18],
+    presentation=1, presentation_rect=[10, 64, 350, 18],
     fontsize=10.0,
     text="",
     textcolor=[0.5, 0.5, 0.5, 1],
@@ -225,16 +216,18 @@ p.add_line(pack_tuning, trig_list)
 p.add_line(trig_list, js, outlet=0, inlet=1)
 
 # ═══════════════════════════════════════════════════════════════════════
-# Controls: live.menu (Mode) + live.dial (Bend Range)
+# Controls: live.tab (Mode) + live.dial (MPE PB) + live.dial (Mono PB)
 # ═══════════════════════════════════════════════════════════════════════
 
-mode_menu = p.add_box(Box(
-    id=p.get_id(), maxclass="live.menu",
+mode_tab = p.add_box(Box(
+    id=p.get_id(), maxclass="live.tab",
     numinlets=1, numoutlets=3,
     outlettype=["", "", "float"],
     parameter_enable=1,
-    patching_rect=[30, 290, 100, 15],
-    presentation=1, presentation_rect=[10, 38, 100, 15],
+    num_lines_patching=1,
+    num_lines_presentation=1,
+    patching_rect=[30, 290, 200, 20],
+    presentation=1, presentation_rect=[10, 34, 200, 20],
     saved_attribute_attributes={
         "valueof": {
             "parameter_enum": ["MPE", "Mono PB"],
@@ -254,40 +247,80 @@ prepend_mode = p.add("prepend set_mode",
     numinlets=1, numoutlets=1, outlettype=[""],
     patching_rect=[30, 325, 105, 22])
 
-bend_dial = p.add_box(Box(
+mpe_bend_dial = p.add_box(Box(
     id=p.get_id(), maxclass="live.dial",
     numinlets=1, numoutlets=2,
     outlettype=["", "float"],
     parameter_enable=1,
     patching_rect=[180, 280, 44, 48],
-    presentation=1, presentation_rect=[130, 23, 44, 48],
+    presentation=1, presentation_rect=[230, 4, 50, 48],
     saved_attribute_attributes={
         "valueof": {
             "parameter_initial": [48],
             "parameter_initial_enable": 1,
             "parameter_linknames": 1,
-            "parameter_longname": "Bend Range",
+            "parameter_longname": "MPE PB Range",
             "parameter_mmax": 96.0,
             "parameter_mmin": 1.0,
-            "parameter_shortname": "PB Range",
+            "parameter_shortname": "MPE PB",
             "parameter_type": 1,
             "parameter_unitstyle": 9,
         }
     },
-    varname="Bend Range",
+    varname="MPE PB Range",
 ))
 
-prepend_bend = p.add("prepend set_bend_range",
-    numinlets=1, numoutlets=1, outlettype=[""],
-    patching_rect=[180, 340, 130, 22])
+mono_bend_dial = p.add_box(Box(
+    id=p.get_id(), maxclass="live.dial",
+    numinlets=1, numoutlets=2,
+    outlettype=["", "float"],
+    parameter_enable=1,
+    patching_rect=[260, 280, 44, 48],
+    presentation=1, presentation_rect=[300, 4, 50, 48],
+    saved_attribute_attributes={
+        "valueof": {
+            "parameter_initial": [2],
+            "parameter_initial_enable": 1,
+            "parameter_linknames": 1,
+            "parameter_longname": "Mono PB Range",
+            "parameter_mmax": 96.0,
+            "parameter_mmin": 1.0,
+            "parameter_shortname": "Mono PB",
+            "parameter_type": 1,
+            "parameter_unitstyle": 9,
+        }
+    },
+    varname="Mono PB Range",
+))
 
-# Mode menu → prepend → js inlet 0
-p.add_line(mode_menu, prepend_mode, outlet=0, inlet=0)
+prepend_mpe_bend = p.add("prepend set_mpe_bend_range",
+    numinlets=1, numoutlets=1, outlettype=[""],
+    patching_rect=[180, 340, 155, 22])
+
+prepend_mono_bend = p.add("prepend set_mono_bend_range",
+    numinlets=1, numoutlets=1, outlettype=[""],
+    patching_rect=[260, 340, 160, 22])
+
+# Mode tab → prepend → js inlet 0 (for MIDI processing mode)
+p.add_line(mode_tab, prepend_mode, outlet=0, inlet=0)
 p.add_line(prepend_mode, js)
 
-# Bend dial → prepend → js inlet 0
-p.add_line(bend_dial, prepend_bend, outlet=0, inlet=0)
-p.add_line(prepend_bend, js)
+# Mode tab → pak → vst~ (sets VST3 mode parameter for file-based registry update)
+# VST3 param index 1 = mode (0=bypass, 1=mode, 2=mpePbRange, 3=monoPbRange)
+# pak triggers on any inlet change; sends list [1, 0./1.] to vst~ inlet
+set_mode_pak = p.add("pak 1 0.",
+    numinlets=2, numoutlets=1, outlettype=[""],
+    patching_rect=[30, 395, 60, 22])
+p.add_line(mode_tab, set_mode_pak, outlet=0, inlet=1)
+p.add_line(set_mode_pak, vst)
+
+# MPE bend dial → prepend → js inlet 0
+p.add_line(mpe_bend_dial, prepend_mpe_bend, outlet=0, inlet=0)
+p.add_line(prepend_mpe_bend, js)
+
+# Mono PB bend dial → prepend → js inlet 0
+p.add_line(mono_bend_dial, prepend_mono_bend, outlet=0, inlet=0)
+p.add_line(prepend_mono_bend, js)
 
 # ═══════════════════════════════════════════════════════════════════════
 # Save and post-process for M4L-specific patcher properties
@@ -300,7 +333,7 @@ with open(OUTPUT_MAXPAT) as f:
     data = json.load(f)
 
 patcher = data["patcher"]
-patcher["openrect"] = [0.0, 0.0, 400.0, 170.0]
+patcher["openrect"] = [0.0, 0.0, 400.0, 88.0]
 # Tell Ableton this device outputs MPE (multi-channel MIDI on ch 2-16).
 # Without this flag, Ableton normalizes all MIDI output to channel 1.
 # ODDSound's MPE M4L device sets this to 1; their non-MPE version sets it to 0.
