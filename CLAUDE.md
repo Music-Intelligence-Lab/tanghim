@@ -262,6 +262,40 @@ The Transmitter's 30Hz editor timer includes a 2Hz MTS-ESP status poll that emit
 - **Post-build codesign**: CMake builds leave a broken code signature ("sealed resource missing"). Must `rm -rf` the old VST3 in `~/Library/Audio/Plug-Ins/VST3/` before `cp -R` (overwriting in-place corrupts kernel signature cache → SIGKILL under Rosetta), then `codesign --force --deep --sign -` the installed copy.
 - **Ableton MIDI routing limitation**: MPE/Pitch Bend data does not pass between tracks (Ableton merges all MIDI to channel 1). MTS-ESP is the recommended output mode for Ableton — it works globally without MIDI routing. MPE/Pitch Bend modes are for DAWs that support placing MIDI effects before instruments (Logic, Reaper, etc.).
 
+### Known Issue: WKWebView + Ableton Computer MIDI Keyboard
+
+**Status: UNRESOLVED** — documented for future investigation.
+
+When the Tanghim plugin window has been interacted with (specifically after using a text input like the searchable maqam dropdown), Ableton's Computer MIDI Keyboard experiences timing delays. External MIDI controllers and arpeggiators are unaffected regardless of plugin focus state.
+
+**Root cause**: WKWebView's internal `WKContentView` becomes first responder when any text input is focused. Once it has first responder status, it retains it even after the text input loses focus, interfering with keyboard event delivery to the DAW host.
+
+**Reproduction**: Load plugin → play CMK with plugin focused → works fine. Use searchable maqam dropdown → close dropdown → play CMK → timing delay. Click away from plugin window to unfocus → CMK works fine again.
+
+**Approaches attempted (all unsuccessful)**:
+1. `browser->setWantsKeyboardFocus(false)` — JUCE component-level, doesn't affect native WKContentView
+2. `EDITOR_WANTS_KEYBOARD_FOCUS FALSE` in CMakeLists.txt — VST3 flag, doesn't prevent WKContentView FR
+3. ObjC swizzle of `WKWebView` keyDown/keyUp → wrong target (WKContentView handles keys)
+4. ObjC swizzle of `WKContentView` keyDown/keyUp → keys still delayed even when forwarded to nextResponder
+5. Swizzle `WKContentView::acceptsFirstResponder` to return NO + `resignWebViewFirstResponder()` on search close → still triggers after text input interaction, cause unclear
+6. Release build (embedded BinaryData vs Vite dev server) → same issue, rules out dev server overhead
+
+**Workaround for users**: Click anywhere outside the plugin window to remove focus, or use an external MIDI controller. The issue only affects Ableton's Computer MIDI Keyboard when the plugin window is focused AND has had text input interaction.
+
+**References**:
+- JUCE forum: https://forum.juce.com/t/fixing-webview-keyboard-focus-issue/63987
+- JUCE forum: https://forum.juce.com/t/webview-and-keyboard-input-propagation-issue-to-the-host/62439
+- JUCE GitHub: https://github.com/juce-framework/JUCE/issues/1522
+
+### Release Build (BinaryData Resource Provider)
+
+The resource provider for serving embedded UI in release builds requires careful handling:
+- JUCE's BinaryData **removes** dashes from filenames (not replaces with `_`): `index-BUhML9SX.css` → `indexBUhML9SX_css`
+- Must match against `BinaryData::originalFilenames[]` instead of replicating JUCE's name mangling
+- The callback receives a path like `/assets/index-Bzx_Xwfh.js` — strip directory prefix before BinaryData lookup
+- `withResourceProvider` second argument (`allowedOriginIn`) is optional — omit it for resource provider mode
+- See the JUCE `WebViewPluginDemo.h` example for reference implementation
+
 ## Max for Live Wrapper
 
 The M4L wrapper is needed because Ableton doesn't support VST3 MIDI effects natively. Max's `vst~` cannot output pitch bend from VST3 plugins (`kLegacyMIDICCOutEvent` dropped, input MIDI echoed). Architecture follows ODDSound's proven approach:
