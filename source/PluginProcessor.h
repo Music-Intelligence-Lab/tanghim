@@ -69,6 +69,9 @@ public:
     void clearPreset      (int presetIndex);
     void applyMaqam       (const juce::String& maqamId, int transpositionIndex);
 
+    // ── Maqam/scroll state (synced from JS, persisted in session) ────────────
+    void setStartMidi (double startMidi);
+
     // ── State accessors ───────────────────────────────────────────────────────
     const std::vector<TuningSystem>&         getTuningSystems()        const;
     const std::vector<MaqamListEntry>&       getMaqamList()            const;
@@ -80,6 +83,14 @@ public:
     bool                                     isMtsTransmitter()        const;
     int                                      mtsNumReceivers()         const;
     ReceiverCounts                           getReceiverCounts()       const;
+
+    juce::String                             getCurrentMaqamId()           const { return currentMaqamId; }
+    int                                      getCurrentTranspositionIdx()  const { return currentTranspositionIdx; }
+    int                                      getCurrentActivePresetIdx()   const { return currentActivePresetIdx; }
+    double                                   getCurrentStartMidi()         const { return currentStartMidi; }
+    const std::vector<juce::String>&         getCurrentDegreeNames()       const { return currentDegreeNames; }
+    bool                                     getSessionRecallInProgress()  const { return sessionRecallInProgress; }
+    bool                                     getHasRecalledSessionState()  const { return hasRecalledSessionState; }
 
     // ── Data update checker ───────────────────────────────────────────────────
     void checkForDataUpdates (std::function<void (std::vector<juce::String>)> onUpdatesFound,
@@ -111,6 +122,15 @@ private:
     juce::String              currentTonicEnglish;   // e.g. "C3" (IPN from pitch class data)
     juce::String              currentTonicSolfege;   // e.g. "Do 3" (solfège from pitch class data)
 
+    // ── Maqam selection state (persisted in session + disk) ─────────────────
+    juce::String              currentMaqamId;              // "maqam_rast" or "" if none
+    int                       currentTranspositionIdx = -1; // -1 = base tonic
+    int                       currentActivePresetIdx  = -1; // -1 = none
+    double                    currentStartMidi       = 48.0; // scroll position (synced from JS)
+    std::vector<juce::String> currentDegreeNames;           // ascending PAO names for highlighting
+    bool                      hasRecalledSessionState = false;
+    bool                      sessionRecallInProgress = false;
+
     // ── Lifetime guard (must be declared before apiClient so it outlives it) ─
     std::shared_ptr<std::atomic<bool>> alive = std::make_shared<std::atomic<bool>> (true);
 
@@ -126,6 +146,12 @@ private:
     void applyMaqamDegrees (const MaqamDegrees& degrees);
     void notifyTuningChanged();
     juce::String buildScaleName() const;
+
+    // ── Disk persistence ─────────────────────────────────────────────────────
+    void saveSettingsToDisk() const;
+    void loadSettingsFromDisk();
+    void savePresetsToDisk() const;
+    void loadPresetsFromDisk();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ArabicMaqamTunerProcessor)
 };

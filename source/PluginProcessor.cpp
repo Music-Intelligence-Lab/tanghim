@@ -11,6 +11,8 @@ ArabicMaqamTunerProcessor::ArabicMaqamTunerProcessor()
       updateChecker (apiClient, dataCache, std::weak_ptr<std::atomic<bool>> (alive))
 {
     dataCache.loadFromDisk();
+    loadPresetsFromDisk();
+    loadSettingsFromDisk();
 
     // Fetch tuning systems list on startup (uses cache if available)
     if (dataCache.hasTuningSystemsList())
@@ -152,6 +154,21 @@ void ArabicMaqamTunerProcessor::getStateInformation (juce::MemoryBlock& dest)
     state.setProperty ("tonicEnglish", currentTonicEnglish, nullptr);
     state.setProperty ("tonicSolfege", currentTonicSolfege, nullptr);
 
+    // Maqam selection state (for session recall)
+    state.setProperty ("selectedMaqamId",    currentMaqamId,           nullptr);
+    state.setProperty ("transpositionIndex", currentTranspositionIdx,  nullptr);
+    state.setProperty ("activePresetIndex",  currentActivePresetIdx,   nullptr);
+    state.setProperty ("startMidi",          currentStartMidi,         nullptr);
+
+    // Degree names (pipe-delimited)
+    juce::String degStr;
+    for (size_t d = 0; d < currentDegreeNames.size(); ++d)
+    {
+        if (d > 0) degStr += "|";
+        degStr += currentDegreeNames[d];
+    }
+    state.setProperty ("degreeNames", degStr, nullptr);
+
     std::unique_ptr<juce::XmlElement> xml (state.createXml());
     copyXmlToBinary (*xml, dest);
 }
@@ -162,6 +179,8 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
     if (! xml) return;
     auto state = juce::ValueTree::fromXml (*xml);
     if (! state.isValid()) return;
+
+    sessionRecallInProgress = true;
 
     // Restore presets immediately (they're just data)
     auto presetsNode = state.getChildWithName ("Presets");
@@ -198,6 +217,25 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
     currentTonicEnglish = state.getProperty ("tonicEnglish").toString();
     currentTonicSolfege = state.getProperty ("tonicSolfege").toString();
 
+    // Restore maqam selection state (capture for use in completion lambda,
+    // since loadTuningSystem() clears these)
+    const juce::String savedMaqamId    = state.getProperty ("selectedMaqamId").toString();
+    const int savedTransIdx            = (int) state.getProperty ("transpositionIndex", -1);
+    const int savedPresetIdx           = (int) state.getProperty ("activePresetIndex",  -1);
+    const double savedStartMidi        = (double) state.getProperty ("startMidi", 48.0);
+
+    std::vector<juce::String> savedDegreeNames;
+    {
+        const juce::String ds = state.getProperty ("degreeNames").toString();
+        if (ds.isNotEmpty())
+        {
+            juce::StringArray parts;
+            parts.addTokens (ds, "|", "");
+            for (const auto& s : parts)
+                if (s.isNotEmpty()) savedDegreeNames.push_back (s);
+        }
+    }
+
     // Restore tuning system — async (may need API fetch)
     const juce::String sysId    = state.getProperty ("tuningSystemId").toString();
     const juce::String startNote = state.getProperty ("startingNote").toString();
@@ -224,17 +262,41 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
     if (sysId.isNotEmpty() && startNote.isNotEmpty())
     {
         std::weak_ptr<std::atomic<bool>> weak (alive);
-        loadTuningSystem (sysId, startNote, [this, weak, savedPositions, savedPerNote] ()
+        loadTuningSystem (sysId, startNote,
+            [this, weak, savedPositions, savedPerNote,
+             savedMaqamId, savedTransIdx, savedPresetIdx, savedStartMidi, savedDegreeNames] ()
         {
             if (! isAlive (weak)) return;
-            for (int i = 0; i < 12; ++i)
-                setSliderVariant (i, savedPositions[(size_t) i]);
 
-            // Restore per-note overrides after slider positions are set
+            // Restore slider positions directly (avoid clearing maqam state)
+            for (int i = 0; i < 12; ++i)
+            {
+                auto& slot = activeTuningState.slots[(size_t) i];
+                slot.selectedIndex = juce::jlimit (0, slot.variantCount() - 1, savedPositions[(size_t) i]);
+                for (int midi = i; midi < 128; midi += 12)
+                    activeTuningState.perNoteVariantOverrides[(size_t) midi] = -1;
+            }
+
+            // Restore per-note overrides
             activeTuningState.perNoteVariantOverrides = savedPerNote;
+
+            // Restore maqam selection state
+            currentMaqamId           = savedMaqamId;
+            currentTranspositionIdx  = savedTransIdx;
+            currentActivePresetIdx   = savedPresetIdx;
+            currentStartMidi         = savedStartMidi;
+            currentDegreeNames       = savedDegreeNames;
+
+            hasRecalledSessionState  = true;
+            sessionRecallInProgress  = false;
+
             tuningEngine.updateTuning (activeTuningState, buildScaleName());
             notifyTuningChanged();
         });
+    }
+    else
+    {
+        sessionRecallInProgress = false;
     }
 }
 
@@ -251,6 +313,12 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
     currentTonicDisplay.clear();
     currentTonicEnglish.clear();
     currentTonicSolfege.clear();
+
+    // Clear maqam selection (system switch invalidates current maqam)
+    currentMaqamId.clear();
+    currentTranspositionIdx = -1;
+    currentActivePresetIdx  = -1;
+    currentDegreeNames.clear();
 
     auto doLoad = [this, systemId, startingNote, onComplete] ()
     {
@@ -297,6 +365,8 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
         if (onStatusMessage) onStatusMessage (buildScaleName());
         notifyTuningChanged();
         if (onComplete) onComplete();
+
+        saveSettingsToDisk();
 
         // Fetch maqam list after sliders are visible (not on the critical path)
         fetchMaqamListIfNeeded();
@@ -363,6 +433,12 @@ void ArabicMaqamTunerProcessor::setSliderVariant (int chromaticIndex, int varian
     for (int midi = chromaticIndex; midi < 128; midi += 12)
         activeTuningState.perNoteVariantOverrides[(size_t) midi] = -1;
 
+    // Manual slider change breaks maqam association
+    currentMaqamId.clear();
+    currentTranspositionIdx = -1;
+    currentActivePresetIdx  = -1;
+    currentDegreeNames.clear();
+
     tuningEngine.updateTuning (activeTuningState, buildScaleName());
     notifyTuningChanged();
 }
@@ -374,6 +450,13 @@ void ArabicMaqamTunerProcessor::setNoteVariant (int midiNote, int variantIndex)
     const auto& slot = activeTuningState.slots[(size_t) chromaticIdx];
     activeTuningState.perNoteVariantOverrides[(size_t) midiNote] =
         juce::jlimit (0, std::max (0, slot.variantCount() - 1), variantIndex);
+
+    // Manual per-note override breaks maqam association
+    currentMaqamId.clear();
+    currentTranspositionIdx = -1;
+    currentActivePresetIdx  = -1;
+    currentDegreeNames.clear();
+
     tuningEngine.updateTuning (activeTuningState, buildScaleName());
     notifyTuningChanged();
 }
@@ -384,9 +467,42 @@ void ArabicMaqamTunerProcessor::applyPreset (int idx)
     const auto& preset = presets[(size_t) idx];
     if (! preset.isAssigned) return;
 
+    // Apply all slider positions directly (not via setSliderVariant which clears maqam state)
     activeTuningState.clearPerNoteOverrides();
     for (int i = 0; i < 12; ++i)
-        setSliderVariant (i, preset.sliderPositions[(size_t) i]);
+    {
+        auto& slot = activeTuningState.slots[(size_t) i];
+        slot.selectedIndex = juce::jlimit (0, slot.variantCount() - 1, preset.sliderPositions[(size_t) i]);
+    }
+
+    // Restore maqam state from preset
+    currentActivePresetIdx  = idx;
+    currentMaqamId          = preset.maqamIdName;
+    currentDegreeNames      = preset.degreeNames;
+    currentTranspositionIdx = preset.isTransposed ? preset.pitchClassSetIndex : -1;
+
+    // Update display strings from preset
+    currentMaqamDisplay = preset.maqamDisplayName;
+    currentTonicDisplay.clear();
+    currentTonicEnglish.clear();
+    currentTonicSolfege.clear();
+    if (preset.tonicNoteName.isNotEmpty() && dataCache.hasData (currentSystemId, currentStartingNote))
+    {
+        const auto& data = dataCache.getData (currentSystemId, currentStartingNote);
+        for (const auto& pc : data.pitchClasses)
+        {
+            if (pc.noteNameDisplay == preset.tonicNoteName)
+            {
+                currentTonicDisplay = pc.noteNameDisplay;
+                currentTonicEnglish = pc.englishName;
+                currentTonicSolfege = pc.solfege;
+                break;
+            }
+        }
+    }
+
+    tuningEngine.updateTuning (activeTuningState, buildScaleName());
+    notifyTuningChanged();
 }
 
 void ArabicMaqamTunerProcessor::assignPreset (int idx,
@@ -412,6 +528,9 @@ void ArabicMaqamTunerProcessor::assignPreset (int idx,
     p.pitchClassSetIndex = setIdx;
     p.sliderPositions    = positions;
     p.degreeNames        = degreeNames;
+
+    currentActivePresetIdx = idx;
+    savePresetsToDisk();
 }
 
 void ArabicMaqamTunerProcessor::applyMaqam (const juce::String& maqamId, int transpositionIndex)
@@ -428,6 +547,11 @@ void ArabicMaqamTunerProcessor::applyMaqam (const juce::String& maqamId, int tra
     }
     if (found == nullptr) return;
 
+    // Track maqam selection state
+    currentMaqamId          = maqamId;
+    currentTranspositionIdx = transpositionIndex;
+    currentActivePresetIdx  = -1; // maqam applied directly, not via preset
+
     // Store current maqam info for MTS-ESP scale name
     currentMaqamDisplay = found->maqamDisplay;
 
@@ -438,6 +562,11 @@ void ArabicMaqamTunerProcessor::applyMaqam (const juce::String& maqamId, int tra
         currentTonicDisplay = found->tonicDisplay;
         tonicId = found->tonicId;
         applyMaqamDegrees (found->degrees);
+
+        // Store degree names from base degrees
+        currentDegreeNames.clear();
+        for (const auto& name : found->degrees.ascending)
+            currentDegreeNames.push_back (name);
     }
     else
     {
@@ -445,6 +574,11 @@ void ArabicMaqamTunerProcessor::applyMaqam (const juce::String& maqamId, int tra
         currentTonicDisplay = t.tonicDisplay;
         tonicId = t.tonicId;
         applyMaqamDegrees (t.degrees);
+
+        // Store degree names from transposition degrees
+        currentDegreeNames.clear();
+        for (const auto& name : t.degrees.ascending)
+            currentDegreeNames.push_back (name);
     }
 
     // Look up tonic's IPN and solfège from pitch class data
@@ -467,7 +601,13 @@ void ArabicMaqamTunerProcessor::applyMaqam (const juce::String& maqamId, int tra
 
 void ArabicMaqamTunerProcessor::clearPreset (int idx)
 {
-    if (idx >= 0 && idx < 12) presets[(size_t) idx].clear();
+    if (idx < 0 || idx >= 12) return;
+    presets[(size_t) idx].clear();
+
+    if (currentActivePresetIdx == idx)
+        currentActivePresetIdx = -1;
+
+    savePresetsToDisk();
 }
 
 // ── Accessors ─────────────────────────────────────────────────────────────────
@@ -671,6 +811,131 @@ juce::String ArabicMaqamTunerProcessor::buildScaleName() const
         line2 += " / " + currentTonicSolfege;
 
     return line1 + "\n" + line2;
+}
+
+// ── Maqam/scroll state ───────────────────────────────────────────────────────
+
+void ArabicMaqamTunerProcessor::setStartMidi (double startMidi)
+{
+    currentStartMidi = startMidi;
+}
+
+// ── Disk persistence ─────────────────────────────────────────────────────────
+
+static juce::File getTanghimDir()
+{
+    return juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+               .getChildFile ("Tanghim");
+}
+
+void ArabicMaqamTunerProcessor::saveSettingsToDisk() const
+{
+    auto* obj = new juce::DynamicObject();
+    obj->setProperty ("tuningSystemId", currentSystemId);
+    obj->setProperty ("startingNote",   currentStartingNote);
+
+    const auto dir = getTanghimDir();
+    dir.createDirectory();
+    dir.getChildFile ("settings.json")
+       .replaceWithText (juce::JSON::toString (juce::var (obj)));
+}
+
+void ArabicMaqamTunerProcessor::loadSettingsFromDisk()
+{
+    const auto file = getTanghimDir().getChildFile ("settings.json");
+    if (! file.existsAsFile()) return;
+
+    auto parsed = juce::JSON::parse (file.loadFileAsString());
+    if (auto* obj = parsed.getDynamicObject())
+    {
+        const juce::String sysId = obj->getProperty ("tuningSystemId").toString();
+        const juce::String note  = obj->getProperty ("startingNote").toString();
+
+        if (sysId.isNotEmpty() && note.isNotEmpty())
+        {
+            currentSystemId     = sysId;
+            currentStartingNote = note;
+            DBG ("loadSettingsFromDisk: system=" + sysId + " note=" + note);
+        }
+    }
+}
+
+void ArabicMaqamTunerProcessor::savePresetsToDisk() const
+{
+    juce::Array<juce::var> arr;
+    for (int i = 0; i < 12; ++i)
+    {
+        const auto& p = presets[(size_t) i];
+        if (! p.isAssigned)
+        {
+            arr.add (juce::var());  // null
+            continue;
+        }
+
+        auto obj = std::make_unique<juce::DynamicObject>();
+        obj->setProperty ("maqamId",         p.maqamIdName);
+        obj->setProperty ("maqamDisplay",    p.maqamDisplayName);
+        obj->setProperty ("baseMaqamId",     p.baseMaqamIdName);
+        obj->setProperty ("isTransposed",    p.isTransposed);
+        obj->setProperty ("tonicNote",       p.tonicNoteName);
+        obj->setProperty ("tonicIpn",        p.tonicIpnRef);
+        obj->setProperty ("setIdx",          p.pitchClassSetIndex);
+
+        juce::Array<juce::var> sp;
+        for (int j = 0; j < 12; ++j)
+            sp.add (p.sliderPositions[(size_t) j]);
+        obj->setProperty ("sliderPositions", sp);
+
+        juce::Array<juce::var> dn;
+        for (const auto& d : p.degreeNames)
+            dn.add (d);
+        obj->setProperty ("degreeNames", dn);
+
+        arr.add (juce::var (obj.release()));
+    }
+
+    const auto dir = getTanghimDir();
+    dir.createDirectory();
+    dir.getChildFile ("presets.json")
+       .replaceWithText (juce::JSON::toString (juce::var (arr)));
+}
+
+void ArabicMaqamTunerProcessor::loadPresetsFromDisk()
+{
+    const auto file = getTanghimDir().getChildFile ("presets.json");
+    if (! file.existsAsFile()) return;
+
+    auto parsed = juce::JSON::parse (file.loadFileAsString());
+    if (auto* arr = parsed.getArray())
+    {
+        for (int i = 0; i < juce::jmin (12, arr->size()); ++i)
+        {
+            const auto& item = (*arr)[i];
+            auto* obj = item.getDynamicObject();
+            if (obj == nullptr) continue;  // null = unassigned
+
+            auto& p = presets[(size_t) i];
+            p.isAssigned         = true;
+            p.maqamIdName        = obj->getProperty ("maqamId").toString();
+            p.maqamDisplayName   = obj->getProperty ("maqamDisplay").toString();
+            p.baseMaqamIdName    = obj->getProperty ("baseMaqamId").toString();
+            p.isTransposed       = (bool) obj->getProperty ("isTransposed");
+            p.tonicNoteName      = obj->getProperty ("tonicNote").toString();
+            p.tonicIpnRef        = obj->getProperty ("tonicIpn").toString();
+            p.pitchClassSetIndex = (int) obj->getProperty ("setIdx");
+
+            if (auto* spArr = obj->getProperty ("sliderPositions").getArray())
+                for (int j = 0; j < juce::jmin (12, spArr->size()); ++j)
+                    p.sliderPositions[(size_t) j] = (int) (*spArr)[j];
+
+            p.degreeNames.clear();
+            if (auto* dnArr = obj->getProperty ("degreeNames").getArray())
+                for (const auto& d : *dnArr)
+                    if (d.toString().isNotEmpty())
+                        p.degreeNames.push_back (d.toString());
+        }
+        DBG ("loadPresetsFromDisk: loaded presets from disk");
+    }
 }
 
 // ── Plugin factory ────────────────────────────────────────────────────────────

@@ -38,6 +38,13 @@ const EMPTY_STATE: TuningState = {
   paoNameMap: {},
   paoOrder: [],
   paoNameInfo: {},
+  selectedMaqamId: '',
+  transpositionIndex: -1,
+  activePresetIndex: -1,
+  startMidi: 48,
+  degreeNames: [],
+  sessionRecallInProgress: false,
+  hasRecalledSessionState: false,
 }
 
 const EMPTY_SET = new Set<number>()
@@ -113,40 +120,96 @@ export default function App() {
   }, [])
 
   const bridge = useJuceBridge()
-  const didAutoSelect = useRef(false)
+  const didInit = useRef(false)
+  const prevRecalledRef = useRef(false)
 
-  // Auto-select Ibn Sina as default, falling back to first system
-  const autoSelectFirst = useCallback((systems: TuningSystem[]) => {
-    if (didAutoSelect.current || systems.length === 0) return
-    didAutoSelect.current = true
+  /** Sync JS maqam state from C++ tuning state (used on session recall). */
+  const syncMaqamStateFromCpp = useCallback((state: TuningState) => {
+    setSelectedMaqamId(state.selectedMaqamId || '')
+    setSelectedTransIdx(state.transpositionIndex ?? -1)
+    setActivePresetIndex(state.activePresetIndex ?? -1)
+    if (state.startMidi !== undefined) setStartMidi(state.startMidi)
+
+    if (state.degreeNames && state.degreeNames.length > 0) {
+      setMaqamDegreeIndices(computeMaqamDegreeIndices(state.degreeNames, state.paoNameMap))
+      const tonicCi = state.paoNameMap[state.degreeNames[0]]
+      if (tonicCi !== undefined) {
+        setMaqamTonicIndex(tonicCi)
+        setMaqamTonicMidi(tonicCi + 48) // base register approximation
+      }
+    } else {
+      setMaqamDegreeIndices(EMPTY_SET)
+      setMaqamTonicIndex(-1)
+      setMaqamTonicMidi(-1)
+    }
+  }, [])
+
+  /** Auto-select Ibn Sina as default, falling back to first system. */
+  const autoSelectSystem = useCallback((systems: TuningSystem[]) => {
+    if (systems.length === 0) return
     const preferred = systems.find(s => s.id === 'ibnsina_1037') ?? systems[0]
     const note = preferred.startingNotes[0]?.id ?? ''
     showStatus('Loading ' + (preferred.shortName || preferred.id) + '…', 10000)
     bridge.selectTuningSystem(preferred.id, note)
   }, [bridge, showStatus])
 
-  // ── Load tuning systems on mount ──────────────────────────────────────────
+  // ── Initialize on mount ───────────────────────────────────────────────────
   useEffect(() => {
-    bridge.getTuningSystems().then(systems => {
-      if (systems.length > 0) {
-        setTuningSystems(systems)
-        autoSelectFirst(systems)
+    let cancelled = false
+    Promise.all([
+      bridge.getTuningSystems(),
+      bridge.getCurrentState()
+    ]).then(([systems, state]) => {
+      if (cancelled) return
+      if (systems.length > 0) setTuningSystems(systems)
+      if (state) setTuningState(state)
+
+      if (state?.hasRecalledSessionState) {
+        // Session recall already completed before editor opened
+        didInit.current = true
+        prevRecalledRef.current = true
+        syncMaqamStateFromCpp(state)
+      } else if (state?.sessionRecallInProgress) {
+        // Session recall in progress — wait for tuningStateChanged event
+        didInit.current = true
+      } else if (state?.systemId) {
+        // Saved settings but no active load — trigger load
+        didInit.current = true
+        bridge.selectTuningSystem(state.systemId, state.startingNote)
+      } else if (systems.length > 0) {
+        // No saved settings — auto-select
+        didInit.current = true
+        autoSelectSystem(systems)
       }
+      // Else: no systems yet, will be handled by tuningSystemsLoaded event
     })
-  }, [bridge, autoSelectFirst])
+    return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ── Listen for C++ push events ────────────────────────────────────────────
   const onTuningSystemsLoaded = useCallback((data: unknown) => {
-    if (Array.isArray(data)) {
-      const systems = data as TuningSystem[]
-      setTuningSystems(systems)
-      autoSelectFirst(systems)
+    if (!Array.isArray(data)) return
+    const systems = data as TuningSystem[]
+    setTuningSystems(systems)
+    // Auto-select if mount effect couldn't (no systems were available at mount time)
+    if (!didInit.current && systems.length > 0) {
+      didInit.current = true
+      autoSelectSystem(systems)
     }
-  }, [autoSelectFirst])
+  }, [autoSelectSystem])
 
   const onTuningStateChanged = useCallback((data: unknown) => {
-    if (data && typeof data === 'object') setTuningState(data as TuningState)
-  }, [])
+    if (!data || typeof data !== 'object') return
+    const state = data as TuningState
+    setTuningState(state)
+
+    // Session recall completed — sync maqam state from C++
+    if (state.hasRecalledSessionState && !prevRecalledRef.current) {
+      prevRecalledRef.current = true
+      syncMaqamStateFromCpp(state)
+    }
+  }, [syncMaqamStateFromCpp])
 
   const onStatusMessage = useCallback((data: unknown) => {
     if (typeof data === 'string') showStatus(data)
@@ -240,6 +303,31 @@ export default function App() {
       else thumb.classList.remove('midi-hit')
     }
   }, [startMidi, visibleCount])
+
+  // ── Sync scroll position to C++ (debounced) ────────────────────────────
+  const startMidiSyncTimer = useRef<ReturnType<typeof setTimeout>>()
+  useEffect(() => {
+    clearTimeout(startMidiSyncTimer.current)
+    startMidiSyncTimer.current = setTimeout(() => {
+      bridge.setStartMidi(startMidi)
+    }, 500)
+    return () => clearTimeout(startMidiSyncTimer.current)
+  }, [startMidi, bridge])
+
+  // ── Refine tonic MIDI when maqam list loads (for session recall) ──────
+  useEffect(() => {
+    if (!selectedMaqamId || maqamList.length === 0) return
+    const entry = maqamList.find(m => m.maqamId === selectedMaqamId)
+    if (!entry) return
+    const tonicDisplay = selectedTransIdx >= 0 && entry.transpositions[selectedTransIdx]
+      ? entry.transpositions[selectedTransIdx].tonicDisplay
+      : entry.tonicDisplay
+    const tonic = findTonicMidi(tonicDisplay, tuningState.noteNames)
+    if (tonic) {
+      setMaqamTonicIndex(tonic.chromaticIndex)
+      setMaqamTonicMidi(tonic.midi)
+    }
+  }, [selectedMaqamId, selectedTransIdx, maqamList, tuningState.noteNames])
 
   useJuceEvent('tuningSystemsLoaded', onTuningSystemsLoaded)
   useJuceEvent('tuningStateChanged',  onTuningStateChanged)

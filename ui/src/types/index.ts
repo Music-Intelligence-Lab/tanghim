@@ -63,6 +63,20 @@ export interface TuningState {
   paoOrder: string[];
   /** PAO idName → { englishName, solfege } for display in transposition dropdown. */
   paoNameInfo: Record<string, { englishName: string; solfege: string }>;
+  /** Currently selected maqam ID (e.g. "maqam_rast"), empty if none. */
+  selectedMaqamId: string;
+  /** Transposition index within the maqam (-1 = base tonic). */
+  transpositionIndex: number;
+  /** Active preset index (-1 = none). */
+  activePresetIndex: number;
+  /** Scroll position (MIDI note at left edge of slider bank). */
+  startMidi: number;
+  /** Ascending degree PAO names for degree highlighting. */
+  degreeNames: string[];
+  /** True while setStateInformation async load is in progress. */
+  sessionRecallInProgress: boolean;
+  /** True once session state has been fully restored from DAW data. */
+  hasRecalledSessionState: boolean;
 }
 
 export interface StartingNote {

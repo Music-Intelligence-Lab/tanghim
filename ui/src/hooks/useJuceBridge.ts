@@ -161,6 +161,14 @@ export function useJuceBridge() {
     return (await callNative<string[]>('checkForUpdates')) ?? []
   }, [])
 
+  const getCurrentState = useCallback(async (): Promise<TuningState | undefined> => {
+    return callNative<TuningState>('getCurrentState')
+  }, [])
+
+  const setStartMidi = useCallback(async (value: number) => {
+    await callNative('setStartMidi', value)
+  }, [])
+
   return useMemo(() => ({
     getTuningSystems,
     selectTuningSystem,
@@ -172,7 +180,9 @@ export function useJuceBridge() {
     getMaqamList,
     applyMaqam,
     checkForUpdates,
+    getCurrentState,
+    setStartMidi,
   }), [getTuningSystems, selectTuningSystem, setSliderVariant, setNoteVariant,
        applyPreset, assignPreset, clearPreset,
-       getMaqamList, applyMaqam, checkForUpdates])
+       getMaqamList, applyMaqam, checkForUpdates, getCurrentState, setStartMidi])
 }

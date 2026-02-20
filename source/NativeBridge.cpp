@@ -111,6 +111,22 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
             complete (buildTuningStateJson());
         });
 
+    // ── getCurrentState() ─────────────────────────────────────────────────────
+    opts = opts.withNativeFunction ("getCurrentState",
+        [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
+        {
+            complete (buildTuningStateJson());
+        });
+
+    // ── setStartMidi(value) ─────────────────────────────────────────────────
+    opts = opts.withNativeFunction ("setStartMidi",
+        [this] (const juce::Array<juce::var>& args, Completion complete)
+        {
+            if (args.size() >= 1)
+                processor.setStartMidi ((double) args[0]);
+            complete (juce::var());
+        });
+
     // ── checkForUpdates() ─────────────────────────────────────────────────────
     opts = opts.withNativeFunction ("checkForUpdates",
         [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
@@ -274,6 +290,19 @@ juce::var NativeBridge::buildTuningStateJson() const
     }
     root->setProperty ("paoOrder", juce::var (paoOrderArr));
     root->setProperty ("paoNameInfo", juce::var (paoNameInfoObj));
+
+    // Maqam selection state (for session recall + JS sync)
+    root->setProperty ("selectedMaqamId",        processor.getCurrentMaqamId());
+    root->setProperty ("transpositionIndex",     processor.getCurrentTranspositionIdx());
+    root->setProperty ("activePresetIndex",      processor.getCurrentActivePresetIdx());
+    root->setProperty ("startMidi",              processor.getCurrentStartMidi());
+    root->setProperty ("sessionRecallInProgress", processor.getSessionRecallInProgress());
+    root->setProperty ("hasRecalledSessionState", processor.getHasRecalledSessionState());
+
+    juce::Array<juce::var> degArr;
+    for (const auto& name : processor.getCurrentDegreeNames())
+        degArr.add (juce::var (name));
+    root->setProperty ("degreeNames", degArr);
 
     return juce::var (root);
 }
