@@ -18,7 +18,7 @@ OUTPUT_AMXD = "m4l/Tanghim Receiver.amxd"
 
 p = px.Patcher(OUTPUT_MAXPAT)
 p.openinpresentation = 1
-p.devicewidth = 400.0
+p.devicewidth = 135.4765625
 p.description = "MTS-ESP microtuning via MPE or Pitch Bend"
 p.rect = Rect(100.0, 100.0, 900.0, 600.0)
 
@@ -28,20 +28,22 @@ p.rect = Rect(100.0, 100.0, 900.0, 600.0)
 
 title = p.add_box(Box(
     id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
-    patching_rect=[30, 460, 200, 22],
-    presentation=1, presentation_rect=[10, 8, 200, 22],
-    fontsize=14.0,
-    text="Tanghim",
-    textcolor=[1, 1, 1, 1],
+    patching_rect=[45, 475, 292, 29],
+    presentation=1, presentation_rect=[-1.0, 2.0, 136.0, 29.0],
+    fontname="Cairo Black",
+    text="\u062a\u0646\u063a\u064a\u0645",
+    textcolor=[0.0, 0.0, 0.0, 1.0],
+    textjustification=1,
 ))
 
-status_label = p.add_box(Box(
+subtitle = p.add_box(Box(
     id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
-    patching_rect=[200, 460, 350, 18],
-    presentation=1, presentation_rect=[10, 64, 350, 18],
-    fontsize=10.0,
-    text="",
-    textcolor=[0.5, 0.5, 0.5, 1],
+    patching_rect=[30, 460, 178, 21],
+    presentation=1, presentation_rect=[-0.5, 33.0, 133.0, 21.0],
+    fontname="Ableton Sans Medium",
+    text="Tanghim Receiver",
+    textcolor=[0.0, 0.0, 0.0, 1.0],
+    textjustification=1,
 ))
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -227,7 +229,7 @@ mode_tab = p.add_box(Box(
     num_lines_patching=1,
     num_lines_presentation=1,
     patching_rect=[30, 290, 200, 20],
-    presentation=1, presentation_rect=[10, 34, 200, 20],
+    presentation=1, presentation_rect=[6.75, 62.0, 121.0, 20.0],
     saved_attribute_attributes={
         "valueof": {
             "parameter_enum": ["MPE", "Mono PB"],
@@ -252,8 +254,8 @@ mpe_bend_dial = p.add_box(Box(
     numinlets=1, numoutlets=2,
     outlettype=["", "float"],
     parameter_enable=1,
-    patching_rect=[180, 280, 44, 48],
-    presentation=1, presentation_rect=[230, 4, 50, 48],
+    patching_rect=[180, 280, 27, 48],
+    presentation=1, presentation_rect=[8.0, 92.0, 60.0, 48.0],
     saved_attribute_attributes={
         "valueof": {
             "parameter_initial": [48],
@@ -262,7 +264,7 @@ mpe_bend_dial = p.add_box(Box(
             "parameter_longname": "MPE PB Range",
             "parameter_mmax": 96.0,
             "parameter_mmin": 1.0,
-            "parameter_shortname": "MPE PB",
+            "parameter_shortname": "PB Range",
             "parameter_type": 1,
             "parameter_unitstyle": 9,
         }
@@ -275,8 +277,8 @@ mono_bend_dial = p.add_box(Box(
     numinlets=1, numoutlets=2,
     outlettype=["", "float"],
     parameter_enable=1,
-    patching_rect=[260, 280, 44, 48],
-    presentation=1, presentation_rect=[300, 4, 50, 48],
+    patching_rect=[260, 280, 27, 48],
+    presentation=1, presentation_rect=[68.0, 92.0, 58.75, 48.0],
     saved_attribute_attributes={
         "valueof": {
             "parameter_initial": [2],
@@ -285,7 +287,7 @@ mono_bend_dial = p.add_box(Box(
             "parameter_longname": "Mono PB Range",
             "parameter_mmax": 96.0,
             "parameter_mmin": 1.0,
-            "parameter_shortname": "Mono PB",
+            "parameter_shortname": "PB Range",
             "parameter_type": 1,
             "parameter_unitstyle": 9,
         }
@@ -333,7 +335,7 @@ with open(OUTPUT_MAXPAT) as f:
     data = json.load(f)
 
 patcher = data["patcher"]
-patcher["openrect"] = [0.0, 0.0, 400.0, 88.0]
+patcher["openrect"] = [0.0, 0.0, 135.4765625, 169.0]
 # Tell Ableton this device outputs MPE (multi-channel MIDI on ch 2-16).
 # Without this flag, Ableton normalizes all MIDI output to channel 1.
 # ODDSound's MPE M4L device sets this to 1; their non-MPE version sets it to 0.

@@ -38,7 +38,7 @@
 		"boxanimatetime": 200,
 		"enablehscroll": 1,
 		"enablevscroll": 1,
-		"devicewidth": 400.0,
+		"devicewidth": 135.4765625,
 		"description": "MTS-ESP microtuning via MPE or Pitch Bend",
 		"digest": "",
 		"tags": "",
@@ -53,26 +53,27 @@
 					"numinlets": 1,
 					"numoutlets": 0,
 					"patching_rect": [
-						30,
-						460,
-						200,
-						22
+						45,
+						475,
+						292,
+						29
 					],
 					"presentation": 1,
 					"presentation_rect": [
-						10,
-						8,
-						200,
-						22
+						-1.0,
+						2.0,
+						136.0,
+						29.0
 					],
-					"fontsize": 14.0,
-					"text": "Tanghim",
+					"fontname": "Cairo Black",
+					"text": "\u062a\u0646\u063a\u064a\u0645",
 					"textcolor": [
-						1,
-						1,
-						1,
-						1
-					]
+						0.0,
+						0.0,
+						0.0,
+						1.0
+					],
+					"textjustification": 1
 				}
 			},
 			{
@@ -82,26 +83,27 @@
 					"numinlets": 1,
 					"numoutlets": 0,
 					"patching_rect": [
-						200,
+						30,
 						460,
-						350,
-						18
+						178,
+						21
 					],
 					"presentation": 1,
 					"presentation_rect": [
-						10,
-						64,
-						350,
-						18
+						-0.5,
+						33.0,
+						133.0,
+						21.0
 					],
-					"fontsize": 10.0,
-					"text": "",
+					"fontname": "Ableton Sans Medium",
+					"text": "Tanghim Receiver",
 					"textcolor": [
-						0.5,
-						0.5,
-						0.5,
-						1
-					]
+						0.0,
+						0.0,
+						0.0,
+						1.0
+					],
+					"textjustification": 1
 				}
 			},
 			{
@@ -537,10 +539,10 @@
 					"num_lines_presentation": 1,
 					"presentation": 1,
 					"presentation_rect": [
-						10,
-						34,
-						200,
-						20
+						6.75,
+						62.0,
+						121.0,
+						20.0
 					],
 					"saved_attribute_attributes": {
 						"valueof": {
@@ -589,7 +591,7 @@
 					"patching_rect": [
 						180,
 						280,
-						44,
+						27,
 						48
 					],
 					"outlettype": [
@@ -599,10 +601,10 @@
 					"parameter_enable": 1,
 					"presentation": 1,
 					"presentation_rect": [
-						230,
-						4,
-						50,
-						48
+						8.0,
+						92.0,
+						60.0,
+						48.0
 					],
 					"saved_attribute_attributes": {
 						"valueof": {
@@ -614,7 +616,7 @@
 							"parameter_longname": "MPE PB Range",
 							"parameter_mmax": 96.0,
 							"parameter_mmin": 1.0,
-							"parameter_shortname": "MPE PB",
+							"parameter_shortname": "PB Range",
 							"parameter_type": 1,
 							"parameter_unitstyle": 9
 						}
@@ -631,7 +633,7 @@
 					"patching_rect": [
 						260,
 						280,
-						44,
+						27,
 						48
 					],
 					"outlettype": [
@@ -641,10 +643,10 @@
 					"parameter_enable": 1,
 					"presentation": 1,
 					"presentation_rect": [
-						300,
-						4,
-						50,
-						48
+						68.0,
+						92.0,
+						58.75,
+						48.0
 					],
 					"saved_attribute_attributes": {
 						"valueof": {
@@ -656,7 +658,7 @@
 							"parameter_longname": "Mono PB Range",
 							"parameter_mmax": 96.0,
 							"parameter_mmin": 1.0,
-							"parameter_shortname": "Mono PB",
+							"parameter_shortname": "PB Range",
 							"parameter_type": 1,
 							"parameter_unitstyle": 9
 						}
@@ -1170,8 +1172,8 @@
 		"openrect": [
 			0.0,
 			0.0,
-			400.0,
-			88.0
+			135.4765625,
+			169.0
 		],
 		"is_mpe": 1,
 		"title": "Tanghim Receiver",
