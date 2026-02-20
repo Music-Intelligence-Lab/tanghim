@@ -261,6 +261,16 @@ The Transmitter's 30Hz editor timer includes a 2Hz MTS-ESP status poll that emit
 - **Audio bus config**: constructor uses `BusesProperties().withInput("Input", stereo, true).withOutput("Output", stereo, true)`. Ableton requires at least one audio bus to load any VST3. Both `processBlock` overloads call `audio.clear()` to silence the buffer (as an instrument, the DAW sends uninitialized audio data).
 - **Post-build codesign**: CMake builds leave a broken code signature ("sealed resource missing"). Must `rm -rf` the old VST3 in `~/Library/Audio/Plug-Ins/VST3/` before `cp -R` (overwriting in-place corrupts kernel signature cache → SIGKILL under Rosetta), then `codesign --force --deep --sign -` the installed copy.
 - **Ableton MIDI routing limitation**: MPE/Pitch Bend data does not pass between tracks (Ableton merges all MIDI to channel 1). MTS-ESP is the recommended output mode for Ableton — it works globally without MIDI routing. MPE/Pitch Bend modes are for DAWs that support placing MIDI effects before instruments (Logic, Reaper, etc.).
+- **JUCE DynamicObject ownership**: Never pass `unique_ptr<DynamicObject>::get()` to `juce::var` or `juce::JSON::toString()` — `juce::var` takes ref-counted ownership and will delete the object, causing a double-free when `unique_ptr` also deletes it. Use `new DynamicObject()` and pass directly to `juce::var(obj)`, or use `unique_ptr::release()`.
+
+### Ableton Live Debugging
+
+- **User version**: Live 11.3.43
+- **Plugin scanner log**: `~/Library/Preferences/Ableton/Live 11.3.43/PluginScanner.txt`
+- **System crash reports**: `/Library/Logs/DiagnosticReports/Ableton Plugin Scanner-*.ips` (macOS-level, plugin scanner process)
+- **Ableton crash reports**: `~/Library/Application Support/Ableton/Live Reports/` (zipped crash reports with timestamps — check here first for Live crashes)
+- **Plugin database**: `~/Library/Application Support/Ableton/Live Database/Live-plugins-1.db.bak`
+- Scanner runs x86_64 under Rosetta on Apple Silicon
 
 ### Known Issue: WKWebView + Ableton Computer MIDI Keyboard
 
