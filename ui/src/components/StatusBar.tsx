@@ -7,9 +7,13 @@ interface Props {
 }
 
 export default function StatusBar({ status, pluginVersion, onCheckForUpdates }: Props) {
+  const versionDisplay = pluginVersion
+    ? `v${pluginVersion} (${__BUILD_TIMESTAMP__})`
+    : `(${__BUILD_TIMESTAMP__})`
+
   return (
     <div className="status-bar">
-      {pluginVersion && <span className="version-label">v{pluginVersion}</span>}
+      <span className="version-label">{versionDisplay}</span>
 
       <span className="status-text">{status}</span>
 

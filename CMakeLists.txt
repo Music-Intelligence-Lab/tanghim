@@ -4,6 +4,15 @@ project(ArabicMaqamTuner VERSION 0.1.1)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ── Build timestamp (regenerated on every build) ─────────────────────────────
+set(TIMESTAMP_HEADER "${CMAKE_BINARY_DIR}/generated/BuildTimestamp.h")
+add_custom_target(GenerateBuildTimestamp ALL
+    COMMAND ${CMAKE_COMMAND}
+        -DOUTPUT_FILE=${TIMESTAMP_HEADER}
+        -P ${CMAKE_SOURCE_DIR}/cmake/GenerateTimestamp.cmake
+    COMMENT "Generating build timestamp"
+)
+
 # ── Dependencies ──────────────────────────────────────────────────────────────
 add_subdirectory(libs/JUCE)
 add_subdirectory(libs/clap-juce-extensions EXCLUDE_FROM_ALL)
@@ -65,7 +74,12 @@ target_include_directories(ArabicMaqamTuner
     PRIVATE
         source
         libs/MTS-ESP/Master
+        ${CMAKE_BINARY_DIR}/generated
 )
+
+# Ensure timestamp is generated before compiling and NativeBridge.cpp recompiles when it changes
+add_dependencies(ArabicMaqamTuner GenerateBuildTimestamp)
+set_source_files_properties(source/NativeBridge.cpp PROPERTIES OBJECT_DEPENDS ${TIMESTAMP_HEADER})
 
 # ── Compile definitions ───────────────────────────────────────────────────────
 target_compile_definitions(ArabicMaqamTuner

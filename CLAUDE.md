@@ -34,12 +34,9 @@ cp -R "build/ArabicMaqamTuner_artefacts/Debug/VST3/Tanghim.vst3" ~/Library/Audio
 cp -R "build/ArabicMaqamTunerReceiver_artefacts/Debug/VST3/Tanghim Receiver.vst3" ~/Library/Audio/Plug-Ins/VST3/
 codesign --force --deep --sign - ~/Library/Audio/Plug-Ins/VST3/Tanghim.vst3
 codesign --force --deep --sign - ~/Library/Audio/Plug-Ins/VST3/Tanghim\ Receiver.vst3
-
-# Force version timestamp update (if version in status bar doesn't change after rebuild)
-# The __DATE__ and __TIME__ macros in NativeBridge.cpp only update when that file recompiles.
-# Touch it before building to force a new timestamp:
-touch source/NativeBridge.cpp
 ```
+
+Note: The build timestamp in the status bar is auto-generated on every build via `cmake/GenerateTimestamp.cmake`.
 
 ## Project Structure
 
@@ -129,13 +126,14 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - **Thumb cursor**: `ns-resize` (double-arrow vertical) — indicates free drag
 - **Live MTS-ESP update**: Tuning updates on every mousemove via fire-and-forget `setSlotCents` bridge call (RAF-throttled ~60fps). `setSlotCentsFinalize` on mouseup returns full TuningState for React state sync
 - **Persistence**: `centsOffset` saved per slot in DAW session state. Backward-compatible: old sessions derive `centsOffset` from selected variant's `midiCentsDeviation`
-- **Smooth scrolling**: `startMidi` is fractional (not integer), mouse wheel delta proportional to `deltaY / SLOT_WIDTH_PX`. NoteSliderBank renders an extra slider and uses CSS `translateX(-pixelOffset)` for sub-pixel offset
+- **Smooth scrolling**: `startMidi` is fractional (not integer), mouse wheel delta proportional to `deltaY / SLOT_WIDTH_PX`. NoteSliderBank renders an extra slider and uses CSS `translateX(BANK_LEFT_OFFSET_PX - pixelOffset)` for sub-pixel offset
+- **Left offset alignment**: `BANK_LEFT_OFFSET_PX = 16` in constants.ts — slider bank content is offset 16px from left edge to align with upper sections (which have 16px padding). Available width for sliders = container width - 16px
 - `RangeScroller` pans smoothly with `step="any"`, tick marks at every C, G, A. Double-click centers viewport on the maqam's octave
-- When selecting a maqam, the viewport auto-centers on the maqam's octave: `startMidi = tonicMidi - floor((visibleCount - 12) / 2)`
-- Plugin window: 884–2400px wide, 590–900px tall (`PluginEditor.cpp: setResizeLimits`)
-- Min width = 13 sliders × 68px (full octave including tonic octave above)
+- **Curtain effect centering**: When selecting a maqam or resizing, the viewport auto-centers on the maqam's octave using `centerMaqamOctave(tonicMidi, fractionalVisibleCount)`. At minimum width (≤12.5 sliders), centering is disabled to avoid partial sliders — octave starts flush at tonic
+- Plugin window: 832–2400px wide, 620–4000px tall (`PluginEditor.cpp: setResizeLimits`)
+- Min width = 16px left offset + 12 sliders × 68px = 832px (one octave aligned with upper sections)
 - Min height = maqam dropdown (max-height 480px) lines up flush with status bar
-- Default window: 900×590, default start MIDI: 48 (C3), default 13 visible sliders
+- Default window: 832×620, default start MIDI: 48 (C3), default 12 visible sliders
 
 ### Per-Note Overrides
 - Per-MIDI-note variant overrides allow different variants for the same pitch class in different octaves

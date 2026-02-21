@@ -29,7 +29,7 @@ const EMPTY_STATE: TuningState = {
     variants: [],
     centsOffset: 0,
   })),
-  presets: Array.from({ length: 12 }, () => ({
+  presets: Array.from({ length: 16 }, () => ({
     isAssigned: false, maqamId: '', maqamDisplay: '', tonicIpn: '',
     baseMaqamId: '', isTransposed: false, tonicNote: '', setIndex: -1, sliderPositions: [],
     centsOffsets: [],
@@ -91,9 +91,10 @@ function findTonicMidi(
   return undefined
 }
 
-/** Center a maqam's octave (12 notes) within the visible slider viewport. */
+/** Center a maqam's octave (12 notes) within the visible slider viewport.
+ *  Uses fractional visibleCount for smooth "curtain opening" effect. */
 function centerMaqamOctave(tonicMidi: number, visibleCount: number): number {
-  const padding = Math.floor((visibleCount - 12) / 2)
+  const padding = (visibleCount - 12) / 2
   return Math.max(0, Math.min(128 - visibleCount, tonicMidi - padding))
 }
 
@@ -248,19 +249,37 @@ export default function App() {
 
   // ── Slider bank layout ───────────────────────────────────────────────────
   const [startMidi, setStartMidi] = useState(48) // default C3
+  const [isUserScrolling, setIsUserScrolling] = useState(false)
   const bankContainerRef = useRef<HTMLDivElement>(null)
-  const visibleCount = useVisibleSliderCount(bankContainerRef)
+  const { count: visibleCount, widthPx: bankWidthPx } = useVisibleSliderCount(bankContainerRef)
+  const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
 
-  // Clamp startMidi when visibleCount changes (e.g. window widened past MIDI range end)
+  // Fractional visible count for smooth curtain effect
+  const fractionalVisibleCount = bankWidthPx / SLOT_WIDTH_PX
+
+  // Keep maqam's octave (or default C3 octave) centered during resize (smooth curtain effect)
+  // Only apply centering when there's clearly more than 12 sliders of space
   useEffect(() => {
-    const maxStart = 128 - visibleCount
-    if (startMidi > maxStart) setStartMidi(maxStart)
-  }, [visibleCount, startMidi])
+    if (isUserScrolling) return // Don't override user's manual scroll position
+    const tonicMidi = maqamTonicMidi >= 0 ? maqamTonicMidi : 48
+    // At minimum width (~12 sliders), just start at tonic without centering
+    // This avoids fractional calculations that show partial sliders
+    if (fractionalVisibleCount < 12.5) {
+      setStartMidi(tonicMidi)
+    } else {
+      setStartMidi(centerMaqamOctave(tonicMidi, fractionalVisibleCount))
+    }
+  }, [fractionalVisibleCount, maqamTonicMidi, isUserScrolling])
 
   const handleBankWheel = useCallback((e: React.WheelEvent) => {
+    setIsUserScrolling(true)
+    // Clear any existing timeout and set a new one
+    if (userScrollTimeoutRef.current) clearTimeout(userScrollTimeoutRef.current)
+    userScrollTimeoutRef.current = setTimeout(() => setIsUserScrolling(false), 2000)
+
     const delta = e.deltaY / SLOT_WIDTH_PX
-    setStartMidi(prev => Math.max(0, Math.min(128 - visibleCount, prev + delta)))
-  }, [visibleCount])
+    setStartMidi(prev => Math.max(0, Math.min(128 - fractionalVisibleCount, prev + delta)))
+  }, [fractionalVisibleCount])
 
   // ── MIDI activity (note on / note off tracking) ─────────────────────────
   // Stored in a ref — NOT React state — so MIDI events never trigger re-renders.
@@ -291,7 +310,7 @@ export default function App() {
     for (const n of onNotes)  midiActiveNotesRef.current.add(n)
     for (const n of offNotes) midiActiveNotesRef.current.delete(n)
 
-    const usePitchClassMode = visibleCountRef.current <= 13
+    const usePitchClassMode = visibleCountRef.current <= 12
 
     // Apply final state to DOM — only mutate if the element's class doesn't already
     // match the ref. This eliminates redundant style recalcs when rapid repeated notes
@@ -337,7 +356,7 @@ export default function App() {
   // won't have the class applied yet). Runs after React commits to DOM.
   useEffect(() => {
     const start = Math.floor(startMidi)
-    const usePitchClassMode = visibleCount <= 13
+    const usePitchClassMode = visibleCount <= 12
 
     for (let i = 0; i < visibleCount + 1 && start + i < 128; i++) {
       const midi = start + i
@@ -535,7 +554,8 @@ export default function App() {
         if (tonic) {
           setMaqamTonicIndex(tonic.chromaticIndex)
           setMaqamTonicMidi(tonic.midi)
-          setStartMidi(centerMaqamOctave(tonic.midi, visibleCount))
+          setIsUserScrolling(false)
+          setStartMidi(centerMaqamOctave(tonic.midi, fractionalVisibleCount))
         }
       }
     }
@@ -640,7 +660,8 @@ export default function App() {
           if (tonic) {
             setMaqamTonicIndex(tonic.chromaticIndex)
             setMaqamTonicMidi(tonic.midi)
-            setStartMidi(centerMaqamOctave(tonic.midi, visibleCount))
+            setIsUserScrolling(false)
+            setStartMidi(centerMaqamOctave(tonic.midi, fractionalVisibleCount))
           }
         }
       }
@@ -717,7 +738,7 @@ export default function App() {
         <NoteSliderBank
           slots={tuningState.slots}
           startMidi={startMidi}
-          visibleCount={visibleCount}
+          bankWidthPx={bankWidthPx}
           noteNames={tuningState.noteNames}
           perNoteOverrides={tuningState.perNoteOverrides}
           maqamDegreeIndices={maqamDegreeIndices}

@@ -7,5 +7,5 @@ export const SLIDER_GAP_PX = 0
 /** Total width each slider slot occupies (slider + gap). */
 export const SLOT_WIDTH_PX = SLIDER_WIDTH_PX + SLIDER_GAP_PX
 
-/** Horizontal padding inside NoteSliderBank (must match NoteSliderBank.css padding-left + padding-right). */
-export const BANK_PADDING_PX = 0
+/** Left offset for slider bank to align with upper sections (16px left margin, 0px right). */
+export const BANK_LEFT_OFFSET_PX = 16

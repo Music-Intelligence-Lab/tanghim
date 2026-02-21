@@ -4,7 +4,7 @@
 #include <vector>
 
 /**
- * One of the 12 user-configurable maqam preset buttons.
+ * One of the 16 user-configurable maqam preset buttons.
  *
  * When assigned, stores the maqam identity and the exact slider positions
  * it implies, so pressing the button instantly snaps all 12 sliders.

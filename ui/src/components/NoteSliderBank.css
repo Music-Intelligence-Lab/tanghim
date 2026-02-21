@@ -6,7 +6,7 @@
   overflow: hidden;
   min-height: 0;
   display: flex;
-  justify-content: center;
+  /* Don't use justify-content: center - it centers the overflow and breaks smooth scrolling */
 }
 
 .note-slider-bank-inner {

@@ -192,7 +192,7 @@ juce::var NativeBridge::buildTuningStateJson() const
     root->setProperty ("mtsNativeCount",  mtsNative);
     root->setProperty ("mpeCount",        receiverCounts.mpeReceivers);
     root->setProperty ("monoPbCount",     receiverCounts.monoPbReceivers);
-    root->setProperty ("pluginVersion",    juce::String (PLUGIN_VERSION) + " (" + __DATE__ + " " + __TIME__ + ")");
+    root->setProperty ("pluginVersion",    juce::String (PLUGIN_VERSION));
 
     // 12 slider slots
     juce::Array<juce::var> slots;

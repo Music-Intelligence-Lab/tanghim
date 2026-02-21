@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import type { ChromaticSlot } from '../types'
-import { SLOT_WIDTH_PX } from '../constants'
+import { SLOT_WIDTH_PX, BANK_LEFT_OFFSET_PX } from '../constants'
 import NoteSlider from './NoteSlider'
 import './NoteSliderBank.css'
 
@@ -9,7 +9,7 @@ const IPN_NAMES = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B']
 interface Props {
   slots: ChromaticSlot[]
   startMidi: number
-  visibleCount: number
+  bankWidthPx: number
   noteNames: Record<string, Record<string, string>>
   perNoteOverrides: Record<string, number>
   maqamDegreeIndices: Set<number>
@@ -21,15 +21,17 @@ interface Props {
   onCentsDragEnd: (chromaticIndex: number, centsValue: number) => void
 }
 
-const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, visibleCount, noteNames, perNoteOverrides, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, modifiedSlots, onVariantSelect, onCentsDrag, onCentsDragEnd }: Props) {
+const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidthPx, noteNames, perNoteOverrides, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, modifiedSlots, onVariantSelect, onCentsDrag, onCentsDragEnd }: Props) {
   const renderStart = Math.floor(startMidi)
   const pixelOffset = (startMidi - renderStart) * SLOT_WIDTH_PX
-  // Render one extra slider to fill the gap when partially scrolled
-  const renderCount = Math.min(visibleCount + (pixelOffset > 0 ? 1 : 0), 128 - renderStart)
+
+  // Render enough sliders to cover the actual pixel width plus buffer for smooth scrolling
+  const fractionalCount = bankWidthPx / SLOT_WIDTH_PX
+  const renderCount = Math.min(Math.ceil(fractionalCount) + 2, 128 - renderStart)
 
   return (
     <div className="note-slider-bank">
-      <div className="note-slider-bank-inner" style={{ transform: `translateX(-${pixelOffset}px)` }}>
+      <div className="note-slider-bank-inner" style={{ transform: `translateX(${BANK_LEFT_OFFSET_PX - pixelOffset}px)` }}>
         {Array.from({ length: renderCount }, (_, i) => {
           const midi = renderStart + i
           const chromaticIndex = midi % 12

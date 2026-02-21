@@ -117,7 +117,7 @@ void ArabicMaqamTunerProcessor::getStateInformation (juce::MemoryBlock& dest)
 
     // Presets
     auto presetsNode = juce::ValueTree ("Presets");
-    for (int i = 0; i < 12; ++i)
+    for (int i = 0; i < 16; ++i)
     {
         auto n = juce::ValueTree ("P" + juce::String (i));
         const auto& p = presets[(size_t) i];
@@ -193,7 +193,7 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
 
     // Restore presets immediately (they're just data)
     auto presetsNode = state.getChildWithName ("Presets");
-    for (int i = 0; i < 12; ++i)
+    for (int i = 0; i < 16; ++i)
     {
         auto n = presetsNode.getChild (i);
         auto& p = presets[(size_t) i];
@@ -544,7 +544,7 @@ void ArabicMaqamTunerProcessor::setNoteVariant (int midiNote, int variantIndex)
 
 void ArabicMaqamTunerProcessor::applyPreset (int idx)
 {
-    if (idx < 0 || idx >= 12) return;
+    if (idx < 0 || idx >= 16) return;
     const auto& preset = presets[(size_t) idx];
     if (! preset.isAssigned) return;
 
@@ -599,7 +599,7 @@ void ArabicMaqamTunerProcessor::assignPreset (int idx,
                                                const std::vector<juce::String>& degreeNames,
                                                const std::array<double, 12>& centsOffsets)
 {
-    if (idx < 0 || idx >= 12) return;
+    if (idx < 0 || idx >= 16) return;
     auto& p              = presets[(size_t) idx];
     p.isAssigned         = true;
     p.maqamIdName        = maqamId;
@@ -685,7 +685,7 @@ void ArabicMaqamTunerProcessor::applyMaqam (const juce::String& maqamId, int tra
 
 void ArabicMaqamTunerProcessor::clearPreset (int idx)
 {
-    if (idx < 0 || idx >= 12) return;
+    if (idx < 0 || idx >= 16) return;
     presets[(size_t) idx].clear();
 
     if (currentActivePresetIdx == idx)
@@ -711,7 +711,7 @@ const ActiveTuningState& ArabicMaqamTunerProcessor::getActiveTuningState() const
     return activeTuningState;
 }
 
-const std::array<MaqamPreset, 12>& ArabicMaqamTunerProcessor::getPresets() const
+const std::array<MaqamPreset, 16>& ArabicMaqamTunerProcessor::getPresets() const
 {
     return presets;
 }
@@ -956,7 +956,7 @@ void ArabicMaqamTunerProcessor::loadSettingsFromDisk()
 void ArabicMaqamTunerProcessor::savePresetsToDisk() const
 {
     juce::Array<juce::var> arr;
-    for (int i = 0; i < 12; ++i)
+    for (int i = 0; i < 16; ++i)
     {
         const auto& p = presets[(size_t) i];
         if (! p.isAssigned)
@@ -1006,7 +1006,7 @@ void ArabicMaqamTunerProcessor::loadPresetsFromDisk()
     auto parsed = juce::JSON::parse (file.loadFileAsString());
     if (auto* arr = parsed.getArray())
     {
-        for (int i = 0; i < juce::jmin (12, arr->size()); ++i)
+        for (int i = 0; i < juce::jmin (16, arr->size()); ++i)
         {
             const auto& item = (*arr)[i];
             auto* obj = item.getDynamicObject();

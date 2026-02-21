@@ -1,20 +1,21 @@
 import { useState, useEffect, type RefObject } from 'react'
-import { SLOT_WIDTH_PX, BANK_PADDING_PX } from '../constants'
+import { SLOT_WIDTH_PX, BANK_LEFT_OFFSET_PX } from '../constants'
 
 /**
- * Observes a container element's content-box width and computes how many
- * fixed-width slider slots fit inside it.
+ * Observes a container element's content-box width and returns both the
+ * integer slider count (for centering logic) and the pixel width (for smooth rendering).
  */
-export function useVisibleSliderCount(containerRef: RefObject<HTMLDivElement | null>): number {
-  const [count, setCount] = useState(12)
+export function useVisibleSliderCount(containerRef: RefObject<HTMLDivElement | null>): { count: number; widthPx: number } {
+  const [state, setState] = useState({ count: 12, widthPx: 12 * SLOT_WIDTH_PX })
 
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
 
     const update = () => {
-      const available = el.clientWidth - BANK_PADDING_PX
-      setCount(Math.max(1, Math.floor(available / SLOT_WIDTH_PX)))
+      const available = el.clientWidth - BANK_LEFT_OFFSET_PX
+      const count = Math.max(1, Math.floor(available / SLOT_WIDTH_PX))
+      setState({ count, widthPx: available })
     }
 
     update() // initial measurement
@@ -24,5 +25,5 @@ export function useVisibleSliderCount(containerRef: RefObject<HTMLDivElement | n
     return () => observer.disconnect()
   }, [containerRef])
 
-  return count
+  return state
 }

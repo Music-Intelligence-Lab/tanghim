@@ -8,9 +8,9 @@
 ArabicMaqamTunerEditor::ArabicMaqamTunerEditor (ArabicMaqamTunerProcessor& p)
     : AudioProcessorEditor (p), processor (p)
 {
-    setSize (900, 590);
+    setSize (832, 620);
     setResizable (true, true);
-    setResizeLimits (884, 590, 2400, 4000);
+    setResizeLimits (832, 620, 2400, 4000);
 
     // Create bridge first so we can register native functions in Options
     bridge = std::make_unique<NativeBridge> (processor);

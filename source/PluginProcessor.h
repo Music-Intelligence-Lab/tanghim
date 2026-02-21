@@ -79,7 +79,7 @@ public:
     const std::vector<TuningSystem>&         getTuningSystems()        const;
     const std::vector<MaqamListEntry>&       getMaqamList()            const;
     const ActiveTuningState&                 getActiveTuningState()    const;
-    const std::array<MaqamPreset, 12>&       getPresets()              const;
+    const std::array<MaqamPreset, 16>&       getPresets()              const;
     juce::String                             getCurrentSystemId()      const;
     juce::String                             getCurrentStartingNote()  const;
     const std::vector<PitchClass>&           getCurrentPitchClasses()  const;
@@ -118,7 +118,7 @@ private:
     juce::String              currentSystemId;
     juce::String              currentStartingNote;
     ActiveTuningState         activeTuningState;
-    std::array<MaqamPreset, 12> presets;
+    std::array<MaqamPreset, 16> presets;
     std::vector<MaqamListEntry>      currentMaqamList;
     juce::String              currentMaqamDisplay;   // e.g. "maqām rāst"
     juce::String              currentTonicDisplay;   // e.g. "rāst" (or transposition tonic)
