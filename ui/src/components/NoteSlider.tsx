@@ -26,19 +26,26 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
   const dragging = useRef(false)
 
   const variantCount = slot.variants.length
-  const isLocked     = slot.isLocked || variantCount <= 1
+  // Only lock if no variants at all (empty data) — with continuous tuning, even single-variant slots are adjustable
+  const isLocked     = variantCount === 0
 
   // Derive centsOffset from selected variant if C++ hasn't sent it yet
   const centsOffset = slot.centsOffset ?? slot.variants[slot.selectedIndex]?.midiCentsDeviation ?? 0
 
-  // ── Deviation-based positioning (±200 cents range) ──────────────────────────
+  // ── Deviation-based positioning (±150 cents range) ──────────────────────────
   // 0 cents deviation = 50% (vertical center of track)
   // Positive deviation (sharper) → above center (lower %)
   // Negative deviation (flatter) → below center (higher %)
-  const devToPct = (dev: number) => 50 - (dev / 200) * 45
+  const CENTS_RANGE = 150
+  const TRACK_HALF_PCT = 45  // Use 45% of track on each side of center (5% to 95%) for thumb padding
+
+  const devToPct = (dev: number) => {
+    const pct = 50 - (dev / CENTS_RANGE) * TRACK_HALF_PCT
+    return Math.max(5, Math.min(95, pct))  // Clamp to track bounds
+  }
 
   // Inverse: convert track percentage to cents deviation
-  const pctToDev = (pct: number): number => -(pct - 50) * 200 / 45
+  const pctToDev = (pct: number): number => -(pct - 50) * CENTS_RANGE / TRACK_HALF_PCT
 
   // Pre-compute positions for each variant (for snap markers)
   const variantPcts = slot.variants.map(v => devToPct(v.midiCentsDeviation))
@@ -49,7 +56,7 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
     const rect = trackRef.current.getBoundingClientRect()
     const pct = ((clientY - rect.top) / rect.height) * 100
     const cents = pctToDev(pct)
-    return Math.max(-200, Math.min(200, cents))
+    return Math.max(-150, Math.min(150, cents))
   }
 
   /** Free drag on track/thumb — continuous cents update. */
