@@ -44,8 +44,37 @@ function list() {
         // Tuning data: note cents
         var note = arguments[0];
         var cents = arguments[1];
-        if (note >= 0 && note < 128)
+        if (note >= 0 && note < 128) {
+            var oldCents = table[note];
             table[note] = cents;
+
+            // If tuning changed and note is active, update pitch bend in real-time
+            if (cents !== oldCents)
+                updateActivePitchBend(note, cents);
+        }
+    }
+}
+
+// ── Real-time pitch bend update for held notes ─────────────────────
+
+function updateActivePitchBend(note, cents) {
+    if (mode === 0) {
+        // MPE: check if this note is active on a member channel
+        var ch = noteToChannel[note];
+        if (ch !== undefined) {
+            var bv = calcBend(cents);
+            var lsb = bv & 0x7F;
+            var msb = (bv >> 7) & 0x7F;
+            outlet(0, 0xE0 + ch - 1, lsb, msb);
+        }
+    } else {
+        // Mono PB: check if this is the currently held note
+        if (note === monoActiveNote) {
+            var bv = calcBend(cents);
+            var lsb = bv & 0x7F;
+            var msb = (bv >> 7) & 0x7F;
+            outlet(0, 0xE0, lsb, msb);
+        }
     }
 }
 

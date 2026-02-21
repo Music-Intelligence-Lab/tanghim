@@ -100,7 +100,7 @@ trig = p.add("t b b",
     numinlets=1, numoutlets=2, outlettype=["bang", "bang"],
     patching_rect=[450, 80, 40, 22])
 
-delay_plug = p.add("delay 2000",
+delay_plug = p.add("delay 300",
     numinlets=2, numoutlets=1, outlettype=["bang"],
     patching_rect=[450, 115, 72, 22])
 
@@ -111,7 +111,7 @@ plug_msg = p.add_box(Box(
     text='plug_vst3 "Tanghim Receiver"',
 ))
 
-delay_metro = p.add("delay 3000",
+delay_metro = p.add("delay 750",
     numinlets=2, numoutlets=1, outlettype=["bang"],
     patching_rect=[560, 115, 72, 22])
 
@@ -307,14 +307,35 @@ prepend_mono_bend = p.add("prepend set_mono_bend_range",
 p.add_line(mode_tab, prepend_mode, outlet=0, inlet=0)
 p.add_line(prepend_mode, js)
 
-# Mode tab → pak → vst~ (sets VST3 mode parameter for file-based registry update)
+# Mode tab → pattr (store mode, saved with patch) → pak → vst~
 # VST3 param index 1 = mode (0=bypass, 1=mode, 2=mpePbRange, 3=monoPbRange)
-# pak triggers on any inlet change; sends list [1, 0./1.] to vst~ inlet
+# pattr saves its value with the patch, so on session reload we can re-send it
+mode_pattr = p.add_box(Box(
+    id=p.get_id(), maxclass="newobj", numinlets=1, numoutlets=3,
+    outlettype=["", "", ""],
+    patching_rect=[30, 360, 95, 22],
+    text="pattr mode_value @default 0",
+))
+
 set_mode_pak = p.add("pak 1 0.",
     numinlets=2, numoutlets=1, outlettype=[""],
     patching_rect=[30, 395, 60, 22])
-p.add_line(mode_tab, set_mode_pak, outlet=0, inlet=1)
+
+# mode_tab → pattr (store on change) → pak → vst~
+#                                     → prepend → js (for MIDI processing)
+p.add_line(mode_tab, mode_pattr, outlet=0, inlet=0)
+p.add_line(mode_pattr, set_mode_pak, outlet=0, inlet=1)
 p.add_line(set_mode_pak, vst)
+p.add_line(mode_pattr, prepend_mode, outlet=0, inlet=0)  # also update JS
+
+# Session reload: after VST loads (300ms), re-send current mode (500ms)
+# Bang the pattr to output its saved value, which then goes to pak → vst~
+delay_mode_resend = p.add("delay 500",
+    numinlets=2, numoutlets=1, outlettype=["bang"],
+    patching_rect=[100, 115, 72, 22])
+
+p.add_line(trig, delay_mode_resend, outlet=0, inlet=0)
+p.add_line(delay_mode_resend, mode_pattr, outlet=0, inlet=0)
 
 # MPE bend dial → prepend → js inlet 0
 p.add_line(mpe_bend_dial, prepend_mpe_bend, outlet=0, inlet=0)
