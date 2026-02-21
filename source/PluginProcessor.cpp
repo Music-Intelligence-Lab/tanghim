@@ -962,13 +962,27 @@ void ArabicMaqamTunerProcessor::applyMaqamDegrees (const MaqamDegrees& degrees)
             nameToInfo[pc.noteName] = { ci, pc.midiCentsDeviation };
     }
 
-    // Reset all slots to default (index 0) before applying maqam degrees,
+    // Reset all slots to the variant closest to 0 cents before applying maqam degrees,
     // so we don't accumulate selections from previously applied maqamat
+    // (same logic as loadTuningSystem)
     activeTuningState.clearPerNoteOverrides();
     for (int ci = 0; ci < 12; ++ci)
     {
         auto& sl = activeTuningState.slots[(size_t) ci];
-        sl.selectedIndex = 0;
+
+        // Select the variant with the smallest absolute cents deviation from 12-EDO
+        int bestIdx = 0;
+        double bestDist = std::numeric_limits<double>::max();
+        for (int v = 0; v < (int) sl.variants.size(); ++v)
+        {
+            const double dist = std::abs (sl.variants[(size_t) v].midiCentsDeviation);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                bestIdx  = v;
+            }
+        }
+        sl.selectedIndex = bestIdx;
         if (const auto* v = sl.selectedVariant())
             sl.centsOffset = v->midiCentsDeviation;
     }
