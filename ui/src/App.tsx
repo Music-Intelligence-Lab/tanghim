@@ -112,7 +112,7 @@ function findTonicMidi(
  *  Uses fractional visibleCount for smooth "curtain opening" effect.
  *  Note: 12 notes span 11 semitones (positions 0-11), so octave center is at +5.5 from tonic. */
 function centerMaqamOctave(tonicMidi: number, visibleCount: number): number {
-  const padding = (visibleCount - 11) / 2
+  const padding = Math.floor((visibleCount - 11) / 2)
   return Math.max(0, Math.min(128 - visibleCount, tonicMidi - padding))
 }
 
@@ -284,17 +284,11 @@ export default function App() {
   const fractionalVisibleCount = bankWidthPx / SLOT_WIDTH_PX
 
   // Keep maqam's octave (or default C3 octave) centered during resize (smooth curtain effect)
-  // Only apply centering when there's clearly more than 12 sliders of space
+  // Math.floor in centerMaqamOctave ensures tonic is flush at minimum width
   useEffect(() => {
     if (isUserScrolling) return // Don't override user's manual scroll position
     const tonicMidi = maqamTonicMidi >= 0 ? maqamTonicMidi : 48
-    // At minimum width (~12 sliders), just start at tonic without centering
-    // This avoids fractional calculations that show partial sliders
-    if (fractionalVisibleCount < 12.5) {
-      setStartMidi(tonicMidi)
-    } else {
-      setStartMidi(centerMaqamOctave(tonicMidi, fractionalVisibleCount))
-    }
+    setStartMidi(centerMaqamOctave(tonicMidi, fractionalVisibleCount))
   }, [fractionalVisibleCount, maqamTonicMidi, isUserScrolling])
 
   const handleBankWheel = useCallback((e: React.WheelEvent) => {
@@ -467,6 +461,9 @@ export default function App() {
     setModifiedSlots(new Set())
     setMaqamDegreePaoNames(new Map())
     maqamListRequested.current = false
+    // Reset user scroll flag and center on C3 (no maqam selected)
+    setIsUserScrolling(false)
+    setStartMidi(centerMaqamOctave(48, fractionalVisibleCount))
     await bridge.selectTuningSystem(systemId, startingNote)
   }
 
