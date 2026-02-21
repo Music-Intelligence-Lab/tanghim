@@ -34,6 +34,8 @@ const EMPTY_STATE: TuningState = {
     baseMaqamId: '', isTransposed: false, tonicNote: '', setIndex: -1, sliderPositions: [],
     centsOffsets: [],
     degreeNames: [],
+    tuningSystemId: '',
+    startingNote: '',
   })),
   noteNames: {},
   perNoteOverrides: {},
@@ -67,6 +69,21 @@ function computeMaqamDegreeIndices(
   return result
 }
 
+/** Build a map of chromatic index → expected PAO name for maqam degrees.
+ *  Used for modification tracking across tuning systems — PAO names are the
+ *  constant that allows comparing the same maqam in different tunings. */
+function buildDegreePaoNameMap(
+  ascendingNames: string[],
+  paoNameMap: Record<string, number>
+): Map<number, string> {
+  const result = new Map<number, string>()
+  for (const name of ascendingNames) {
+    const ci = paoNameMap[name]
+    if (ci !== undefined) result.set(ci, name)
+  }
+  return result
+}
+
 /**
  * Find the MIDI note and chromatic index for a tonic by its display name.
  *
@@ -92,9 +109,10 @@ function findTonicMidi(
 }
 
 /** Center a maqam's octave (12 notes) within the visible slider viewport.
- *  Uses fractional visibleCount for smooth "curtain opening" effect. */
+ *  Uses fractional visibleCount for smooth "curtain opening" effect.
+ *  Note: 12 notes span 11 semitones (positions 0-11), so octave center is at +5.5 from tonic. */
 function centerMaqamOctave(tonicMidi: number, visibleCount: number): number {
-  const padding = (visibleCount - 12) / 2
+  const padding = (visibleCount - 11) / 2
   return Math.max(0, Math.min(128 - visibleCount, tonicMidi - padding))
 }
 
@@ -114,8 +132,9 @@ export default function App() {
   const [maqamTonicMidi, setMaqamTonicMidi] = useState(-1)   // MIDI note of tonic, -1 = none
   const [isMaqamModified, setIsMaqamModified] = useState(false)  // true when slider adjusted while maqam selected
   const [modifiedSlots, setModifiedSlots] = useState<Set<number>>(new Set())  // chromatic indices of modified sliders
-  const [maqamDefaultPositions, setMaqamDefaultPositions] = useState<number[]>([])  // original variant indices when maqam was applied
+  const [maqamDegreePaoNames, setMaqamDegreePaoNames] = useState<Map<number, string>>(new Map())  // chromatic index → expected PAO name
   const maqamListRequested = useRef(false)
+  const afterSystemSwitchRef = useRef<(() => void) | null>(null)  // callback to run after tuning system loads
 
   const showStatus = useCallback((msg: string, durationMs = 4000) => {
     setStatus(msg)
@@ -214,6 +233,13 @@ export default function App() {
     if (state.hasRecalledSessionState && !prevRecalledRef.current) {
       prevRecalledRef.current = true
       syncMaqamStateFromCpp(state)
+    }
+
+    // Execute pending callback after tuning system switch (used for modified preset loading)
+    if (afterSystemSwitchRef.current) {
+      const callback = afterSystemSwitchRef.current
+      afterSystemSwitchRef.current = null
+      callback()
     }
   }, [syncMaqamStateFromCpp])
 
@@ -439,7 +465,7 @@ export default function App() {
     setMaqamTonicMidi(-1)
     setIsMaqamModified(false)
     setModifiedSlots(new Set())
-    setMaqamDefaultPositions([])
+    setMaqamDegreePaoNames(new Map())
     maqamListRequested.current = false
     await bridge.selectTuningSystem(systemId, startingNote)
   }
@@ -453,12 +479,19 @@ export default function App() {
     if (newState) setTuningState(newState)
     setActivePresetIndex(-1)
 
-    // Check if this variant matches the maqam's default for this slot
-    const isDefaultVariant = maqamDefaultPositions.length > 0 &&
-      maqamDefaultPositions[chromaticIndex] === variantIndex
+    // Check if this variant's PAO name matches the maqam's expected degree for this slot.
+    // PAO names are the constant across tuning systems — variant indices can differ.
+    const expectedPaoName = maqamDegreePaoNames.get(chromaticIndex)
+    if (expectedPaoName === undefined) {
+      // Not a maqam degree slot — don't track modifications for passing tones
+      return
+    }
+    const selectedVariant = newState?.slots[chromaticIndex]?.variants[variantIndex]
+    const selectedPaoName = selectedVariant?.noteName
+    const isCorrectDegree = selectedPaoName === expectedPaoName
 
-    if (isDefaultVariant) {
-      // Returning to maqam default → remove from modified set
+    if (isCorrectDegree) {
+      // Correct PAO name for this maqam degree → remove from modified set
       setModifiedSlots(prev => {
         const next = new Set(prev)
         next.delete(chromaticIndex)
@@ -466,11 +499,11 @@ export default function App() {
         return next
       })
     } else if (selectedMaqamId) {
-      // Different variant than maqam default → mark as modified
+      // Different PAO name than maqam expects → mark as modified
       setIsMaqamModified(true)
       setModifiedSlots(prev => new Set(prev).add(chromaticIndex))
     }
-  }, [bridge, maqamDefaultPositions, selectedMaqamId])
+  }, [bridge, maqamDegreePaoNames, selectedMaqamId])
 
   /** Continuous drag: fire-and-forget update to C++ (MTS-ESP updates live).
    *  Uses requestAnimationFrame to throttle C++ calls to ~60fps. */
@@ -489,18 +522,22 @@ export default function App() {
       return { ...prev, slots }
     })
 
-    // Mark maqam as modified once per drag gesture (keep degrees highlighted)
-    if (!maqamModifiedRef.current) {
-      maqamModifiedRef.current = true
-      setActivePresetIndex(-1)
-      if (selectedMaqamId) setIsMaqamModified(true)
-    }
-    // Track this specific slot as modified
-    if (selectedMaqamId) {
-      setModifiedSlots(prev => {
-        if (prev.has(chromaticIndex)) return prev
-        return new Set(prev).add(chromaticIndex)
-      })
+    // Only track modifications for maqam degree slots (not passing tones)
+    const isDegreeSlot = maqamDegreePaoNames.has(chromaticIndex)
+    if (isDegreeSlot) {
+      // Mark maqam as modified once per drag gesture (keep degrees highlighted)
+      if (!maqamModifiedRef.current) {
+        maqamModifiedRef.current = true
+        setActivePresetIndex(-1)
+        if (selectedMaqamId) setIsMaqamModified(true)
+      }
+      // Track this specific slot as modified
+      if (selectedMaqamId) {
+        setModifiedSlots(prev => {
+          if (prev.has(chromaticIndex)) return prev
+          return new Set(prev).add(chromaticIndex)
+        })
+      }
     }
 
     // Throttle C++ calls to one per animation frame
@@ -514,7 +551,7 @@ export default function App() {
         }
       })
     }
-  }, [bridge, selectedMaqamId])
+  }, [bridge, selectedMaqamId, maqamDegreePaoNames])
 
   /** Drag end: finalize + get full state sync from C++. */
   const handleCentsDragEnd = useCallback(async (
@@ -542,11 +579,10 @@ export default function App() {
     const newState = await bridge.applyMaqam(maqamId, transpositionIndex)
     if (newState) {
       setTuningState(newState)
-      // Capture the maqam's default variant positions for modification tracking
-      setMaqamDefaultPositions(newState.slots.map(s => s.selectedIndex))
-      // Compute maqam degree highlights using paoNameMap (covers all octaves)
+      // Compute maqam degree highlights and PAO name map using paoNameMap (covers all octaves)
       const degrees = getAscendingDegrees(maqamId, transpositionIndex)
       setMaqamDegreeIndices(computeMaqamDegreeIndices(degrees, newState.paoNameMap))
+      setMaqamDegreePaoNames(buildDegreePaoNameMap(degrees, newState.paoNameMap))
       // Set tonic index + scroll so maqam octave is centered in viewport
       const tonicInfo = getTonicInfo(maqamId, transpositionIndex)
       if (tonicInfo) {
@@ -587,10 +623,14 @@ export default function App() {
     // Include asterisk in display name if maqam tuning was modified
     const displayName = isMaqamModified ? entry.maqamDisplay + ' *' : entry.maqamDisplay
 
+    // Store tuning system info for modified presets (needed to switch systems when loading)
+    const tuningSystemId = isMaqamModified ? tuningState.systemId : ''
+    const startingNote = isMaqamModified ? tuningState.startingNote : ''
+
     await bridge.assignPreset(
       presetIndex, entry.maqamId, displayName,
       entry.familyId, selectedTransIdx >= 0, tonicDisplay, tonicIpnLabel,
-      selectedTransIdx, positions, degreeNames, centsOffsets
+      selectedTransIdx, positions, degreeNames, centsOffsets, tuningSystemId, startingNote
     )
     // Update local preset state immediately
     setTuningState(prev => {
@@ -607,37 +647,49 @@ export default function App() {
         sliderPositions: positions,
         centsOffsets,
         degreeNames,
+        tuningSystemId,
+        startingNote,
       }
       return { ...prev, presets }
     })
     setActivePresetIndex(presetIndex)
   }
 
-  const handlePresetClick = async (presetIndex: number) => {
-    // Get the preset to access its maqam info
+  /** Apply a modified preset with modification tracking. */
+  const applyModifiedPreset = async (presetIndex: number) => {
     const preset = tuningState.presets[presetIndex]
     if (!preset?.isAssigned) return
 
-    // First, apply the maqam to get its default positions (don't update UI state yet)
-    const maqamState = await bridge.applyMaqam(preset.maqamId, preset.setIndex)
-    const maqamDefaults = maqamState ? maqamState.slots.map(s => s.selectedIndex) : []
-    setMaqamDefaultPositions(maqamDefaults)
-
-    // Now apply the actual preset (this overwrites with saved positions/centsOffsets)
+    // For modified presets, applyPreset handles everything:
+    // - applies slider positions and centsOffsets from preset
+    // - restores maqam state (currentMaqamId, degreeNames, etc.)
+    // No need for applyMaqam (which would fail anyway if maqam list isn't loaded yet)
     const newState = await bridge.applyPreset(presetIndex)
     if (newState) setTuningState(newState)
     setActivePresetIndex(presetIndex)
 
-    // Derive modified slots by comparing preset positions to maqam defaults
+    // Build PAO name map and track modifications
+    const degrees = preset.degreeNames?.length > 0
+      ? preset.degreeNames
+      : getAscendingDegrees(preset.maqamId, preset.setIndex)
+    const degreePaoNames = newState
+      ? buildDegreePaoNameMap(degrees, newState.paoNameMap)
+      : new Map<number, string>()
+    setMaqamDegreePaoNames(degreePaoNames)
+
+    // Compare preset's cents values to current tuning system's defaults
     const modified = new Set<number>()
-    if (newState && maqamDefaults.length === 12) {
+    if (newState) {
       for (let i = 0; i < 12; i++) {
+        const expectedPaoName = degreePaoNames.get(i)
+        if (expectedPaoName === undefined) continue
+
         const slot = newState.slots[i]
-        // Modified if: variant differs from maqam default OR centsOffset differs from variant's deviation
-        const variant = slot.variants[slot.selectedIndex]
-        const variantDiffersFromDefault = slot.selectedIndex !== maqamDefaults[i]
-        const centsDiffersFromVariant = variant && Math.abs(slot.centsOffset - variant.midiCentsDeviation) > 0.01
-        if (variantDiffersFromDefault || centsDiffersFromVariant) {
+        const expectedVariant = slot.variants.find(v => v.noteName === expectedPaoName)
+        if (!expectedVariant) continue
+
+        const systemDefault = expectedVariant.midiCentsDeviation
+        if (Math.abs(slot.centsOffset - systemDefault) > 0.01) {
           modified.add(i)
         }
       }
@@ -645,26 +697,91 @@ export default function App() {
     setModifiedSlots(modified)
     setIsMaqamModified(modified.size > 0)
 
-    // Sync dropdown selection to match preset's maqam
-    if (preset.isAssigned) {
-      setSelectedMaqamId(preset.maqamId)
-      setSelectedTransIdx(preset.setIndex)
-      // Recompute maqam degree highlights using paoNameMap (covers all octaves)
-      if (newState) {
-        const degrees = getAscendingDegrees(preset.maqamId, preset.setIndex)
-        setMaqamDegreeIndices(computeMaqamDegreeIndices(degrees, newState.paoNameMap))
-        // Set tonic index + scroll so maqam octave is centered in viewport
-        const tonicInfo = getTonicInfo(preset.maqamId, preset.setIndex)
-        if (tonicInfo) {
-          const tonic = findTonicMidi(tonicInfo.display, newState.noteNames)
-          if (tonic) {
-            setMaqamTonicIndex(tonic.chromaticIndex)
-            setMaqamTonicMidi(tonic.midi)
-            setIsUserScrolling(false)
-            setStartMidi(centerMaqamOctave(tonic.midi, fractionalVisibleCount))
-          }
+    // Sync UI state
+    setSelectedMaqamId(preset.maqamId)
+    setSelectedTransIdx(preset.setIndex)
+    if (newState) {
+      setMaqamDegreeIndices(computeMaqamDegreeIndices(degrees, newState.paoNameMap))
+      const tonicInfo = getTonicInfo(preset.maqamId, preset.setIndex)
+      if (tonicInfo) {
+        const tonic = findTonicMidi(tonicInfo.display, newState.noteNames)
+        if (tonic) {
+          setMaqamTonicIndex(tonic.chromaticIndex)
+          setMaqamTonicMidi(tonic.midi)
+          setIsUserScrolling(false)
+          setStartMidi(centerMaqamOctave(tonic.midi, fractionalVisibleCount))
         }
       }
+    }
+  }
+
+  /** Apply an unmodified preset — just applies the maqam fresh in current system. */
+  const applyUnmodifiedPreset = async (presetIndex: number) => {
+    const preset = tuningState.presets[presetIndex]
+    if (!preset?.isAssigned) return
+
+    // Just apply the maqam (use current system's cents, not preset's stored values)
+    const newState = await bridge.applyMaqam(preset.maqamId, preset.setIndex)
+    if (newState) setTuningState(newState)
+    setActivePresetIndex(presetIndex)
+
+    // No modifications — it's the canonical maqam
+    setIsMaqamModified(false)
+    setModifiedSlots(new Set())
+
+    // Build PAO name map for future modification tracking
+    const degrees = preset.degreeNames?.length > 0
+      ? preset.degreeNames
+      : getAscendingDegrees(preset.maqamId, preset.setIndex)
+    const degreePaoNames = newState
+      ? buildDegreePaoNameMap(degrees, newState.paoNameMap)
+      : new Map<number, string>()
+    setMaqamDegreePaoNames(degreePaoNames)
+
+    // Sync UI state
+    setSelectedMaqamId(preset.maqamId)
+    setSelectedTransIdx(preset.setIndex)
+    if (newState) {
+      setMaqamDegreeIndices(computeMaqamDegreeIndices(degrees, newState.paoNameMap))
+      const tonicInfo = getTonicInfo(preset.maqamId, preset.setIndex)
+      if (tonicInfo) {
+        const tonic = findTonicMidi(tonicInfo.display, newState.noteNames)
+        if (tonic) {
+          setMaqamTonicIndex(tonic.chromaticIndex)
+          setMaqamTonicMidi(tonic.midi)
+          setIsUserScrolling(false)
+          setStartMidi(centerMaqamOctave(tonic.midi, fractionalVisibleCount))
+        }
+      }
+    }
+  }
+
+  const handlePresetClick = async (presetIndex: number) => {
+    const preset = tuningState.presets[presetIndex]
+    if (!preset?.isAssigned) return
+
+    // Check if preset is modified (has tuningSystemId stored)
+    const isModifiedPreset = !!preset.tuningSystemId
+
+    if (!isModifiedPreset) {
+      // Unmodified preset: just apply the maqam in current system
+      await applyUnmodifiedPreset(presetIndex)
+      return
+    }
+
+    // Modified preset: need to be in the correct tuning system
+    const needsSystemSwitch =
+      preset.tuningSystemId !== tuningState.systemId ||
+      preset.startingNote !== tuningState.startingNote
+
+    if (needsSystemSwitch) {
+      // Switch tuning systems first, then apply preset after load
+      showStatus('Loading ' + preset.tuningSystemId + '…', 10000)
+      afterSystemSwitchRef.current = () => applyModifiedPreset(presetIndex)
+      await bridge.selectTuningSystem(preset.tuningSystemId, preset.startingNote)
+    } else {
+      // Already in correct system — apply directly
+      await applyModifiedPreset(presetIndex)
     }
   }
 
@@ -677,6 +794,8 @@ export default function App() {
         baseMaqamId: '', isTransposed: false, tonicNote: '', setIndex: -1, sliderPositions: [],
         centsOffsets: [],
         degreeNames: [],
+        tuningSystemId: '',
+        startingNote: '',
       }
       return { ...prev, presets }
     })

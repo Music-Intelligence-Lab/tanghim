@@ -68,7 +68,9 @@ public:
                            int pitchClassSetIndex,
                            const std::array<int, 12>& sliderPositions,
                            const std::vector<juce::String>& degreeNames,
-                           const std::array<double, 12>& centsOffsets);
+                           const std::array<double, 12>& centsOffsets,
+                           const juce::String& tuningSystemId,
+                           const juce::String& startingNote);
     void clearPreset      (int presetIndex);
     void applyMaqam       (const juce::String& maqamId, int transpositionIndex);
 

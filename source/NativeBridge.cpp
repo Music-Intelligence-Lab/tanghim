@@ -107,7 +107,11 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
                 for (int i = 0; i < 12 && i < args[10].size(); ++i)
                     centsOffsets[(size_t) i] = (double) args[10][i];
 
-            processor.assignPreset (idx, id, disp, baseId, transposed, tonicN, tonicIpn, setIdx, positions, degreeNames, centsOffsets);
+            const juce::String tuningSystemId = args.size() > 11 ? args[11].toString() : "";
+            const juce::String startingNote   = args.size() > 12 ? args[12].toString() : "";
+
+            processor.assignPreset (idx, id, disp, baseId, transposed, tonicN, tonicIpn, setIdx,
+                                    positions, degreeNames, centsOffsets, tuningSystemId, startingNote);
             complete (buildPresetsJson());
         });
 
@@ -391,6 +395,9 @@ juce::var NativeBridge::buildPresetsJson() const
         juce::Array<juce::var> dn;
         for (const auto& name : p.degreeNames) dn.add (juce::var (name));
         obj->setProperty ("degreeNames", dn);
+
+        obj->setProperty ("tuningSystemId", p.tuningSystemId);
+        obj->setProperty ("startingNote",   p.startingNote);
 
         arr.add (juce::var (obj));
     }

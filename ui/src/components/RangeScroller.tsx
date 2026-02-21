@@ -74,7 +74,7 @@ export default function RangeScroller({ startMidi, visibleCount, maqamTonicMidi,
             const trackWidth = rect.width - thumbHalf * 2
             const thumbX = thumbHalf + (info.thumbMidi / maxStart) * trackWidth
             if (Math.abs(info.x - rect.left - thumbX) > thumbHalf + 4) return
-            const padding = Math.floor((visibleCount - 12) / 2)
+            const padding = Math.floor((visibleCount - 11) / 2)
             onChange(Math.max(0, Math.min(maxStart, maqamTonicMidi - padding)))
           }}
         />

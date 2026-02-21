@@ -143,6 +143,10 @@ void ArabicMaqamTunerProcessor::getStateInformation (juce::MemoryBlock& dest)
         }
         n.setProperty ("degreeNames", degStr, nullptr);
 
+        // Tuning system (for modified presets)
+        n.setProperty ("tuningSystemId", p.tuningSystemId, nullptr);
+        n.setProperty ("startingNote",   p.startingNote,   nullptr);
+
         presetsNode.addChild (n, -1, nullptr);
     }
     state.addChild (presetsNode, -1, nullptr);
@@ -220,6 +224,10 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
             for (const auto& s : parts)
                 if (s.isNotEmpty()) p.degreeNames.push_back (s);
         }
+
+        // Restore tuning system (for modified presets)
+        p.tuningSystemId = n.getProperty ("tuningSystemId").toString();
+        p.startingNote   = n.getProperty ("startingNote").toString();
     }
 
     // Restore maqam display info (for MTS-ESP scale name)
@@ -597,7 +605,9 @@ void ArabicMaqamTunerProcessor::assignPreset (int idx,
                                                int setIdx,
                                                const std::array<int, 12>& positions,
                                                const std::vector<juce::String>& degreeNames,
-                                               const std::array<double, 12>& centsOffsets)
+                                               const std::array<double, 12>& centsOffsets,
+                                               const juce::String& tuningSystemId,
+                                               const juce::String& startingNote)
 {
     if (idx < 0 || idx >= 16) return;
     auto& p              = presets[(size_t) idx];
@@ -612,6 +622,8 @@ void ArabicMaqamTunerProcessor::assignPreset (int idx,
     p.sliderPositions    = positions;
     p.degreeNames        = degreeNames;
     p.centsOffsets       = centsOffsets;
+    p.tuningSystemId     = tuningSystemId;
+    p.startingNote       = startingNote;
 
     currentActivePresetIdx = idx;
     savePresetsToDisk();
@@ -989,6 +1001,9 @@ void ArabicMaqamTunerProcessor::savePresetsToDisk() const
             dn.add (d);
         obj->setProperty ("degreeNames", dn);
 
+        obj->setProperty ("tuningSystemId", p.tuningSystemId);
+        obj->setProperty ("startingNote",   p.startingNote);
+
         arr.add (juce::var (obj.release()));
     }
 
@@ -1035,6 +1050,9 @@ void ArabicMaqamTunerProcessor::loadPresetsFromDisk()
                 for (const auto& d : *dnArr)
                     if (d.toString().isNotEmpty())
                         p.degreeNames.push_back (d.toString());
+
+            p.tuningSystemId = obj->getProperty ("tuningSystemId").toString();
+            p.startingNote   = obj->getProperty ("startingNote").toString();
         }
         DBG ("loadPresetsFromDisk: loaded presets from disk");
     }

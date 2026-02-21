@@ -151,10 +151,13 @@ export function useJuceBridge() {
     setIndex: number,
     sliderPositions: number[],
     degreeNames: string[],
-    centsOffsets: number[]
+    centsOffsets: number[],
+    tuningSystemId: string,
+    startingNote: string
   ) => {
     await callNative('assignPreset', presetIndex, maqamId, maqamDisplay,
-      baseMaqamId, isTransposed, tonicNote, tonicIpn, setIndex, sliderPositions, degreeNames, centsOffsets)
+      baseMaqamId, isTransposed, tonicNote, tonicIpn, setIndex, sliderPositions, degreeNames, centsOffsets,
+      tuningSystemId, startingNote)
   }, [])
 
   const clearPreset = useCallback(async (presetIndex: number) => {

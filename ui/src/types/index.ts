@@ -32,6 +32,8 @@ export interface MaqamPreset {
   sliderPositions: number[];
   centsOffsets: number[];  // custom tuning values (source of truth for modified presets)
   degreeNames: string[];   // ascending degree PAO names for compatibility checking
+  tuningSystemId: string;  // tuning system ID when preset was saved (for modified presets)
+  startingNote: string;    // starting note when preset was saved (for modified presets)
 }
 
 export interface MtsStatusUpdate {

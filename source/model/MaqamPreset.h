@@ -35,6 +35,11 @@ struct MaqamPreset
     // Used to check compatibility when switching tuning systems.
     std::vector<juce::String> degreeNames;
 
+    // Tuning system when preset was saved (for modified presets).
+    // Empty for unmodified presets — they load in any tuning system.
+    juce::String tuningSystemId;
+    juce::String startingNote;
+
     void clear()
     {
         isAssigned      = false;
@@ -48,6 +53,8 @@ struct MaqamPreset
         sliderPositions.fill (0);
         centsOffsets.fill (0.0);
         degreeNames.clear();
+        tuningSystemId = {};
+        startingNote = {};
     }
 
     juce::String buttonLabel() const
