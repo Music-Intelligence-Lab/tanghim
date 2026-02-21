@@ -131,6 +131,8 @@ void ArabicMaqamTunerProcessor::getStateInformation (juce::MemoryBlock& dest)
         n.setProperty ("setIdx",          p.pitchClassSetIndex, nullptr);
         for (int j = 0; j < 12; ++j)
             n.setProperty ("sp" + juce::String (j), p.sliderPositions[(size_t) j], nullptr);
+        for (int j = 0; j < 12; ++j)
+            n.setProperty ("co" + juce::String (j), p.centsOffsets[(size_t) j], nullptr);
 
         // Degree names (for compatibility checking across tuning systems)
         juce::String degStr;
@@ -205,6 +207,8 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
         p.pitchClassSetIndex = (int) n.getProperty ("setIdx", -1);
         for (int j = 0; j < 12; ++j)
             p.sliderPositions[(size_t) j] = (int) n.getProperty ("sp" + juce::String (j), 0);
+        for (int j = 0; j < 12; ++j)
+            p.centsOffsets[(size_t) j] = (double) n.getProperty ("co" + juce::String (j), 0.0);
 
         // Restore degree names
         const juce::String degStr = n.getProperty ("degreeNames").toString();
@@ -544,14 +548,13 @@ void ArabicMaqamTunerProcessor::applyPreset (int idx)
     const auto& preset = presets[(size_t) idx];
     if (! preset.isAssigned) return;
 
-    // Apply all slider positions directly (not via setSliderVariant which clears maqam state)
+    // Apply all slider positions and cents offsets directly (not via setSliderVariant which clears maqam state)
     activeTuningState.clearPerNoteOverrides();
     for (int i = 0; i < 12; ++i)
     {
         auto& slot = activeTuningState.slots[(size_t) i];
         slot.selectedIndex = juce::jlimit (0, slot.variantCount() - 1, preset.sliderPositions[(size_t) i]);
-        if (const auto* v = slot.selectedVariant())
-            slot.centsOffset = v->midiCentsDeviation;
+        slot.centsOffset = preset.centsOffsets[(size_t) i];
     }
 
     // Restore maqam state from preset
@@ -593,7 +596,8 @@ void ArabicMaqamTunerProcessor::assignPreset (int idx,
                                                const juce::String& tonicIpn,
                                                int setIdx,
                                                const std::array<int, 12>& positions,
-                                               const std::vector<juce::String>& degreeNames)
+                                               const std::vector<juce::String>& degreeNames,
+                                               const std::array<double, 12>& centsOffsets)
 {
     if (idx < 0 || idx >= 12) return;
     auto& p              = presets[(size_t) idx];
@@ -607,6 +611,7 @@ void ArabicMaqamTunerProcessor::assignPreset (int idx,
     p.pitchClassSetIndex = setIdx;
     p.sliderPositions    = positions;
     p.degreeNames        = degreeNames;
+    p.centsOffsets       = centsOffsets;
 
     currentActivePresetIdx = idx;
     savePresetsToDisk();
@@ -974,6 +979,11 @@ void ArabicMaqamTunerProcessor::savePresetsToDisk() const
             sp.add (p.sliderPositions[(size_t) j]);
         obj->setProperty ("sliderPositions", sp);
 
+        juce::Array<juce::var> co;
+        for (int j = 0; j < 12; ++j)
+            co.add (p.centsOffsets[(size_t) j]);
+        obj->setProperty ("centsOffsets", co);
+
         juce::Array<juce::var> dn;
         for (const auto& d : p.degreeNames)
             dn.add (d);
@@ -1015,6 +1025,10 @@ void ArabicMaqamTunerProcessor::loadPresetsFromDisk()
             if (auto* spArr = obj->getProperty ("sliderPositions").getArray())
                 for (int j = 0; j < juce::jmin (12, spArr->size()); ++j)
                     p.sliderPositions[(size_t) j] = (int) (*spArr)[j];
+
+            if (auto* coArr = obj->getProperty ("centsOffsets").getArray())
+                for (int j = 0; j < juce::jmin (12, coArr->size()); ++j)
+                    p.centsOffsets[(size_t) j] = (double) (*coArr)[j];
 
             p.degreeNames.clear();
             if (auto* dnArr = obj->getProperty ("degreeNames").getArray())

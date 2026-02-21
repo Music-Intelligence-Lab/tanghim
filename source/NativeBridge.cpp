@@ -101,7 +101,13 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
                 for (int i = 0; i < args[9].size(); ++i)
                     degreeNames.push_back (args[9][i].toString());
 
-            processor.assignPreset (idx, id, disp, baseId, transposed, tonicN, tonicIpn, setIdx, positions, degreeNames);
+            std::array<double, 12> centsOffsets;
+            centsOffsets.fill (0.0);
+            if (args.size() > 10 && args[10].isArray())
+                for (int i = 0; i < 12 && i < args[10].size(); ++i)
+                    centsOffsets[(size_t) i] = (double) args[10][i];
+
+            processor.assignPreset (idx, id, disp, baseId, transposed, tonicN, tonicIpn, setIdx, positions, degreeNames, centsOffsets);
             complete (buildPresetsJson());
         });
 
@@ -377,6 +383,10 @@ juce::var NativeBridge::buildPresetsJson() const
         juce::Array<juce::var> sp;
         for (int pos : p.sliderPositions) sp.add (juce::var (pos));
         obj->setProperty ("sliderPositions", sp);
+
+        juce::Array<juce::var> co;
+        for (double cents : p.centsOffsets) co.add (juce::var (cents));
+        obj->setProperty ("centsOffsets", co);
 
         juce::Array<juce::var> dn;
         for (const auto& name : p.degreeNames) dn.add (juce::var (name));

@@ -9,6 +9,7 @@ interface Props {
   selectedTranspositionIndex: number  // -1 = base (no transposition)
   paoOrder: string[]                  // unique PAO idNames in ascending MIDI note order
   paoNameInfo: Record<string, { englishName: string; solfege: string }>
+  isModified?: boolean                // true when slider tuning has been adjusted
   onSelect: (maqamId: string, transpositionIndex: number) => void
 }
 
@@ -30,7 +31,7 @@ function buildTonicLabel(
 }
 
 export default function MaqamSelector({
-  maqamList, selectedMaqamId, selectedTranspositionIndex, paoOrder, paoNameInfo, onSelect,
+  maqamList, selectedMaqamId, selectedTranspositionIndex, paoOrder, paoNameInfo, isModified, onSelect,
 }: Props) {
   // Simple alphabetical list of maqamat (no family grouping)
   const maqamOptions = useMemo(() => {
@@ -89,6 +90,7 @@ export default function MaqamSelector({
         className="select-maqam"
         placeholder="Select maqām…"
         searchable
+        selectedSuffix={isModified ? ' *' : undefined}
       />
       {transpositionOptions.length > 0 && (
         <CustomSelect

@@ -15,12 +15,13 @@ interface Props {
   maqamDegreeIndices: Set<number>
   maqamTonicIndex: number
   maqamTonicMidi: number
+  modifiedSlots: Set<number>
   onVariantSelect: (chromaticIndex: number, variantIndex: number) => void
   onCentsDrag: (chromaticIndex: number, centsValue: number) => void
   onCentsDragEnd: (chromaticIndex: number, centsValue: number) => void
 }
 
-const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, visibleCount, noteNames, perNoteOverrides, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, onVariantSelect, onCentsDrag, onCentsDragEnd }: Props) {
+const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, visibleCount, noteNames, perNoteOverrides, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, modifiedSlots, onVariantSelect, onCentsDrag, onCentsDragEnd }: Props) {
   const renderStart = Math.floor(startMidi)
   const pixelOffset = (startMidi - renderStart) * SLOT_WIDTH_PX
   // Render one extra slider to fill the gap when partially scrolled
@@ -48,6 +49,7 @@ const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, visibleC
           // Home octave: tonic to tonic+11. The octave above (tonic+12) is treated as equiv.
           const isDegree = maqamDegreeIndices.has(chromaticIndex)
           const inHomeOctave = maqamTonicMidi >= 0 && midi >= maqamTonicMidi && midi < maqamTonicMidi + 12
+          const isModified = modifiedSlots.has(chromaticIndex)
 
           return (
             <NoteSlider
@@ -61,6 +63,7 @@ const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, visibleC
               isMaqamDegreeEquiv={isDegree && !inHomeOctave}
               isMaqamTonic={midi === maqamTonicMidi}
               isMaqamTonicEquiv={chromaticIndex === maqamTonicIndex && midi !== maqamTonicMidi}
+              isModified={isModified}
               ipnLabel={ipnLabel}
               solfege={solfege}
               paoName={paoName}

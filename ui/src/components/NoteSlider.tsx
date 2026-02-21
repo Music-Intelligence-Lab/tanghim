@@ -12,6 +12,7 @@ interface Props {
   isMaqamDegreeEquiv: boolean
   isMaqamTonic: boolean
   isMaqamTonicEquiv: boolean
+  isModified: boolean
   ipnLabel: string       // e.g. "C3", "A4"
   solfege: string        // e.g. "Mi -b3", "Do 2"
   paoName: string        // e.g. "rāst", "—"
@@ -20,7 +21,7 @@ interface Props {
   onCentsDragEnd: (chromaticIndex: number, centsValue: number) => void
 }
 
-const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, ipnLabel, solfege, paoName, onVariantSelect, onCentsDrag, onCentsDragEnd }: Props) {
+const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, isModified, ipnLabel, solfege, paoName, onVariantSelect, onCentsDrag, onCentsDragEnd }: Props) {
   const trackRef = useRef<HTMLDivElement>(null)
   const thumbRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
@@ -96,7 +97,7 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
   const thumbPct = devToPct(centsOffset)
 
   return (
-    <div data-midi={midiNote} className={`note-slider ${isLocked ? 'locked' : ''} ${hasOverride ? 'has-override' : ''} ${isMaqamDegree ? 'maqam-degree' : ''} ${isMaqamDegreeEquiv ? 'maqam-degree-equiv' : ''} ${isMaqamTonic ? 'maqam-tonic' : ''} ${isMaqamTonicEquiv ? 'maqam-tonic-equiv' : ''}`}>
+    <div data-midi={midiNote} className={`note-slider ${isLocked ? 'locked' : ''} ${hasOverride ? 'has-override' : ''} ${isMaqamDegree ? 'maqam-degree' : ''} ${isMaqamDegreeEquiv ? 'maqam-degree-equiv' : ''} ${isMaqamTonic ? 'maqam-tonic' : ''} ${isMaqamTonicEquiv ? 'maqam-tonic-equiv' : ''} ${isModified ? 'modified' : ''}`}>
       <div className="track-wrap" ref={trackRef} onMouseDown={handleMouseDown}>
         <div className="track">
           {/* Snap markers on the left — clickable to snap to variant */}

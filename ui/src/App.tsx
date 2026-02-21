@@ -32,6 +32,7 @@ const EMPTY_STATE: TuningState = {
   presets: Array.from({ length: 12 }, () => ({
     isAssigned: false, maqamId: '', maqamDisplay: '', tonicIpn: '',
     baseMaqamId: '', isTransposed: false, tonicNote: '', setIndex: -1, sliderPositions: [],
+    centsOffsets: [],
     degreeNames: [],
   })),
   noteNames: {},
@@ -110,6 +111,8 @@ export default function App() {
   const [maqamDegreeIndices, setMaqamDegreeIndices] = useState<Set<number>>(EMPTY_SET)
   const [maqamTonicIndex, setMaqamTonicIndex] = useState(-1)  // chromatic index of tonic, -1 = none
   const [maqamTonicMidi, setMaqamTonicMidi] = useState(-1)   // MIDI note of tonic, -1 = none
+  const [isMaqamModified, setIsMaqamModified] = useState(false)  // true when slider adjusted while maqam selected
+  const [modifiedSlots, setModifiedSlots] = useState<Set<number>>(new Set())  // chromatic indices of modified sliders
   const maqamListRequested = useRef(false)
 
   const showStatus = useCallback((msg: string, durationMs = 4000) => {
@@ -414,6 +417,8 @@ export default function App() {
     setMaqamDegreeIndices(EMPTY_SET)
     setMaqamTonicIndex(-1)
     setMaqamTonicMidi(-1)
+    setIsMaqamModified(false)
+    setModifiedSlots(new Set())
     maqamListRequested.current = false
     await bridge.selectTuningSystem(systemId, startingNote)
   }
@@ -425,18 +430,19 @@ export default function App() {
   ) => {
     const newState = await bridge.setSliderVariant(chromaticIndex, variantIndex)
     if (newState) setTuningState(newState)
-    // Manual slider change breaks preset/maqam association
+    // Manual slider change breaks preset association, marks maqam as modified
     setActivePresetIndex(-1)
-    setMaqamDegreeIndices(EMPTY_SET)
-    setMaqamTonicIndex(-1)
-    setMaqamTonicMidi(-1)
-  }, [bridge])
+    if (selectedMaqamId) {
+      setIsMaqamModified(true)
+      setModifiedSlots(prev => new Set(prev).add(chromaticIndex))
+    }
+  }, [bridge, selectedMaqamId])
 
   /** Continuous drag: fire-and-forget update to C++ (MTS-ESP updates live).
    *  Uses requestAnimationFrame to throttle C++ calls to ~60fps. */
   const pendingDragRef = useRef<{ ci: number; cents: number } | null>(null)
   const dragRafRef = useRef<number>(0)
-  const maqamClearedRef = useRef(false)
+  const maqamModifiedRef = useRef(false)
 
   const handleCentsDrag = useCallback((
     chromaticIndex: number,
@@ -449,13 +455,18 @@ export default function App() {
       return { ...prev, slots }
     })
 
-    // Clear maqam association once per drag gesture
-    if (!maqamClearedRef.current) {
-      maqamClearedRef.current = true
+    // Mark maqam as modified once per drag gesture (keep degrees highlighted)
+    if (!maqamModifiedRef.current) {
+      maqamModifiedRef.current = true
       setActivePresetIndex(-1)
-      setMaqamDegreeIndices(EMPTY_SET)
-      setMaqamTonicIndex(-1)
-      setMaqamTonicMidi(-1)
+      if (selectedMaqamId) setIsMaqamModified(true)
+    }
+    // Track this specific slot as modified
+    if (selectedMaqamId) {
+      setModifiedSlots(prev => {
+        if (prev.has(chromaticIndex)) return prev
+        return new Set(prev).add(chromaticIndex)
+      })
     }
 
     // Throttle C++ calls to one per animation frame
@@ -469,7 +480,7 @@ export default function App() {
         }
       })
     }
-  }, [bridge])
+  }, [bridge, selectedMaqamId])
 
   /** Drag end: finalize + get full state sync from C++. */
   const handleCentsDragEnd = useCallback(async (
@@ -482,7 +493,7 @@ export default function App() {
       dragRafRef.current = 0
     }
     pendingDragRef.current = null
-    maqamClearedRef.current = false
+    maqamModifiedRef.current = false
 
     const newState = await bridge.setSlotCentsFinalize(chromaticIndex, centsValue)
     if (newState) setTuningState(newState)
@@ -492,6 +503,8 @@ export default function App() {
     setSelectedMaqamId(maqamId)
     setSelectedTransIdx(transpositionIndex)
     setActivePresetIndex(-1)
+    setIsMaqamModified(false)  // Reset modification flag when selecting a new maqam
+    setModifiedSlots(new Set())
     const newState = await bridge.applyMaqam(maqamId, transpositionIndex)
     if (newState) {
       setTuningState(newState)
@@ -520,6 +533,7 @@ export default function App() {
     if (!entry) return
 
     const positions = tuningState.slots.map(s => s.selectedIndex)
+    const centsOffsets = tuningState.slots.map(s => s.centsOffset)
 
     // Resolve tonic display name and IPN for the selected transposition
     const tonicDisplay = selectedTransIdx >= 0 && entry.transpositions[selectedTransIdx]
@@ -533,10 +547,13 @@ export default function App() {
 
     const degreeNames = getAscendingDegrees(selectedMaqamId, selectedTransIdx)
 
+    // Include asterisk in display name if maqam tuning was modified
+    const displayName = isMaqamModified ? entry.maqamDisplay + ' *' : entry.maqamDisplay
+
     await bridge.assignPreset(
-      presetIndex, entry.maqamId, entry.maqamDisplay,
+      presetIndex, entry.maqamId, displayName,
       entry.familyId, selectedTransIdx >= 0, tonicDisplay, tonicIpnLabel,
-      selectedTransIdx, positions, degreeNames
+      selectedTransIdx, positions, degreeNames, centsOffsets
     )
     // Update local preset state immediately
     setTuningState(prev => {
@@ -544,13 +561,14 @@ export default function App() {
       presets[presetIndex] = {
         isAssigned: true,
         maqamId: entry.maqamId,
-        maqamDisplay: entry.maqamDisplay,
+        maqamDisplay: displayName,
         tonicIpn: tonicIpnLabel,
         baseMaqamId: entry.familyId,
         isTransposed: selectedTransIdx >= 0,
         tonicNote: tonicDisplay,
         setIndex: selectedTransIdx,
         sliderPositions: positions,
+        centsOffsets,
         degreeNames,
       }
       return { ...prev, presets }
@@ -562,6 +580,8 @@ export default function App() {
     const newState = await bridge.applyPreset(presetIndex)
     if (newState) setTuningState(newState)
     setActivePresetIndex(presetIndex)
+    setIsMaqamModified(false)  // Reset modification flag when applying a preset
+    setModifiedSlots(new Set())
     // Sync dropdown selection to match preset's maqam
     const preset = tuningState.presets[presetIndex]
     if (preset?.isAssigned) {
@@ -592,6 +612,7 @@ export default function App() {
       presets[presetIndex] = {
         isAssigned: false, maqamId: '', maqamDisplay: '', tonicIpn: '',
         baseMaqamId: '', isTransposed: false, tonicNote: '', setIndex: -1, sliderPositions: [],
+        centsOffsets: [],
         degreeNames: [],
       }
       return { ...prev, presets }
@@ -635,6 +656,7 @@ export default function App() {
         selectedTranspositionIndex={selectedTransIdx}
         paoOrder={tuningState.paoOrder}
         paoNameInfo={tuningState.paoNameInfo}
+        isModified={isMaqamModified}
         onSelect={handleMaqamSelect}
       />
 
@@ -659,6 +681,7 @@ export default function App() {
           maqamDegreeIndices={maqamDegreeIndices}
           maqamTonicIndex={maqamTonicIndex}
           maqamTonicMidi={maqamTonicMidi}
+          modifiedSlots={modifiedSlots}
           onVariantSelect={handleVariantSelect}
           onCentsDrag={handleCentsDrag}
           onCentsDragEnd={handleCentsDragEnd}

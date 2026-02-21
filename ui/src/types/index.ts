@@ -30,6 +30,7 @@ export interface MaqamPreset {
   tonicNote: string;
   setIndex: number;
   sliderPositions: number[];
+  centsOffsets: number[];  // custom tuning values (source of truth for modified presets)
   degreeNames: string[];   // ascending degree PAO names for compatibility checking
 }
 

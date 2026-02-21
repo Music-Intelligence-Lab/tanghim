@@ -27,6 +27,10 @@ struct MaqamPreset
     // -1 means "don't change this slot" (note not in the maqam).
     std::array<int, 12> sliderPositions = { 0,0,0,0,0,0,0,0,0,0,0,0 };
 
+    // The 12 slider cents offsets (custom tuning values, source of truth).
+    // Allows presets to store modified tuning even when dragged away from variant.
+    std::array<double, 12> centsOffsets = { 0,0,0,0,0,0,0,0,0,0,0,0 };
+
     // Ascending degree PAO names (e.g. ["rast","dugah","segah",...]).
     // Used to check compatibility when switching tuning systems.
     std::vector<juce::String> degreeNames;
@@ -42,6 +46,7 @@ struct MaqamPreset
         tonicIpnRef     = {};
         pitchClassSetIndex = -1;
         sliderPositions.fill (0);
+        centsOffsets.fill (0.0);
         degreeNames.clear();
     }
 

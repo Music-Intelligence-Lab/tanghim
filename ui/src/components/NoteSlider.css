@@ -169,6 +169,24 @@
   border-radius: 6px;
 }
 
+/* Modified slider (tuning adjusted from maqam default) */
+.note-slider.modified .thumb {
+  background: #26c6da;
+  box-shadow: 0 0 0 3px rgba(38, 198, 218, 0.35);
+}
+
+/* Modified maqam degree: cyan thumb instead of gold */
+.note-slider.maqam-degree.modified .thumb {
+  background: #26c6da;
+  box-shadow: 0 0 0 3px rgba(38, 198, 218, 0.35);
+}
+
+/* MIDI hit on modified: white flash */
+.note-slider.modified .thumb.midi-hit {
+  background: #fff;
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.45), 0 0 12px rgba(38, 198, 218, 0.5);
+}
+
 .note-name {
   font-size: 11px;
   color: var(--text);

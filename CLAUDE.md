@@ -123,7 +123,8 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - Sliders have a **fixed width** of 68px (`ui/src/constants.ts: SLOT_WIDTH_PX`)
 - The number of visible sliders is computed dynamically via `ResizeObserver` in `useVisibleSliderCount` hook
 - Widening the plugin window reveals more sliders; narrowing hides them — no CSS scrolling, virtual render only
-- **Continuous tuning**: Slider thumbs are freely draggable within ±200 cents range. `centsOffset` (per chromatic slot) is the **source of truth** for frequency/cents table computation. `selectedIndex` is retained for snap marker highlighting and PAO name display
+- **Continuous tuning**: Slider thumbs are freely draggable within ±150 cents range. `centsOffset` (per chromatic slot) is the **source of truth** for frequency/cents table computation. `selectedIndex` is retained for snap marker highlighting and PAO name display
+- **Maqam modification tracking**: When a maqam is selected and sliders are adjusted, degree highlights remain active (don't clear), maqam name shows ` *` suffix, and modified slider thumbs turn cyan (#26c6da). Reset on maqam/preset/system change
 - **Snap markers**: Clickable dots to the left of each slider track — snap to exact tuning system variant values with 0.1s CSS transition. Cursor: `pointer`
 - **Thumb cursor**: `ns-resize` (double-arrow vertical) — indicates free drag
 - **Live MTS-ESP update**: Tuning updates on every mousemove via fire-and-forget `setSlotCents` bridge call (RAF-throttled ~60fps). `setSlotCentsFinalize` on mouseup returns full TuningState for React state sync
@@ -157,6 +158,8 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - Preset labels use non-breaking hyphen (U+2011) after "al" to prevent line breaks: `.replace(/\bal-/gi, 'al\u2011')`
 - Preset compatibility: when switching tuning systems, presets are checked against `maqamList` — if `preset.maqamId` doesn't exist or `transpositionIndex` is out of bounds, preset is disabled (opacity 0.35, cursor not-allowed)
 - `degreeNames` (ascending PAO names) stored in presets for degree highlighting
+- `centsOffsets` (12 doubles) stored in presets — restores exact slider tuning values even when modified from maqam defaults
+- Modified presets include ` *` suffix in display name to indicate custom tuning
 
 ### Maqam List Caching
 - `ApiDataCache` caches maqam list per tuning system
