@@ -7,9 +7,14 @@ interface Props {
   presets: MaqamPreset[]
   activePresetIndex: number
   maqamList: MaqamListEntry[]
+  midiLearnTarget: number  // -1 if not learning, 0-15 = preset index
+  midiPresetNotes: number[]  // Per-preset MIDI note mappings, -1 = unmapped
   onPresetClick: (index: number) => void
   onSaveToPreset: (index: number) => void
   onPresetClear: (index: number) => void
+  onMidiLearnStart: (index: number) => void
+  onMidiLearnCancel: () => void
+  onMidiNoteClear: (index: number) => void
 }
 
 /** Check if a preset's maqam (and transposition) exists in the current maqam list. */
@@ -23,7 +28,12 @@ function isPresetCompatible(preset: MaqamPreset, maqamList: MaqamListEntry[]): b
   return true
 }
 
-export default function MaqamPresetBar({ presets, activePresetIndex, maqamList, onPresetClick, onSaveToPreset, onPresetClear }: Props) {
+export default function MaqamPresetBar({
+  presets, activePresetIndex, maqamList,
+  midiLearnTarget, midiPresetNotes,
+  onPresetClick, onSaveToPreset, onPresetClear,
+  onMidiLearnStart, onMidiLearnCancel, onMidiNoteClear
+}: Props) {
   const compatibility = useMemo(
     () => presets.map(p => isPresetCompatible(p, maqamList)),
     [presets, maqamList]
@@ -38,9 +48,14 @@ export default function MaqamPresetBar({ presets, activePresetIndex, maqamList, 
           index={i}
           isActive={i === activePresetIndex}
           isDisabled={!compatibility[i]}
+          isMidiLearning={midiLearnTarget === i}
+          midiNote={midiPresetNotes[i] ?? -1}
           onApply={onPresetClick}
           onSave={onSaveToPreset}
           onClear={onPresetClear}
+          onMidiLearnStart={onMidiLearnStart}
+          onMidiLearnCancel={onMidiLearnCancel}
+          onMidiNoteClear={onMidiNoteClear}
         />
       ))}
     </div>

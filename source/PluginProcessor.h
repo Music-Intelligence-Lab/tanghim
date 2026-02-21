@@ -8,10 +8,16 @@
 #include "engine/TuningEngine.h"
 #include "receiver/ReceiverRegistry.h"
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_audio_devices/juce_audio_devices.h>
 #include <array>
 #include <atomic>
 #include <memory>
 #include <vector>
+
+// Number of chromatic slot parameters (slot_0 through slot_11)
+inline constexpr int kNumSlotParams = 12;
+// Number of preset choices ("None" + presets 1-16)
+inline constexpr int kNumPresetChoices = 17;
 
 /** Check whether a Processor is still alive (for use in callAsync lambdas). */
 inline bool isAlive (const std::weak_ptr<std::atomic<bool>>& w)
@@ -20,7 +26,9 @@ inline bool isAlive (const std::weak_ptr<std::atomic<bool>>& w)
     return f && f->load (std::memory_order_acquire);
 }
 
-class ArabicMaqamTunerProcessor : public juce::AudioProcessor
+class ArabicMaqamTunerProcessor : public juce::AudioProcessor,
+                                   public juce::AudioProcessorValueTreeState::Listener,
+                                   public juce::MidiInputCallback
 {
 public:
     ArabicMaqamTunerProcessor();
@@ -114,6 +122,8 @@ public:
     std::function<void()> onTuningSystemsLoaded;
     std::function<void()> onMaqamListLoaded;
     std::function<void (juce::String)> onStatusMessage;
+    // Lightweight callback for slot cents changes (DAW automation at high rate)
+    std::function<void (int chromaticIndex, double centsOffset)> onSlotCentsChanged;
 
     // ── MIDI activity (audio thread → editor via atomic) ───────────────────
     // 128-bit bitmask (4 × 32-bit words) for per-note MIDI activity.
@@ -121,6 +131,55 @@ public:
     // Editor exchanges each word to 0 every tick.
     std::atomic<uint32_t> noteOnBits[4]  = {};
     std::atomic<uint32_t> noteOffBits[4] = {};
+
+    // ── MIDI note → preset triggering (MIDI Learn) ─────────────────────────────
+    // Each preset can be mapped to a specific MIDI note (-1 = unmapped)
+    // midiPresetChannel: 0 = any channel, 1-16 = specific channel
+    std::array<std::atomic<int>, 16> midiPresetNotes;  // Note per preset, -1 = unmapped
+    std::atomic<int> midiPresetChannel { 0 };          // 0 = any channel
+    std::atomic<int> pendingMidiPreset { -1 };         // Set by MIDI callback, consumed by editor timer
+    std::atomic<int> midiLearnTargetPreset { -1 };     // -1 = not learning, 0-15 = learning for preset
+
+    void setMidiPresetNote (int presetIdx, int midiNote);
+    int  getMidiPresetNote (int presetIdx) const;
+    void setMidiPresetChannel (int channel);
+    int  getMidiPresetChannel() const { return midiPresetChannel.load(); }
+    int  consumePendingMidiPreset();  // Returns preset index (0-15) or -1 if none
+
+    // MIDI Learn mode
+    void startMidiLearn (int presetIdx);
+    void cancelMidiLearn();
+    int  getMidiLearnTarget() const { return midiLearnTargetPreset.load(); }
+    bool isMidiLearning() const { return midiLearnTargetPreset.load() >= 0; }
+    void clearMidiPresetNote (int presetIdx);
+    void clearAllMidiPresetNotes();
+
+    // ── Direct MIDI device input (bypasses DAW MIDI routing) ─────────────────
+    // Allows channel filtering to work in Ableton (which normalizes to ch1)
+    juce::StringArray getAvailableMidiDevices() const;
+    juce::String      getMidiPresetDevice() const;
+    void              setMidiPresetDevice (const juce::String& deviceName);
+
+    // MidiInputCallback override
+    void handleIncomingMidiMessage (juce::MidiInput* source,
+                                    const juce::MidiMessage& message) override;
+
+    // ── APVTS for DAW automation / MIDI mapping ───────────────────────────────
+    juce::AudioProcessorValueTreeState apvts;
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+
+    // Parameter pointers for quick access (non-owning)
+    std::array<juce::AudioParameterFloat*, kNumSlotParams> slotParams {};
+    juce::AudioParameterChoice* presetParam = nullptr;
+
+    // ── APVTS Listener ───────────────────────────────────────────────────────
+    void parameterChanged (const juce::String& parameterID, float newValue) override;
+
+    // ── Gesture marking for DAW automation recording ─────────────────────────
+    void beginSliderGesture (int chromaticIndex);
+    void endSliderGesture   (int chromaticIndex);
+    void beginPresetGesture();
+    void endPresetGesture();
 
 private:
     // ── Core state ────────────────────────────────────────────────────────────
@@ -142,6 +201,11 @@ private:
     std::vector<juce::String> currentDegreeNames;           // ascending PAO names for highlighting
     bool                      hasRecalledSessionState = false;
     bool                      sessionRecallInProgress = false;
+    int                       currentTonicChromatic  = 0;   // 0-11, used for tonic-relative slot mapping
+
+    // ── Direct MIDI device input for preset triggering ──────────────────────
+    std::unique_ptr<juce::MidiInput> midiPresetInput;
+    juce::String                     midiPresetDeviceName;  // Empty = disabled
 
     // ── Lifetime guard (must be declared before apiClient so it outlives it) ─
     std::shared_ptr<std::atomic<bool>> alive = std::make_shared<std::atomic<bool>> (true);
@@ -158,6 +222,20 @@ private:
     void applyMaqamDegrees (const MaqamDegrees& degrees);
     void notifyTuningChanged();
     juce::String buildScaleName() const;
+
+    // ── APVTS sync helpers ───────────────────────────────────────────────────
+    // Guard flag to prevent feedback loops when programmatically updating params
+    bool updatingParamsFromCode = false;
+
+    // Tonic-relative slot mapping: slot_0 = tonic, slot_1 = tonic+1, etc.
+    // When no maqam is selected, defaults to C (chromatic 0).
+    int slotToChromatic (int slotIdx) const { return (slotIdx + currentTonicChromatic) % 12; }
+    int chromaticToSlot (int chromaticIdx) const { return (chromaticIdx - currentTonicChromatic + 12) % 12; }
+
+    // Sync APVTS params from current tuning state
+    void syncSlotParamFromState (int chromaticIndex);
+    void syncAllSlotParamsFromState();
+    void syncPresetParamFromState();
 
     // ── Disk persistence ─────────────────────────────────────────────────────
     void saveSettingsToDisk() const;

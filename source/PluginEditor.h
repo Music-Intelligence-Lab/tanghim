@@ -7,6 +7,110 @@
 class NativeBridge;
 
 /**
+ * Custom LookAndFeel for status bar ComboBoxes to match the dark theme.
+ */
+class StatusBarLookAndFeel : public juce::LookAndFeel_V4
+{
+public:
+    StatusBarLookAndFeel()
+    {
+        // Set colors for the popup menu
+        setColour (juce::PopupMenu::backgroundColourId, juce::Colour (0xff1a1a2e));
+        setColour (juce::PopupMenu::textColourId, juce::Colour (0xffe8b339));
+        setColour (juce::PopupMenu::highlightedBackgroundColourId, juce::Colour (0xff2d2d4a));
+        setColour (juce::PopupMenu::highlightedTextColourId, juce::Colour (0xffe8b339));
+    }
+
+    void drawComboBox (juce::Graphics& g, int width, int height, bool /*isButtonDown*/,
+                       int /*buttonX*/, int /*buttonY*/, int /*buttonW*/, int /*buttonH*/,
+                       juce::ComboBox& box) override
+    {
+        auto bounds = juce::Rectangle<float> (0, 0, (float) width, (float) height);
+        g.setColour (box.findColour (juce::ComboBox::backgroundColourId));
+        g.fillRoundedRectangle (bounds, 3.0f);
+        g.setColour (box.findColour (juce::ComboBox::outlineColourId));
+        g.drawRoundedRectangle (bounds.reduced (0.5f), 3.0f, 1.0f);
+
+        // Draw small arrow
+        auto arrowZone = juce::Rectangle<float> ((float) width - 14.0f, 0.0f, 10.0f, (float) height);
+        juce::Path arrow;
+        arrow.addTriangle (arrowZone.getX() + 1.0f, arrowZone.getCentreY() - 2.0f,
+                           arrowZone.getRight() - 1.0f, arrowZone.getCentreY() - 2.0f,
+                           arrowZone.getCentreX(), arrowZone.getCentreY() + 3.0f);
+        g.setColour (box.findColour (juce::ComboBox::arrowColourId));
+        g.fillPath (arrow);
+    }
+
+    void positionComboBoxText (juce::ComboBox& box, juce::Label& label) override
+    {
+        label.setBounds (4, 0, box.getWidth() - 16, box.getHeight());
+        label.setFont (juce::FontOptions (11.0f));
+    }
+
+    juce::Font getComboBoxFont (juce::ComboBox&) override
+    {
+        return juce::FontOptions (11.0f);
+    }
+
+    juce::Font getPopupMenuFont() override
+    {
+        return juce::FontOptions (12.0f);
+    }
+
+    void drawPopupMenuBackground (juce::Graphics& g, int width, int height) override
+    {
+        g.setColour (findColour (juce::PopupMenu::backgroundColourId));
+        g.fillRoundedRectangle (0.0f, 0.0f, (float) width, (float) height, 4.0f);
+        g.setColour (juce::Colour (0xff3d3d5a));
+        g.drawRoundedRectangle (0.5f, 0.5f, (float) width - 1.0f, (float) height - 1.0f, 4.0f, 1.0f);
+    }
+
+    void drawPopupMenuItem (juce::Graphics& g, const juce::Rectangle<int>& area,
+                            bool isSeparator, bool isActive, bool isHighlighted,
+                            bool isTicked, bool hasSubMenu,
+                            const juce::String& text, const juce::String& shortcutKeyText,
+                            const juce::Drawable* icon, const juce::Colour* textColour) override
+    {
+        if (isSeparator)
+        {
+            auto r = area.reduced (5, 0).toFloat();
+            r.removeFromTop ((float) r.getHeight() / 2.0f - 0.5f);
+            g.setColour (juce::Colour (0xff3d3d5a));
+            g.fillRect (r.removeFromTop (1.0f));
+            return;
+        }
+
+        auto textColourToUse = textColour ? *textColour
+            : findColour (isHighlighted ? juce::PopupMenu::highlightedTextColourId
+                                        : juce::PopupMenu::textColourId);
+
+        if (isHighlighted)
+        {
+            g.setColour (findColour (juce::PopupMenu::highlightedBackgroundColourId));
+            g.fillRect (area);
+        }
+
+        auto r = area.reduced (6, 0);
+        g.setColour (textColourToUse.withAlpha (isActive ? 1.0f : 0.5f));
+        g.setFont (getPopupMenuFont());
+
+        if (isTicked)
+        {
+            g.drawText (juce::CharPointer_UTF8 ("\xe2\x9c\x93"), r.removeFromLeft (16),
+                        juce::Justification::centredLeft);
+        }
+        else
+        {
+            r.removeFromLeft (16);
+        }
+
+        g.drawFittedText (text, r, juce::Justification::centredLeft, 1);
+    }
+
+    int getPopupMenuBorderSize() override { return 4; }
+};
+
+/**
  * Native MIDI drag button that overlays the WebView.
  * Enables drag-and-drop of maqam MIDI files to DAW timeline.
  */
@@ -79,6 +183,7 @@ public:
     void emitTuningSystemsLoaded();
     void emitMaqamListLoaded();
     void emitStatusMessage (const juce::String& msg);
+    void emitSlotCentsChanged (int chromaticIndex, double centsOffset);
 
 private:
     void timerCallback() override;
@@ -103,8 +208,18 @@ private:
     // Native status bar components
     MidiDragButton     midiDragButton;
     juce::String       lastMaqamId;
-    juce::String       lastStatusMessage;
     juce::TextButton   updatesButton { juce::CharPointer_UTF8 ("\xe2\x86\xbb Updates") }; // ↻ Updates
+
+    // MIDI preset trigger configuration (MIDI Learn per-preset)
+    StatusBarLookAndFeel statusBarLnF;
+    juce::Label        midiPresetLabel { {}, "Preset MIDI:" };
+    juce::ComboBox     midiDeviceSelector;    // Direct MIDI device for preset triggering
+    juce::ComboBox     midiChannelSelector;   // Channel selector (All, 1-16)
+    void setupMidiPresetControls();
+    void populateMidiDeviceList();
+    void populateMidiChannelList();
+    void onMidiDeviceChanged();
+    void onMidiChannelChanged();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ArabicMaqamTunerEditor)
 };

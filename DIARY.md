@@ -1,5 +1,122 @@
 # Development Diary
 
+## Feb 22 2026: MIDI Learn for Presets + Modification Tracking Fix
+
+### Features Implemented
+
+#### MIDI Learn for Preset Triggering
+
+Users can now map MIDI notes to presets for instant maqam switching during performance.
+
+**Why a dedicated MIDI input?** VST3 plugins only receive MIDI through DAW routing, which requires a MIDI track to be armed, the plugin in the signal path, and the DAW passing MIDI. For reliable preset triggering during performance, we open a **direct MIDI input device** that bypasses DAW routing entirely. Users select their MIDI controller from a dropdown in the native status bar.
+
+**User interaction:**
+- **Select MIDI device** from dropdown in native status bar (required first!)
+- **Shift+click** a preset button → enters MIDI Learn mode (button pulses, shows "...")
+- Play any MIDI note → that note is mapped to the preset
+- **Click the MIDI badge** → clears the mapping
+- **Shift+click the badge** → re-learn with a different note
+
+**C++ implementation (`PluginProcessor`):**
+- Inherits from `juce::MidiInputCallback`
+- `midiPresetInput` (unique_ptr<MidiInput>): direct MIDI device handle
+- `handleIncomingMidiMessage()`: processes Note On from direct input
+- `midiLearnTargetPreset` (atomic int): which preset is learning (-1 = none)
+- `midiPresetNotes[16]` (atomic ints): MIDI note mapped to each preset (-1 = unmapped)
+- `midiPresetChannel` (atomic int): channel filter (0 = any, 1-16 = specific)
+- `pendingMidiPreset` (atomic int): preset index triggered by MIDI, consumed by editor timer
+- `processBlock()` checks Note On messages against mappings, sets `pendingMidiPreset`
+- Mappings persisted to `~/Library/Tanghim/settings.json`
+
+**Editor timer (`PluginEditor`):**
+- 30Hz poll checks `consumePendingMidiPreset()`
+- On trigger: calls `applyPreset()` + `emitTuningStateChanged()`
+
+**Bridge functions (`NativeBridge`):**
+- `startMidiLearn(presetIndex)` → returns current learning target
+- `cancelMidiLearn()` → cancels learning mode
+- `getMidiLearnTarget()` → returns which preset is learning
+- `getMidiPresetNote(presetIndex)` → returns mapped MIDI note
+- `clearMidiPresetNote(presetIndex)` → clears mapping
+- `setMidiPresetChannel(channel)` / `getMidiPresetChannel()`
+
+**React UI (`MaqamPresetButton`):**
+- `isMidiLearning` prop: shows pulsing animation + "..." badge
+- `midiNote` prop: displays note name (e.g., "C3") when mapped
+- Badge click handlers for clear/re-learn
+
+#### Maqam Modification Tracking Fix
+
+**The bug:** Selecting a maqam then modifying a slider should turn the thumb cyan and add `*` to the maqam name. This was broken.
+
+**Root cause (multi-layered):**
+
+1. **C++ timing issue**: In `applyMaqam()`, `currentDegreeNames` was populated AFTER calling `applyMaqamDegrees()`, but `applyMaqamDegrees()` calls `notifyTuningChanged()`. The event was sent with empty degree names.
+
+   **Fix:** Move degree names population BEFORE `applyMaqamDegrees()`:
+   ```cpp
+   // Store degree names BEFORE applyMaqamDegrees, since it calls notifyTuningChanged()
+   currentDegreeNames.clear();
+   for (const auto& name : found->degrees.ascending)
+       currentDegreeNames.push_back(name);
+   applyMaqamDegrees(found->degrees);
+   ```
+
+2. **Async APVTS callbacks**: `syncAllSlotParamsFromState()` updates APVTS parameters with `updatingParamsFromCode = true`. But if the DAW calls `parameterChanged` asynchronously after the flag resets to `false`, it would clear maqam state and emit events with empty data.
+
+   **Fix:** Removed maqam state clearing from `parameterChanged` for slot params. The explicit methods (`setSliderVariant`, `setSlotCents`) already handle this for user interactions.
+
+3. **JS state overwrite**: `syncMaqamStateFromCpp` would receive stale async events with empty maqam data AFTER `handleMaqamSelect` had already set the correct state, overwriting it.
+
+   **Fix:** Added guards to preserve existing maqam state:
+   ```typescript
+   // Don't let empty events clear state we just set
+   if (!state.selectedMaqamId && (isMaqamModifiedRef.current || selectedMaqamIdRef.current)) {
+     setActivePresetIndex(state.activePresetIndex ?? -1)
+     return  // Preserve current maqam state
+   }
+   ```
+
+### DAW Automation Parameters (APVTS)
+
+The Transmitter plugin exposes 13 parameters for DAW automation and MIDI CC mapping:
+
+| Parameter ID | Type | Range | Purpose |
+|---|---|---|---|
+| `slot_0`–`slot_11` | AudioParameterFloat | ±100 cents | Cents deviation for each chromatic slot |
+| `preset` | AudioParameterChoice | "None", "1"–"16" | Active preset index |
+
+**Key implementation details:**
+- **Bidirectional sync**: UI changes update APVTS (for recording); DAW automation updates tuning (for playback)
+- **Gesture marking**: `beginSliderGesture()`/`endSliderGesture()` called from JS on mousedown/mouseup for proper automation recording
+- **Feedback loop prevention**: `updatingParamsFromCode` flag prevents recursive updates when syncing state
+- **Per-note overrides**: UI-only, not exposed as parameters (would be 128 params!)
+- **MIDI Learn mappings**: Separate from APVTS — persisted to disk, not DAW session
+
+**Why only 13 params?** Originally considered 16 preset trigger params, but MIDI Learn via dedicated input is more flexible and doesn't pollute automation lanes.
+
+### Key Learnings
+
+1. **APVTS callbacks can be async**: `setValueNotifyingHost()` may trigger `parameterChanged` on a deferred message thread callback, after `updatingParamsFromCode` is already reset. Guard flags need careful lifetime management.
+
+2. **Event ordering matters**: When C++ emits events during an async bridge call, JS receives them DURING the `await`. If the JS code sets state AFTER the await, stale events can overwrite it.
+
+3. **Use refs for callbacks**: React's `useCallback` captures state at creation time. Use refs (`useRef`) updated during render to ensure callbacks always access current values.
+
+4. **Debug with console.log**: Adding logging to `syncMaqamStateFromCpp` revealed the exact sequence of events that caused the bug.
+
+### Files Changed
+- `source/PluginProcessor.h/.cpp` (MIDI Learn state, degree names fix, parameterChanged fix)
+- `source/PluginEditor.h/.cpp` (MIDI preset controls, timer handling)
+- `source/NativeBridge.cpp` (MIDI Learn bridge functions)
+- `ui/src/App.tsx` (refs for modification tracking, syncMaqamStateFromCpp guards)
+- `ui/src/components/MaqamPresetButton.tsx/.css` (MIDI badge UI)
+- `ui/src/components/MaqamPresetBar.tsx` (MIDI Learn props)
+- `ui/src/hooks/useJuceBridge.ts` (MIDI Learn bridge calls)
+- `ui/src/types/index.ts` (TuningState.midiLearnTarget)
+
+---
+
 ## Feb 21 2026: Native MIDI Drag Button + Native Status Bar
 
 ### Problem

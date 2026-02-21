@@ -106,3 +106,45 @@
 .preset-btn.disabled:hover .preset-clear-btn {
   display: flex;
 }
+
+/* MIDI Learn mode */
+.preset-btn.learning {
+  animation: pulse-learn 1s infinite;
+  border-color: #26c6da;
+}
+
+@keyframes pulse-learn {
+  0%, 100% { background: var(--surface2); }
+  50% { background: rgba(38, 198, 218, 0.15); }
+}
+
+/* MIDI note badge */
+.preset-midi-badge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  padding: 1px 4px;
+  font-size: 8px;
+  font-weight: 600;
+  background: var(--accent2);
+  color: var(--accent);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.preset-midi-badge:hover {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+.preset-midi-badge.learning {
+  background: #26c6da;
+  color: var(--surface);
+  animation: pulse-badge 0.5s infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

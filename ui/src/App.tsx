@@ -137,6 +137,12 @@ export default function App() {
   const maqamListRequested = useRef(false)
   const afterSystemSwitchRef = useRef<(() => void) | null>(null)  // callback to run after tuning system loads
 
+  // Refs for modification tracking — ensures callbacks always have latest values
+  // without stale closures. Updated both during render AND immediately in handlers.
+  const maqamDegreeIndicesRef = useRef<Set<number>>(EMPTY_SET)
+  const selectedMaqamIdRef = useRef('')
+  const isMaqamModifiedRef = useRef(false)
+
   const showStatus = useCallback((msg: string, durationMs = 4000) => {
     setStatus(msg)
     clearTimeout(statusTimer.current)
@@ -149,24 +155,65 @@ export default function App() {
   const didInit = useRef(false)
   const prevRecalledRef = useRef(false)
 
-  /** Sync JS maqam state from C++ tuning state (used on session recall). */
-  const syncMaqamStateFromCpp = useCallback((state: TuningState) => {
-    setSelectedMaqamId(state.selectedMaqamId || '')
+  /** Sync JS maqam state from C++ tuning state (used on session recall and MIDI preset triggers). */
+  const syncMaqamStateFromCpp = useCallback((state: TuningState, centerOnMaqam = false) => {
+    // Preserve JS-side maqam state if:
+    // 1. User has modified the maqam (slider adjusted), OR
+    // 2. We already have a maqam selected and C++ is sending empty state (stale async event)
+    // C++ clears currentMaqamId when sliders are manually adjusted, but we want to keep
+    // showing the modified maqam with an asterisk. Also, async APVTS callbacks can send
+    // stale events after handleMaqamSelect has already set the state.
+    if (!state.selectedMaqamId && (isMaqamModifiedRef.current || selectedMaqamIdRef.current)) {
+      // Don't overwrite maqam selection — keep the current state
+      // Only sync preset index (it might have changed)
+      setActivePresetIndex(state.activePresetIndex ?? -1)
+      return
+    }
+
+    const newMaqamId = state.selectedMaqamId || ''
+    setSelectedMaqamId(newMaqamId)
+    selectedMaqamIdRef.current = newMaqamId  // Update ref immediately
     setSelectedTransIdx(state.transpositionIndex ?? -1)
     setActivePresetIndex(state.activePresetIndex ?? -1)
-    if (state.startMidi !== undefined) setStartMidi(state.startMidi)
 
     if (state.degreeNames && state.degreeNames.length > 0) {
-      setMaqamDegreeIndices(computeMaqamDegreeIndices(state.degreeNames, state.paoNameMap))
-      const tonicCi = state.paoNameMap[state.degreeNames[0]]
+      const degreeIndices = computeMaqamDegreeIndices(state.degreeNames, state.paoNameMap)
+      setMaqamDegreeIndices(degreeIndices)
+      maqamDegreeIndicesRef.current = degreeIndices  // Update ref immediately
+      // Build PAO name map for modification tracking — essential for cyan thumb + asterisk
+      setMaqamDegreePaoNames(buildDegreePaoNameMap(state.degreeNames, state.paoNameMap))
+      const tonicName = state.degreeNames[0]
+      const tonicCi = state.paoNameMap[tonicName]
       if (tonicCi !== undefined) {
         setMaqamTonicIndex(tonicCi)
-        setMaqamTonicMidi(tonicCi + 48) // base register approximation
+        // Find proper tonic MIDI using noteNames
+        const tonic = findTonicMidi(
+          // Get display name from paoNameInfo or use the id
+          Object.entries(state.noteNames[String(tonicCi)] || {}).find(([, name]) =>
+            state.paoNameMap[name] === tonicCi
+          )?.[1] || tonicName,
+          state.noteNames
+        )
+        const tonicMidi = tonic?.midi ?? (tonicCi + 48)
+        setMaqamTonicMidi(tonicMidi)
+
+        // Center viewport on maqam when requested (e.g., MIDI preset trigger)
+        if (centerOnMaqam) {
+          setIsUserScrolling(false)
+        }
       }
-    } else {
+    } else if (!isMaqamModifiedRef.current && !selectedMaqamIdRef.current) {
+      // Only clear maqam state if:
+      // 1. User hasn't modified the maqam (isMaqamModifiedRef is false)
+      // 2. We don't already have a maqam selected (selectedMaqamIdRef is empty)
+      // This prevents stale/async events from clearing state that was just set by handleMaqamSelect
       setMaqamDegreeIndices(EMPTY_SET)
+      maqamDegreeIndicesRef.current = EMPTY_SET  // Update ref immediately
+      setMaqamDegreePaoNames(new Map())
       setMaqamTonicIndex(-1)
       setMaqamTonicMidi(-1)
+      // Restore scroll position only when no maqam is selected
+      if (state.startMidi !== undefined) setStartMidi(state.startMidi)
     }
   }, [])
 
@@ -230,11 +277,18 @@ export default function App() {
     const state = data as TuningState
     setTuningState(state)
 
-    // Session recall completed — sync maqam state from C++
-    if (state.hasRecalledSessionState && !prevRecalledRef.current) {
-      prevRecalledRef.current = true
-      syncMaqamStateFromCpp(state)
-    }
+    // Determine if this is a session recall (don't center) or a live change (center on maqam)
+    // Session recall: first time hasRecalledSessionState becomes true, or sessionRecallInProgress
+    const isSessionRecall = state.sessionRecallInProgress ||
+      (state.hasRecalledSessionState && !prevRecalledRef.current)
+    const shouldCenter = !isSessionRecall && state.degreeNames && state.degreeNames.length > 0
+
+    // Always sync maqam/preset state from C++ — this handles both:
+    // - Session recall on startup
+    // - DAW automation changes (preset, slider, etc.)
+    // C++ is the canonical source of truth; JS should reflect its state.
+    syncMaqamStateFromCpp(state, shouldCenter)
+    if (state.hasRecalledSessionState) prevRecalledRef.current = true
 
     // Execute pending callback after tuning system switch (used for modified preset loading)
     if (afterSystemSwitchRef.current) {
@@ -262,6 +316,20 @@ export default function App() {
       mpeCount: update.mpeCount,
       monoPbCount: update.monoPbCount,
     }))
+  }, [])
+
+  // Lightweight slot cents update from DAW automation (avoids full state rebuild)
+  const onSlotCentsChanged = useCallback((data: unknown) => {
+    if (!data || typeof data !== 'object') return
+    const { index, cents } = data as { index: number; cents: number }
+    if (typeof index !== 'number' || typeof cents !== 'number') return
+    setTuningState(prev => {
+      const slots = [...prev.slots]
+      if (index >= 0 && index < 12) {
+        slots[index] = { ...slots[index], centsOffset: cents }
+      }
+      return { ...prev, slots }
+    })
   }, [])
 
   // ── Fetch maqam list once after first tuning state arrives ──────────────
@@ -426,6 +494,7 @@ export default function App() {
   useJuceEvent('midiActivity',        onMidiActivity)
   useJuceEvent('maqamListLoaded',     onMaqamListLoaded)
   useJuceEvent('mtsStatusChanged',   onMtsStatusChanged)
+  useJuceEvent('slotCentsChanged',   onSlotCentsChanged)
 
   // ── Maqam degree + scroll helpers ───────────────────────────────────────
 
@@ -459,6 +528,7 @@ export default function App() {
     setMaqamTonicIndex(-1)
     setMaqamTonicMidi(-1)
     setIsMaqamModified(false)
+    isMaqamModifiedRef.current = false  // Update ref immediately
     setModifiedSlots(new Set())
     setMaqamDegreePaoNames(new Map())
     maqamListRequested.current = false
@@ -493,12 +563,16 @@ export default function App() {
       setModifiedSlots(prev => {
         const next = new Set(prev)
         next.delete(chromaticIndex)
-        if (next.size === 0) setIsMaqamModified(false)
+        if (next.size === 0) {
+          setIsMaqamModified(false)
+          isMaqamModifiedRef.current = false
+        }
         return next
       })
     } else if (selectedMaqamId) {
       // Different PAO name than maqam expects → mark as modified
       setIsMaqamModified(true)
+      isMaqamModifiedRef.current = true
       setModifiedSlots(prev => new Set(prev).add(chromaticIndex))
     }
   }, [bridge, maqamDegreePaoNames, selectedMaqamId])
@@ -508,6 +582,11 @@ export default function App() {
   const pendingDragRef = useRef<{ ci: number; cents: number } | null>(null)
   const dragRafRef = useRef<number>(0)
   const maqamModifiedRef = useRef(false)
+
+  // Keep refs in sync with state during render (backup for when handlers don't update them)
+  maqamDegreeIndicesRef.current = maqamDegreeIndices
+  selectedMaqamIdRef.current = selectedMaqamId
+  isMaqamModifiedRef.current = isMaqamModified
 
   const handleCentsDrag = useCallback((
     chromaticIndex: number,
@@ -521,16 +600,21 @@ export default function App() {
     })
 
     // Only track modifications for maqam degree slots (not passing tones)
-    const isDegreeSlot = maqamDegreePaoNames.has(chromaticIndex)
+    // Use refs to always access latest values without stale closures
+    const isDegreeSlot = maqamDegreeIndicesRef.current.has(chromaticIndex)
+    const currentMaqamId = selectedMaqamIdRef.current
     if (isDegreeSlot) {
       // Mark maqam as modified once per drag gesture (keep degrees highlighted)
       if (!maqamModifiedRef.current) {
         maqamModifiedRef.current = true
         setActivePresetIndex(-1)
-        if (selectedMaqamId) setIsMaqamModified(true)
+        if (currentMaqamId) {
+          setIsMaqamModified(true)
+          isMaqamModifiedRef.current = true  // Update ref immediately
+        }
       }
       // Track this specific slot as modified
-      if (selectedMaqamId) {
+      if (currentMaqamId) {
         setModifiedSlots(prev => {
           if (prev.has(chromaticIndex)) return prev
           return new Set(prev).add(chromaticIndex)
@@ -549,7 +633,7 @@ export default function App() {
         }
       })
     }
-  }, [bridge, selectedMaqamId, maqamDegreePaoNames])
+  }, [bridge])
 
   /** Drag end: finalize + get full state sync from C++. */
   const handleCentsDragEnd = useCallback(async (
@@ -568,18 +652,33 @@ export default function App() {
     if (newState) setTuningState(newState)
   }, [bridge])
 
+  /** Gesture start: notify DAW of parameter change beginning (for automation recording). */
+  const handleGestureStart = useCallback((chromaticIndex: number) => {
+    bridge.beginSliderGesture(chromaticIndex)
+  }, [bridge])
+
+  /** Gesture end: notify DAW of parameter change ending (for automation recording). */
+  const handleGestureEnd = useCallback((chromaticIndex: number) => {
+    bridge.endSliderGesture(chromaticIndex)
+  }, [bridge])
+
   const handleMaqamSelect = async (maqamId: string, transpositionIndex: number) => {
     setSelectedMaqamId(maqamId)
     setSelectedTransIdx(transpositionIndex)
     setActivePresetIndex(-1)
     setIsMaqamModified(false)  // Reset modification flag when selecting a new maqam
+    isMaqamModifiedRef.current = false  // Update ref immediately
     setModifiedSlots(new Set())
+    // Update ref immediately so modification tracking works even before React re-renders
+    selectedMaqamIdRef.current = maqamId
     const newState = await bridge.applyMaqam(maqamId, transpositionIndex)
     if (newState) {
       setTuningState(newState)
       // Compute maqam degree highlights and PAO name map using paoNameMap (covers all octaves)
       const degrees = getAscendingDegrees(maqamId, transpositionIndex)
-      setMaqamDegreeIndices(computeMaqamDegreeIndices(degrees, newState.paoNameMap))
+      const degreeIndices = computeMaqamDegreeIndices(degrees, newState.paoNameMap)
+      setMaqamDegreeIndices(degreeIndices)
+      maqamDegreeIndicesRef.current = degreeIndices  // Update ref immediately
       setMaqamDegreePaoNames(buildDegreePaoNameMap(degrees, newState.paoNameMap))
       // Set tonic index + scroll so maqam octave is centered in viewport
       const tonicInfo = getTonicInfo(maqamId, transpositionIndex)
@@ -730,6 +829,7 @@ export default function App() {
 
     // No modifications — it's the canonical maqam
     setIsMaqamModified(false)
+    isMaqamModifiedRef.current = false
     setModifiedSlots(new Set())
 
     // Build PAO name map for future modification tracking
@@ -818,6 +918,22 @@ export default function App() {
       : 'Data is up to date')
   }
 
+  // ── MIDI Learn handlers ─────────────────────────────────────────────────
+  const handleMidiLearnStart = useCallback((presetIndex: number) => {
+    bridge.startMidiLearn(presetIndex)
+    showStatus(`MIDI Learn: Press a note to map to preset ${presetIndex + 1}`, 10000)
+  }, [bridge, showStatus])
+
+  const handleMidiLearnCancel = useCallback(() => {
+    bridge.cancelMidiLearn()
+    showStatus('MIDI Learn cancelled')
+  }, [bridge, showStatus])
+
+  const handleMidiNoteClear = useCallback((presetIndex: number) => {
+    bridge.clearMidiPresetNote(presetIndex)
+    showStatus(`Cleared MIDI mapping for preset ${presetIndex + 1}`)
+  }, [bridge, showStatus])
+
   return (
     <div className="app">
       <div className="top-bar">
@@ -849,9 +965,14 @@ export default function App() {
         presets={tuningState.presets}
         activePresetIndex={activePresetIndex}
         maqamList={maqamList}
+        midiLearnTarget={tuningState.midiLearnTarget ?? -1}
+        midiPresetNotes={tuningState.midiPresetNotes ?? Array(16).fill(-1)}
         onPresetClick={handlePresetClick}
         onSaveToPreset={handleSaveToPreset}
         onPresetClear={handlePresetClear}
+        onMidiLearnStart={handleMidiLearnStart}
+        onMidiLearnCancel={handleMidiLearnCancel}
+        onMidiNoteClear={handleMidiNoteClear}
       />
 
       <RangeScroller startMidi={startMidi} visibleCount={visibleCount} maqamTonicMidi={maqamTonicMidi} onChange={setStartMidi} />
@@ -870,6 +991,8 @@ export default function App() {
           onVariantSelect={handleVariantSelect}
           onCentsDrag={handleCentsDrag}
           onCentsDragEnd={handleCentsDragEnd}
+          onGestureStart={handleGestureStart}
+          onGestureEnd={handleGestureEnd}
         />
       </div>
 

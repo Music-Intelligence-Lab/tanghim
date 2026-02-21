@@ -198,6 +198,70 @@ export function useJuceBridge() {
     return callNative<{ path: string; filename: string }>('saveMaqamMidiFile')
   }, [])
 
+  // ── Gesture marking for DAW automation recording ─────────────────────────
+
+  /** Begin slider gesture (call on mousedown for proper DAW automation). */
+  const beginSliderGesture = useCallback(async (chromaticIndex: number): Promise<void> => {
+    await callNative('beginSliderGesture', chromaticIndex)
+  }, [])
+
+  /** End slider gesture (call on mouseup for proper DAW automation). */
+  const endSliderGesture = useCallback(async (chromaticIndex: number): Promise<void> => {
+    await callNative('endSliderGesture', chromaticIndex)
+  }, [])
+
+  /** Begin preset gesture (call before preset selection). */
+  const beginPresetGesture = useCallback(async (): Promise<void> => {
+    await callNative('beginPresetGesture')
+  }, [])
+
+  /** End preset gesture (call after preset selection). */
+  const endPresetGesture = useCallback(async (): Promise<void> => {
+    await callNative('endPresetGesture')
+  }, [])
+
+  // ── MIDI Learn (per-preset note mapping) ─────────────────────────────────
+
+  /** Start MIDI Learn for a preset. Next MIDI note received will be mapped to this preset. */
+  const startMidiLearn = useCallback(async (presetIndex: number): Promise<number | undefined> => {
+    return callNative<number>('startMidiLearn', presetIndex)
+  }, [])
+
+  /** Cancel MIDI Learn mode. */
+  const cancelMidiLearn = useCallback(async (): Promise<void> => {
+    await callNative('cancelMidiLearn')
+  }, [])
+
+  /** Get preset index currently in MIDI Learn mode (-1 if none). */
+  const getMidiLearnTarget = useCallback(async (): Promise<number | undefined> => {
+    return callNative<number>('getMidiLearnTarget')
+  }, [])
+
+  /** Get the MIDI note mapped to a preset (-1 if unmapped). */
+  const getMidiPresetNote = useCallback(async (presetIndex: number): Promise<number | undefined> => {
+    return callNative<number>('getMidiPresetNote', presetIndex)
+  }, [])
+
+  /** Clear the MIDI note mapping for a preset. */
+  const clearMidiPresetNote = useCallback(async (presetIndex: number): Promise<void> => {
+    await callNative('clearMidiPresetNote', presetIndex)
+  }, [])
+
+  /** Clear all MIDI preset note mappings. */
+  const clearAllMidiPresetNotes = useCallback(async (): Promise<void> => {
+    await callNative('clearAllMidiPresetNotes')
+  }, [])
+
+  /** Set MIDI channel for preset triggering. 0 = any channel, 1-16 = specific. */
+  const setMidiPresetChannel = useCallback(async (channel: number): Promise<number | undefined> => {
+    return callNative<number>('setMidiPresetChannel', channel)
+  }, [])
+
+  /** Get current MIDI channel for preset triggering. */
+  const getMidiPresetChannel = useCallback(async (): Promise<number | undefined> => {
+    return callNative<number>('getMidiPresetChannel')
+  }, [])
+
   return useMemo(() => ({
     getTuningSystems,
     selectTuningSystem,
@@ -215,8 +279,23 @@ export function useJuceBridge() {
     setStartMidi,
     getMaqamMidiDragData,
     saveMaqamMidiFile,
+    beginSliderGesture,
+    endSliderGesture,
+    beginPresetGesture,
+    endPresetGesture,
+    startMidiLearn,
+    cancelMidiLearn,
+    getMidiLearnTarget,
+    getMidiPresetNote,
+    clearMidiPresetNote,
+    clearAllMidiPresetNotes,
+    setMidiPresetChannel,
+    getMidiPresetChannel,
   }), [getTuningSystems, selectTuningSystem, setSliderVariant, setNoteVariant,
        setSlotCents, setSlotCentsFinalize,
        applyPreset, assignPreset, clearPreset,
-       getMaqamList, applyMaqam, checkForUpdates, getCurrentState, setStartMidi, getMaqamMidiDragData, saveMaqamMidiFile])
+       getMaqamList, applyMaqam, checkForUpdates, getCurrentState, setStartMidi, getMaqamMidiDragData, saveMaqamMidiFile,
+       beginSliderGesture, endSliderGesture, beginPresetGesture, endPresetGesture,
+       startMidiLearn, cancelMidiLearn, getMidiLearnTarget, getMidiPresetNote, clearMidiPresetNote, clearAllMidiPresetNotes,
+       setMidiPresetChannel, getMidiPresetChannel])
 }

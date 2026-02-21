@@ -393,9 +393,79 @@ m4l/
   Tanghim Receiver.amxd                 Frozen M4L device (for distribution)
 ```
 
-## Planned Features
+## APVTS: MIDI-Mappable & Automatable Sliders + Presets
 
-### MIDI-Mappable & Automatable Sliders + Presets (ON HOLD)
-**Plan file**: `~/.claude/plans/tranquil-giggling-thimble.md`
+The Transmitter plugin has 13 APVTS parameters exposed for DAW automation and MIDI CC mapping:
 
-Adds 13 APVTS parameters to the Transmitter plugin: 12 `AudioParameterFloat` params (`slot_0`–`slot_11`, ±100 cents, snap to nearest variant) + 1 `AudioParameterChoice` (`preset`, "None"/1–12). Enables DAW automation lanes and MIDI CC mapping. Bidirectional sync between WebView UI and APVTS with gesture marking. Per-note overrides remain UI-only. Prerequisite: continuous slider tuning (free pitch bend on slider drag) should be implemented first.
+| Parameter ID | Type | Range | Default | Purpose |
+|---|---|---|---|---|
+| `slot_0`–`slot_11` | `AudioParameterFloat` | -100.0 to +100.0 cents | 0.0 | Cents deviation for each chromatic slot |
+| `preset` | `AudioParameterChoice` | "None", "1"–"16" (17 choices) | 0 (None) | Active preset index |
+
+**Key behaviors:**
+- Bidirectional sync: UI changes update APVTS params (for DAW recording); DAW automation updates tuning state (for playback)
+- Gesture marking: `beginSliderGesture()`/`endSliderGesture()` called from JS on mousedown/mouseup for proper DAW automation recording
+- Feedback loop prevention: Single guard flag (`updatingParamsFromCode`) prevents recursive updates
+- Per-note overrides remain UI-only (not exposed as parameters)
+
+## MIDI Learn: Per-Preset Note Mapping
+
+MIDI Learn allows mapping MIDI notes to presets for instant maqam switching during performance. This is separate from APVTS automation — mappings are persisted to disk, not to DAW session state.
+
+### Dedicated MIDI Input Device
+
+**Why a separate input?** VST3 plugins only receive MIDI through the DAW's routing, which requires:
+- A MIDI track to be selected/armed
+- The plugin to be in the MIDI signal path
+- The DAW to be in a state that passes MIDI (not all do when stopped)
+
+For reliable preset triggering during performance, we open a **direct MIDI input** that bypasses DAW routing entirely.
+
+**Native status bar controls:**
+- **MIDI Input dropdown**: Select from available MIDI devices (or "None" to disable)
+- **Channel dropdown**: Filter by channel (1-16) or "All" for any channel
+
+**Device management (`PluginProcessor`):**
+- `midiPresetInput` (unique_ptr<MidiInput>): Direct MIDI input device
+- `midiPresetDeviceName` (String): Selected device name, persisted to settings
+- Processor inherits from `juce::MidiInputCallback`
+- `handleIncomingMidiMessage()`: Processes Note On from direct input
+- Device/channel saved to `~/Library/Tanghim/settings.json`
+
+### User Interaction
+
+- **Shift+click preset button** → enters MIDI Learn mode (button pulses, badge shows "...")
+- **Play any MIDI note** → maps that note to the preset, exits learn mode
+- **Click MIDI badge** → clears the mapping
+- **Shift+click badge** → re-learn with a different note
+
+### C++ State (`PluginProcessor`)
+- `midiLearnTargetPreset` (atomic int): preset currently learning (-1 = none)
+- `midiPresetNotes[16]` (atomic int array): MIDI note mapped to each preset (-1 = unmapped)
+- `midiPresetChannel` (atomic int): channel filter (0 = any channel, 1-16 = specific)
+- `pendingMidiPreset` (atomic int): preset triggered by MIDI, consumed by editor timer
+
+**Processing flow:**
+1. `processBlock()` checks Note On messages against `midiPresetNotes[]` mappings
+2. On match: sets `pendingMidiPreset` (atomic, lock-free)
+3. Editor timer (30Hz) calls `consumePendingMidiPreset()`
+4. On consume: calls `applyPreset()` + `emitTuningStateChanged()`
+
+**Persistence:**
+- Mappings saved to `~/Library/Tanghim/settings.json` as `midiPresetNotes` array
+- Channel saved as `midiPresetChannel`
+- Loaded on plugin startup via `loadSettingsFromDisk()`
+
+**Bridge functions:**
+- `startMidiLearn(presetIndex)` → begins learning for preset
+- `cancelMidiLearn()` → cancels learning mode
+- `getMidiLearnTarget()` → returns which preset is learning (-1 if none)
+- `getMidiPresetNote(presetIndex)` → returns mapped MIDI note (-1 if unmapped)
+- `clearMidiPresetNote(presetIndex)` → clears mapping for preset
+- `clearAllMidiPresetNotes()` → clears all mappings
+- `setMidiPresetChannel(channel)` / `getMidiPresetChannel()` → channel filter
+
+**Why not APVTS?**
+- MIDI note mappings are user preferences, not musical content to automate
+- Mappings should persist across DAW sessions without needing to save the project
+- Avoids polluting automation lanes with 16+ non-musical parameters

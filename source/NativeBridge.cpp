@@ -193,6 +193,118 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
             complete (saveMaqamMidiFile());
         });
 
+    // ── beginSliderGesture(chromaticIndex) ───────────────────────────────────
+    // Called on mousedown for DAW automation gesture marking.
+    opts = opts.withNativeFunction ("beginSliderGesture",
+        [this] (const juce::Array<juce::var>& args, Completion complete)
+        {
+            if (args.size() >= 1)
+                processor.beginSliderGesture ((int) args[0]);
+            complete (juce::var());
+        });
+
+    // ── endSliderGesture(chromaticIndex) ─────────────────────────────────────
+    // Called on mouseup for DAW automation gesture marking.
+    opts = opts.withNativeFunction ("endSliderGesture",
+        [this] (const juce::Array<juce::var>& args, Completion complete)
+        {
+            if (args.size() >= 1)
+                processor.endSliderGesture ((int) args[0]);
+            complete (juce::var());
+        });
+
+    // ── beginPresetGesture() ─────────────────────────────────────────────────
+    // Called before preset selection for DAW automation gesture marking.
+    opts = opts.withNativeFunction ("beginPresetGesture",
+        [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
+        {
+            processor.beginPresetGesture();
+            complete (juce::var());
+        });
+
+    // ── endPresetGesture() ───────────────────────────────────────────────────
+    // Called after preset selection for DAW automation gesture marking.
+    opts = opts.withNativeFunction ("endPresetGesture",
+        [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
+        {
+            processor.endPresetGesture();
+            complete (juce::var());
+        });
+
+    // ── setMidiPresetBaseNote(baseNote) ──────────────────────────────────────
+    // ── startMidiLearn(presetIndex) ─────────────────────────────────────────
+    // Start MIDI Learn for a preset. Next MIDI note received will be mapped.
+    opts = opts.withNativeFunction ("startMidiLearn",
+        [this] (const juce::Array<juce::var>& args, Completion complete)
+        {
+            const int presetIdx = args.size() > 0 ? (int) args[0] : -1;
+            processor.startMidiLearn (presetIdx);
+            complete (juce::var (presetIdx));
+        });
+
+    // ── cancelMidiLearn() ────────────────────────────────────────────────────
+    // Cancel MIDI Learn mode.
+    opts = opts.withNativeFunction ("cancelMidiLearn",
+        [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
+        {
+            processor.cancelMidiLearn();
+            complete (juce::var());
+        });
+
+    // ── getMidiLearnTarget() ─────────────────────────────────────────────────
+    // Get the preset index currently in MIDI Learn mode (-1 if none).
+    opts = opts.withNativeFunction ("getMidiLearnTarget",
+        [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
+        {
+            complete (juce::var (processor.getMidiLearnTarget()));
+        });
+
+    // ── getMidiPresetNote(presetIndex) ───────────────────────────────────────
+    // Get the MIDI note mapped to a preset (-1 if unmapped).
+    opts = opts.withNativeFunction ("getMidiPresetNote",
+        [this] (const juce::Array<juce::var>& args, Completion complete)
+        {
+            const int presetIdx = args.size() > 0 ? (int) args[0] : -1;
+            complete (juce::var (processor.getMidiPresetNote (presetIdx)));
+        });
+
+    // ── clearMidiPresetNote(presetIndex) ─────────────────────────────────────
+    // Clear the MIDI note mapping for a preset.
+    opts = opts.withNativeFunction ("clearMidiPresetNote",
+        [this] (const juce::Array<juce::var>& args, Completion complete)
+        {
+            const int presetIdx = args.size() > 0 ? (int) args[0] : -1;
+            processor.clearMidiPresetNote (presetIdx);
+            complete (juce::var());
+        });
+
+    // ── clearAllMidiPresetNotes() ────────────────────────────────────────────
+    // Clear all MIDI preset note mappings.
+    opts = opts.withNativeFunction ("clearAllMidiPresetNotes",
+        [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
+        {
+            processor.clearAllMidiPresetNotes();
+            complete (juce::var());
+        });
+
+    // ── setMidiPresetChannel(channel) ────────────────────────────────────────
+    // Set the MIDI channel for preset triggering. 0 = any channel, 1-16 = specific.
+    opts = opts.withNativeFunction ("setMidiPresetChannel",
+        [this] (const juce::Array<juce::var>& args, Completion complete)
+        {
+            const int channel = args.size() > 0 ? (int) args[0] : 0;
+            processor.setMidiPresetChannel (channel);
+            complete (juce::var (channel));
+        });
+
+    // ── getMidiPresetChannel() ───────────────────────────────────────────────
+    // Get the current MIDI channel for preset triggering.
+    opts = opts.withNativeFunction ("getMidiPresetChannel",
+        [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
+        {
+            complete (juce::var (processor.getMidiPresetChannel()));
+        });
+
     return opts;
 }
 
@@ -351,6 +463,14 @@ juce::var NativeBridge::buildTuningStateJson() const
     root->setProperty ("startMidi",              processor.getCurrentStartMidi());
     root->setProperty ("sessionRecallInProgress", processor.getSessionRecallInProgress());
     root->setProperty ("hasRecalledSessionState", processor.getHasRecalledSessionState());
+    root->setProperty ("midiPresetChannel", processor.getMidiPresetChannel());
+    root->setProperty ("midiLearnTarget", processor.getMidiLearnTarget());
+
+    // Per-preset MIDI note mappings (array of 16 ints, -1 = unmapped)
+    juce::Array<juce::var> midiNotesArr;
+    for (int i = 0; i < 16; ++i)
+        midiNotesArr.add (juce::var (processor.getMidiPresetNote (i)));
+    root->setProperty ("midiPresetNotes", midiNotesArr);
 
     juce::Array<juce::var> degArr;
     for (const auto& name : processor.getCurrentDegreeNames())

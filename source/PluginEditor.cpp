@@ -71,11 +71,15 @@ ArabicMaqamTunerEditor::ArabicMaqamTunerEditor (ArabicMaqamTunerProcessor& p)
         );
     };
 
+    // Setup MIDI preset trigger controls
+    setupMidiPresetControls();
+
     // Set processor change callbacks
     processor.onTuningStateChanged   = [this] { emitTuningStateChanged(); };
     processor.onTuningSystemsLoaded  = [this] { emitTuningSystemsLoaded(); };
     processor.onMaqamListLoaded      = [this] { emitMaqamListLoaded(); };
     processor.onStatusMessage        = [this] (juce::String msg) { emitStatusMessage (msg); };
+    processor.onSlotCentsChanged     = [this] (int idx, double cents) { emitSlotCentsChanged (idx, cents); };
 
 #if EMBED_UI_BUNDLE
     browser->goToURL (juce::WebBrowserComponent::getResourceProviderRoot());
@@ -91,10 +95,14 @@ ArabicMaqamTunerEditor::ArabicMaqamTunerEditor (ArabicMaqamTunerProcessor& p)
 ArabicMaqamTunerEditor::~ArabicMaqamTunerEditor()
 {
     stopTimer();
+    // Reset LookAndFeel before components are destroyed
+    midiDeviceSelector.setLookAndFeel (nullptr);
+    midiChannelSelector.setLookAndFeel (nullptr);
     processor.onTuningStateChanged  = {};
     processor.onTuningSystemsLoaded = {};
     processor.onMaqamListLoaded     = {};
     processor.onStatusMessage       = {};
+    processor.onSlotCentsChanged    = {};
 }
 
 void ArabicMaqamTunerEditor::paint (juce::Graphics& g)
@@ -116,13 +124,6 @@ void ArabicMaqamTunerEditor::paint (juce::Graphics& g)
     g.drawText (versionText,
                 statusBarBounds.withTrimmedLeft (16).withWidth (200),
                 juce::Justification::centredLeft);
-
-    // Status message (center)
-    if (lastStatusMessage.isNotEmpty())
-    {
-        auto textBounds = statusBarBounds.reduced (120, 0); // Leave space for version and button
-        g.drawText (lastStatusMessage, textBounds, juce::Justification::centred);
-    }
 }
 
 void ArabicMaqamTunerEditor::resized()
@@ -147,6 +148,20 @@ void ArabicMaqamTunerEditor::resized()
     // MIDI drag button (to the left of Updates)
     const int midiBtnWidth = 42;
     midiDragButton.setBounds (rightEdge - midiBtnWidth, yPos, midiBtnWidth, btnHeight);
+    rightEdge -= midiBtnWidth + 12;
+
+    // MIDI preset configuration (to the left of MIDI button)
+    // "Preset MIDI: [device v] [ch v]"
+    const int chSelectorWidth = 50;
+    midiChannelSelector.setBounds (rightEdge - chSelectorWidth, yPos, chSelectorWidth, btnHeight);
+    rightEdge -= chSelectorWidth + 4;
+
+    const int deviceSelectorWidth = 120;
+    midiDeviceSelector.setBounds (rightEdge - deviceSelectorWidth, yPos, deviceSelectorWidth, btnHeight);
+    rightEdge -= deviceSelectorWidth + 4;
+
+    const int prefixWidth = 70;
+    midiPresetLabel.setBounds (rightEdge - prefixWidth, yPos, prefixWidth, btnHeight);
 }
 
 // ── MIDI activity + MTS-ESP status polling ───────────────────────────────────
@@ -154,6 +169,16 @@ void ArabicMaqamTunerEditor::resized()
 void ArabicMaqamTunerEditor::timerCallback()
 {
     if (! browser) return;
+
+    // ── MIDI-triggered preset (~30Hz check) ───────────────────────────────
+    {
+        const int presetIdx = processor.consumePendingMidiPreset();
+        if (presetIdx >= 0 && presetIdx < 16)
+        {
+            processor.applyPreset (presetIdx);
+            emitTuningStateChanged();
+        }
+    }
 
     // ── MIDI activity (~30Hz) ─────────────────────────────────────────────
     {
@@ -252,9 +277,17 @@ void ArabicMaqamTunerEditor::emitMaqamListLoaded()
 
 void ArabicMaqamTunerEditor::emitStatusMessage (const juce::String& msg)
 {
-    lastStatusMessage = msg;
-    repaint(); // Refresh native status bar
+    // Forward to React (for any future use)
     if (browser) browser->emitEventIfBrowserIsVisible ("statusMessage", juce::var (msg));
+}
+
+void ArabicMaqamTunerEditor::emitSlotCentsChanged (int chromaticIndex, double centsOffset)
+{
+    if (! browser) return;
+    auto* obj = new juce::DynamicObject();
+    obj->setProperty ("index", chromaticIndex);
+    obj->setProperty ("cents", centsOffset);
+    browser->emitEventIfBrowserIsVisible ("slotCentsChanged", juce::var (obj));
 }
 
 // ── Resource provider (release builds) ───────────────────────────────────────
@@ -404,4 +437,97 @@ void MidiDragButton::prepareMidiFile()
          << " | size=" << midiData.size()
          << " | write=" << (writeSuccess ? "OK" : "FAILED")
          << " | exists=" << (tempMidiFile.existsAsFile() ? "YES" : "NO"));
+}
+
+// ── MIDI preset trigger control setup ──────────────────────────────────────
+
+void ArabicMaqamTunerEditor::setupMidiPresetControls()
+{
+    // Consistent dark theme colors
+    const auto bgColor      = juce::Colour (0xff1a1a2e);  // --surface
+    const auto borderColor  = juce::Colour (0xff2d2d4a);  // --border
+    const auto textColor    = juce::Colour (0xffe8b339);  // --accent
+    const auto mutedColor   = juce::Colour (0xff808099);  // --text-muted
+
+    // Static prefix label
+    addAndMakeVisible (midiPresetLabel);
+    midiPresetLabel.setColour (juce::Label::textColourId, mutedColor);
+    midiPresetLabel.setFont (juce::FontOptions (11.0f));
+
+    // MIDI device selector dropdown
+    addAndMakeVisible (midiDeviceSelector);
+    midiDeviceSelector.setLookAndFeel (&statusBarLnF);
+    midiDeviceSelector.setColour (juce::ComboBox::backgroundColourId, bgColor);
+    midiDeviceSelector.setColour (juce::ComboBox::textColourId, textColor);
+    midiDeviceSelector.setColour (juce::ComboBox::outlineColourId, borderColor);
+    midiDeviceSelector.setColour (juce::ComboBox::arrowColourId, textColor);
+    midiDeviceSelector.onChange = [this] { onMidiDeviceChanged(); };
+    populateMidiDeviceList();
+
+    // MIDI channel selector dropdown
+    addAndMakeVisible (midiChannelSelector);
+    midiChannelSelector.setLookAndFeel (&statusBarLnF);
+    midiChannelSelector.setColour (juce::ComboBox::backgroundColourId, bgColor);
+    midiChannelSelector.setColour (juce::ComboBox::textColourId, textColor);
+    midiChannelSelector.setColour (juce::ComboBox::outlineColourId, borderColor);
+    midiChannelSelector.setColour (juce::ComboBox::arrowColourId, textColor);
+    midiChannelSelector.onChange = [this] { onMidiChannelChanged(); };
+    populateMidiChannelList();
+}
+
+void ArabicMaqamTunerEditor::populateMidiChannelList()
+{
+    midiChannelSelector.clear();
+    midiChannelSelector.addItem ("All", 1);  // ID 1 = channel 0 (any)
+    for (int ch = 1; ch <= 16; ++ch)
+        midiChannelSelector.addItem (juce::String (ch), ch + 1);  // ID 2-17 = channels 1-16
+
+    // Select current channel
+    const int channel = processor.getMidiPresetChannel();
+    midiChannelSelector.setSelectedId (channel + 1);  // channel 0 → ID 1, channel 1 → ID 2, etc.
+}
+
+void ArabicMaqamTunerEditor::onMidiChannelChanged()
+{
+    const int selectedId = midiChannelSelector.getSelectedId();
+    const int channel = selectedId - 1;  // ID 1 → 0 (All), ID 2 → 1, etc.
+    processor.setMidiPresetChannel (channel);
+}
+
+void ArabicMaqamTunerEditor::populateMidiDeviceList()
+{
+    midiDeviceSelector.clear();
+    const auto devices = processor.getAvailableMidiDevices();
+    for (int i = 0; i < devices.size(); ++i)
+        midiDeviceSelector.addItem (devices[i], i + 1);
+
+    // Select current device or "None"
+    const auto currentDevice = processor.getMidiPresetDevice();
+    if (currentDevice.isEmpty())
+    {
+        midiDeviceSelector.setSelectedId (1);  // "None"
+    }
+    else
+    {
+        const int idx = devices.indexOf (currentDevice);
+        if (idx >= 0)
+            midiDeviceSelector.setSelectedId (idx + 1);
+        else
+            midiDeviceSelector.setSelectedId (1);  // "None" if device not found
+    }
+}
+
+void ArabicMaqamTunerEditor::onMidiDeviceChanged()
+{
+    const int selected = midiDeviceSelector.getSelectedId();
+    if (selected <= 1)
+    {
+        processor.setMidiPresetDevice ("");  // None / disabled
+    }
+    else
+    {
+        const auto devices = processor.getAvailableMidiDevices();
+        if (selected - 1 < devices.size())
+            processor.setMidiPresetDevice (devices[selected - 1]);
+    }
 }

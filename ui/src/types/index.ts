@@ -91,6 +91,12 @@ export interface TuningState {
   sessionRecallInProgress: boolean;
   /** True once session state has been fully restored from DAW data. */
   hasRecalledSessionState: boolean;
+  /** MIDI channel for preset triggering. 0 = any channel, 1-16 = specific. */
+  midiPresetChannel?: number;
+  /** Preset index currently in MIDI Learn mode (-1 if none). */
+  midiLearnTarget?: number;
+  /** Per-preset MIDI note mappings. Array of 16 ints, -1 = unmapped. */
+  midiPresetNotes?: number[];
 }
 
 export interface StartingNote {

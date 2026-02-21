@@ -6,12 +6,58 @@
 #include <map>
 #include <set>
 
+// ── APVTS parameter layout ────────────────────────────────────────────────────
+
+juce::AudioProcessorValueTreeState::ParameterLayout ArabicMaqamTunerProcessor::createParameterLayout()
+{
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
+
+    // 12 slot params: slot_0 through slot_11 (±150 cents range to match UI)
+    for (int i = 0; i < kNumSlotParams; ++i)
+    {
+        auto id = juce::ParameterID ("slot_" + juce::String (i), 1);
+        params.push_back (std::make_unique<juce::AudioParameterFloat> (
+            id, "Slot " + juce::String (i),
+            juce::NormalisableRange<float> (-150.0f, 150.0f, 0.01f),
+            0.0f));
+    }
+
+    // Preset param: "None" + presets 1-16
+    juce::StringArray presetChoices;
+    presetChoices.add ("None");
+    for (int i = 1; i <= 16; ++i)
+        presetChoices.add (juce::String (i));
+
+    params.push_back (std::make_unique<juce::AudioParameterChoice> (
+        juce::ParameterID ("preset", 1), "Preset",
+        presetChoices, 0));
+
+    return { params.begin(), params.end() };
+}
+
 ArabicMaqamTunerProcessor::ArabicMaqamTunerProcessor()
     : AudioProcessor (BusesProperties()
                           .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
+      apvts (*this, nullptr, "Parameters", createParameterLayout()),
       updateChecker (apiClient, dataCache, std::weak_ptr<std::atomic<bool>> (alive))
 {
+    // Cache parameter pointers for quick access
+    for (int i = 0; i < kNumSlotParams; ++i)
+        slotParams[i] = dynamic_cast<juce::AudioParameterFloat*> (
+            apvts.getParameter ("slot_" + juce::String (i)));
+
+    presetParam = dynamic_cast<juce::AudioParameterChoice*> (
+        apvts.getParameter ("preset"));
+
+    // Initialize MIDI preset note mappings to -1 (unmapped)
+    for (int i = 0; i < 16; ++i)
+        midiPresetNotes[i].store (-1, std::memory_order_relaxed);
+
+    // Register as listener for all params
+    for (int i = 0; i < kNumSlotParams; ++i)
+        apvts.addParameterListener ("slot_" + juce::String (i), this);
+    apvts.addParameterListener ("preset", this);
     dataCache.loadFromDisk();
     loadPresetsFromDisk();
     loadSettingsFromDisk();
@@ -41,6 +87,18 @@ ArabicMaqamTunerProcessor::ArabicMaqamTunerProcessor()
 
 ArabicMaqamTunerProcessor::~ArabicMaqamTunerProcessor()
 {
+    // Stop direct MIDI input if active
+    if (midiPresetInput)
+    {
+        midiPresetInput->stop();
+        midiPresetInput.reset();
+    }
+
+    // Remove APVTS listeners
+    for (int i = 0; i < kNumSlotParams; ++i)
+        apvts.removeParameterListener ("slot_" + juce::String (i), this);
+    apvts.removeParameterListener ("preset", this);
+
     alive->store (false, std::memory_order_release);
     apiClient.cancelPending();
 }
@@ -56,6 +114,7 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<float>& audio,
     audio.clear();
 
     // Track Note On / Note Off activity for UI feedback (lock-free, per-note)
+    // Preset triggering is handled via direct MIDI device input (handleIncomingMidiMessage)
     for (const auto metadata : midi)
     {
         const auto msg  = metadata.getMessage();
@@ -183,6 +242,23 @@ void ArabicMaqamTunerProcessor::getStateInformation (juce::MemoryBlock& dest)
     }
     state.setProperty ("degreeNames", degStr, nullptr);
 
+    // MIDI preset note mappings, channel, and device
+    juce::String midiNotesStr;
+    for (int i = 0; i < 16; ++i)
+    {
+        if (i > 0) midiNotesStr += ",";
+        midiNotesStr += juce::String (midiPresetNotes[(size_t) i].load());
+    }
+    state.setProperty ("midiPresetNotes", midiNotesStr, nullptr);
+    state.setProperty ("midiPresetChannel", midiPresetChannel.load(), nullptr);
+    state.setProperty ("midiPresetDevice", midiPresetDeviceName, nullptr);
+
+    // Tonic chromatic index for tonic-relative slot mapping
+    state.setProperty ("tonicChromatic", currentTonicChromatic, nullptr);
+
+    // Include APVTS state as a child
+    state.addChild (apvts.copyState(), -1, nullptr);
+
     std::unique_ptr<juce::XmlElement> xml (state.createXml());
     copyXmlToBinary (*xml, dest);
 }
@@ -261,6 +337,34 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
     const juce::String sysId    = state.getProperty ("tuningSystemId").toString();
     const juce::String startNote = state.getProperty ("startingNote").toString();
 
+    // Restore APVTS state if present
+    auto apvtsChild = state.getChildWithName (apvts.state.getType());
+    if (apvtsChild.isValid())
+        apvts.replaceState (apvtsChild);
+
+    // Restore MIDI preset note mappings, channel, and device
+    auto midiNotesProp = state.getProperty ("midiPresetNotes", juce::var());
+    if (! midiNotesProp.isVoid())
+    {
+        juce::StringArray notes;
+        notes.addTokens (midiNotesProp.toString(), ",", "");
+        for (int i = 0; i < juce::jmin (16, notes.size()); ++i)
+            midiPresetNotes[(size_t) i].store (notes[i].getIntValue(), std::memory_order_relaxed);
+    }
+
+    auto midiChanProp = state.getProperty ("midiPresetChannel", juce::var());
+    if (! midiChanProp.isVoid())
+        midiPresetChannel.store ((int) midiChanProp, std::memory_order_relaxed);
+
+    auto midiDeviceProp = state.getProperty ("midiPresetDevice", juce::var());
+    if (! midiDeviceProp.isVoid())
+        setMidiPresetDevice (midiDeviceProp.toString());
+
+    // Restore tonic chromatic index
+    auto tonicChromProp = state.getProperty ("tonicChromatic", juce::var());
+    if (! tonicChromProp.isVoid())
+        currentTonicChromatic = juce::jlimit (0, 11, (int) tonicChromProp);
+
     auto slidersNode = state.getChildWithName ("SliderPositions");
     std::array<int, 12> savedPositions;
     std::array<double, 12> savedCentsOffsets;
@@ -323,6 +427,10 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
 
             hasRecalledSessionState  = true;
             sessionRecallInProgress  = false;
+
+            // Sync APVTS params after session recall
+            syncAllSlotParamsFromState();
+            syncPresetParamFromState();
 
             tuningEngine.updateTuning (activeTuningState, buildScaleName());
             notifyTuningChanged();
@@ -416,6 +524,10 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
                 sl.centsOffset = v->midiCentsDeviation;
         }
 
+        // Sync APVTS params after tuning system load
+        syncAllSlotParamsFromState();
+        syncPresetParamFromState();
+
         tuningEngine.updateTuning (activeTuningState, buildScaleName());
         if (onStatusMessage) onStatusMessage (buildScaleName());
         notifyTuningChanged();
@@ -498,6 +610,10 @@ void ArabicMaqamTunerProcessor::setSliderVariant (int chromaticIndex, int varian
     currentActivePresetIdx  = -1;
     currentDegreeNames.clear();
 
+    // Sync APVTS params
+    syncSlotParamFromState (chromaticIndex);
+    syncPresetParamFromState();
+
     tuningEngine.updateTuning (activeTuningState, buildScaleName());
     notifyTuningChanged();
 }
@@ -524,6 +640,9 @@ void ArabicMaqamTunerProcessor::setSlotCents (int chromaticIndex, double centsVa
     currentActivePresetIdx  = -1;
     currentDegreeNames.clear();
 
+    // Sync APVTS param for DAW automation recording
+    syncSlotParamFromState (chromaticIndex);
+
     // Update MTS-ESP immediately (live pitch change) — no WebView push
     tuningEngine.updateTuning (activeTuningState, buildScaleName());
 }
@@ -547,6 +666,9 @@ void ArabicMaqamTunerProcessor::setNoteVariant (int midiNote, int variantIndex)
     currentTranspositionIdx = -1;
     currentActivePresetIdx  = -1;
     currentDegreeNames.clear();
+
+    // Sync preset param only (per-note overrides don't affect slot params)
+    syncPresetParamFromState();
 
     tuningEngine.updateTuning (activeTuningState, buildScaleName());
     notifyTuningChanged();
@@ -573,6 +695,20 @@ void ArabicMaqamTunerProcessor::applyPreset (int idx)
     currentDegreeNames      = preset.degreeNames;
     currentTranspositionIdx = preset.isTransposed ? preset.pitchClassSetIndex : -1;
 
+    // Set tonic chromatic index from first degree name (for tonic-relative slot mapping)
+    if (! preset.degreeNames.empty() && dataCache.hasData (currentSystemId, currentStartingNote))
+    {
+        const auto& data = dataCache.getData (currentSystemId, currentStartingNote);
+        for (const auto& pc : data.pitchClasses)
+        {
+            if (pc.noteName == preset.degreeNames[0])
+            {
+                currentTonicChromatic = chromaticIndexForIpnRef (pc.ipnReference);
+                break;
+            }
+        }
+    }
+
     // Update display strings from preset
     currentMaqamDisplay = preset.maqamDisplayName;
     currentTonicDisplay.clear();
@@ -592,6 +728,10 @@ void ArabicMaqamTunerProcessor::applyPreset (int idx)
             }
         }
     }
+
+    // Sync APVTS params
+    syncAllSlotParamsFromState();
+    syncPresetParamFromState();
 
     tuningEngine.updateTuning (activeTuningState, buildScaleName());
     notifyTuningChanged();
@@ -661,24 +801,26 @@ void ArabicMaqamTunerProcessor::applyMaqam (const juce::String& maqamId, int tra
     {
         currentTonicDisplay = found->tonicDisplay;
         tonicId = found->tonicId;
-        applyMaqamDegrees (found->degrees);
 
-        // Store degree names from base degrees
+        // Store degree names BEFORE applyMaqamDegrees, since it calls notifyTuningChanged()
         currentDegreeNames.clear();
         for (const auto& name : found->degrees.ascending)
             currentDegreeNames.push_back (name);
+
+        applyMaqamDegrees (found->degrees);
     }
     else
     {
         const auto& t = found->transpositions[(size_t) transpositionIndex];
         currentTonicDisplay = t.tonicDisplay;
         tonicId = t.tonicId;
-        applyMaqamDegrees (t.degrees);
 
-        // Store degree names from transposition degrees
+        // Store degree names BEFORE applyMaqamDegrees, since it calls notifyTuningChanged()
         currentDegreeNames.clear();
         for (const auto& name : t.degrees.ascending)
             currentDegreeNames.push_back (name);
+
+        applyMaqamDegrees (t.degrees);
     }
 
     // Look up tonic's IPN and solfège from pitch class data
@@ -831,6 +973,14 @@ void ArabicMaqamTunerProcessor::applyMaqamDegrees (const MaqamDegrees& degrees)
             sl.centsOffset = v->midiCentsDeviation;
     }
 
+    // Set tonic chromatic index from first ascending degree (for tonic-relative slot mapping)
+    if (! degrees.ascending.empty())
+    {
+        auto tonicIt = nameToInfo.find (degrees.ascending[0]);
+        if (tonicIt != nameToInfo.end())
+            currentTonicChromatic = tonicIt->second.chromaticIdx;
+    }
+
     // Apply ascending degrees: for each PAO name in the scale,
     // find the matching slider variant by chromatic index and cents deviation.
     // Register-specific names (e.g. "kirdan" at C5) share the same midiCentsDeviation
@@ -860,6 +1010,10 @@ void ArabicMaqamTunerProcessor::applyMaqamDegrees (const MaqamDegrees& degrees)
         if (const auto* v = slot.selectedVariant())
             slot.centsOffset = v->midiCentsDeviation;
     }
+
+    // Sync APVTS params
+    syncAllSlotParamsFromState();
+    syncPresetParamFromState();
 
     tuningEngine.updateTuning (activeTuningState, buildScaleName());
     notifyTuningChanged();
@@ -922,11 +1076,374 @@ juce::String ArabicMaqamTunerProcessor::buildScaleName() const
     return line1 + "\n" + line2;
 }
 
+// ── APVTS listener ────────────────────────────────────────────────────────────
+
+void ArabicMaqamTunerProcessor::parameterChanged (const juce::String& parameterID, float newValue)
+{
+    // Skip if we're programmatically updating params to avoid feedback loops
+    if (updatingParamsFromCode)
+        return;
+
+    // Handle slot parameters (slot_0 through slot_11)
+    // Mapping is tonic-relative: slot_0 = tonic, slot_1 = tonic+1, etc.
+    if (parameterID.startsWith ("slot_"))
+    {
+        const int slotIdx = parameterID.substring (5).getIntValue();
+        if (slotIdx < 0 || slotIdx >= 12)
+            return;
+
+        // Map from tonic-relative slot index to absolute chromatic index
+        const int chromaticIdx = slotToChromatic (slotIdx);
+
+        // newValue is cents deviation — find nearest variant and update centsOffset
+        auto& slot = activeTuningState.slots[(size_t) chromaticIdx];
+        const double centsValue = juce::jlimit (-150.0, 150.0, (double) newValue);
+
+        // Find nearest variant
+        int bestIdx = 0;
+        double bestDist = std::numeric_limits<double>::max();
+        for (int v = 0; v < slot.variantCount(); ++v)
+        {
+            const double dist = std::abs (slot.variants[(size_t) v].midiCentsDeviation - centsValue);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                bestIdx = v;
+            }
+        }
+        slot.selectedIndex = bestIdx;
+        slot.centsOffset = centsValue;
+
+        // Clear per-note overrides for this chromatic position
+        for (int midi = chromaticIdx; midi < 128; midi += 12)
+            activeTuningState.perNoteVariantOverrides[(size_t) midi] = -1;
+
+        // NOTE: We intentionally do NOT clear maqam state here.
+        // DAW automation should update tuning without breaking maqam association.
+        // The explicit methods (setSliderVariant, setSlotCents) handle maqam clearing
+        // for direct user interactions. Also, parameterChanged can be called
+        // asynchronously from syncAllSlotParamsFromState, after updatingParamsFromCode
+        // is reset, which would incorrectly clear maqam state.
+
+        tuningEngine.updateTuning (activeTuningState, buildScaleName());
+
+        // Debug: track automation rate
+        static int slotChangeCount = 0;
+        static juce::int64 lastLogTime = 0;
+        ++slotChangeCount;
+        const auto now = juce::Time::currentTimeMillis();
+        if (now - lastLogTime > 1000)
+        {
+            DBG ("Slot automation: " << slotChangeCount << " changes/sec, slot=" << slotIdx
+                 << " chromatic=" << chromaticIdx << " cents=" << centsValue);
+            slotChangeCount = 0;
+            lastLogTime = now;
+        }
+
+        // Use lightweight callback for high-rate automation (avoids full state JSON rebuild)
+        // Note: emit chromatic index (not slot index) for JS to update the correct slot
+        if (onSlotCentsChanged)
+            onSlotCentsChanged (chromaticIdx, centsValue);
+        else
+            notifyTuningChanged();
+    }
+    // Handle preset parameter
+    else if (parameterID == "preset")
+    {
+        // newValue is normalized 0-1, use the parameter's getIndex() for actual choice
+        if (presetParam == nullptr)
+            return;
+
+        const int choiceIdx = presetParam->getIndex(); // 0 = "None", 1-16 = presets 1-16
+        const int presetIdx = choiceIdx - 1;           // -1 = "None", 0-15 = presets 1-16
+
+        if (presetIdx >= 0 && presetIdx < 16)
+        {
+            const auto& preset = presets[(size_t) presetIdx];
+            if (! preset.isAssigned)
+                return;
+
+            // Check if preset requires a different tuning system (modified preset)
+            const bool needsSystemSwitch =
+                preset.tuningSystemId.isNotEmpty() &&
+                (preset.tuningSystemId != currentSystemId ||
+                 preset.startingNote != currentStartingNote);
+
+            if (needsSystemSwitch)
+            {
+                // Queue the preset application for after the tuning system loads
+                const int capturedIdx = presetIdx;
+                loadTuningSystem (preset.tuningSystemId, preset.startingNote,
+                    [this, capturedIdx] ()
+                    {
+                        applyPreset (capturedIdx);
+                    });
+            }
+            else
+            {
+                applyPreset (presetIdx);
+            }
+        }
+        else
+        {
+            // "None" selected — clear active preset but keep current tuning
+            currentActivePresetIdx = -1;
+            notifyTuningChanged();
+        }
+    }
+}
+
+// ── APVTS sync helpers ────────────────────────────────────────────────────────
+
+void ArabicMaqamTunerProcessor::syncSlotParamFromState (int chromaticIndex)
+{
+    if (chromaticIndex < 0 || chromaticIndex >= kNumSlotParams)
+        return;
+
+    // Map chromatic index to tonic-relative slot index
+    const int slotIdx = chromaticToSlot (chromaticIndex);
+    auto* param = slotParams[(size_t) slotIdx];
+    if (param == nullptr)
+        return;
+
+    const auto& slot = activeTuningState.slots[(size_t) chromaticIndex];
+    const float cents = static_cast<float> (juce::jlimit (-150.0, 150.0, slot.centsOffset));
+
+    updatingParamsFromCode = true;
+    param->setValueNotifyingHost (param->convertTo0to1 (cents));
+    updatingParamsFromCode = false;
+}
+
+void ArabicMaqamTunerProcessor::syncAllSlotParamsFromState()
+{
+    updatingParamsFromCode = true;
+    for (int slotIdx = 0; slotIdx < kNumSlotParams; ++slotIdx)
+    {
+        auto* param = slotParams[(size_t) slotIdx];
+        if (param == nullptr)
+            continue;
+
+        // Map tonic-relative slot index to chromatic index
+        const int chromaticIdx = slotToChromatic (slotIdx);
+        const auto& slot = activeTuningState.slots[(size_t) chromaticIdx];
+        const float cents = static_cast<float> (juce::jlimit (-150.0, 150.0, slot.centsOffset));
+        param->setValueNotifyingHost (param->convertTo0to1 (cents));
+    }
+    updatingParamsFromCode = false;
+}
+
+void ArabicMaqamTunerProcessor::syncPresetParamFromState()
+{
+    if (presetParam == nullptr)
+        return;
+
+    // currentActivePresetIdx is -1 for "None", 0-15 for presets 1-16
+    // APVTS choice index: 0 = "None", 1-16 = presets 1-16
+    const int choiceIdx = currentActivePresetIdx + 1;
+
+    updatingParamsFromCode = true;
+    presetParam->setValueNotifyingHost (
+        presetParam->convertTo0to1 (static_cast<float> (juce::jlimit (0, 16, choiceIdx))));
+    updatingParamsFromCode = false;
+}
+
+// ── Gesture marking ───────────────────────────────────────────────────────────
+
+void ArabicMaqamTunerProcessor::beginSliderGesture (int chromaticIndex)
+{
+    if (chromaticIndex < 0 || chromaticIndex >= kNumSlotParams)
+        return;
+
+    // Map chromatic index to tonic-relative slot index
+    const int slotIdx = chromaticToSlot (chromaticIndex);
+    auto* param = slotParams[(size_t) slotIdx];
+    if (param != nullptr)
+        param->beginChangeGesture();
+}
+
+void ArabicMaqamTunerProcessor::endSliderGesture (int chromaticIndex)
+{
+    if (chromaticIndex < 0 || chromaticIndex >= kNumSlotParams)
+        return;
+
+    // Map chromatic index to tonic-relative slot index
+    const int slotIdx = chromaticToSlot (chromaticIndex);
+    auto* param = slotParams[(size_t) slotIdx];
+    if (param != nullptr)
+        param->endChangeGesture();
+}
+
+void ArabicMaqamTunerProcessor::beginPresetGesture()
+{
+    if (presetParam != nullptr)
+        presetParam->beginChangeGesture();
+}
+
+void ArabicMaqamTunerProcessor::endPresetGesture()
+{
+    if (presetParam != nullptr)
+        presetParam->endChangeGesture();
+}
+
 // ── Maqam/scroll state ───────────────────────────────────────────────────────
 
 void ArabicMaqamTunerProcessor::setStartMidi (double startMidi)
 {
     currentStartMidi = startMidi;
+}
+
+void ArabicMaqamTunerProcessor::setMidiPresetNote (int presetIdx, int midiNote)
+{
+    if (presetIdx >= 0 && presetIdx < 16)
+    {
+        midiPresetNotes[(size_t) presetIdx].store (juce::jlimit (-1, 127, midiNote), std::memory_order_relaxed);
+        saveSettingsToDisk();
+    }
+}
+
+int ArabicMaqamTunerProcessor::getMidiPresetNote (int presetIdx) const
+{
+    if (presetIdx >= 0 && presetIdx < 16)
+        return midiPresetNotes[(size_t) presetIdx].load (std::memory_order_relaxed);
+    return -1;
+}
+
+void ArabicMaqamTunerProcessor::setMidiPresetChannel (int channel)
+{
+    // 0 = any channel, 1-16 = specific channel
+    midiPresetChannel.store (juce::jlimit (0, 16, channel), std::memory_order_relaxed);
+    saveSettingsToDisk();
+}
+
+int ArabicMaqamTunerProcessor::consumePendingMidiPreset()
+{
+    return pendingMidiPreset.exchange (-1, std::memory_order_relaxed);
+}
+
+void ArabicMaqamTunerProcessor::startMidiLearn (int presetIdx)
+{
+    if (presetIdx >= 0 && presetIdx < 16)
+    {
+        midiLearnTargetPreset.store (presetIdx, std::memory_order_relaxed);
+        notifyTuningChanged();  // Update UI to show learning animation immediately
+    }
+}
+
+void ArabicMaqamTunerProcessor::cancelMidiLearn()
+{
+    midiLearnTargetPreset.store (-1, std::memory_order_relaxed);
+    notifyTuningChanged();  // Update UI to hide learning animation
+}
+
+void ArabicMaqamTunerProcessor::clearMidiPresetNote (int presetIdx)
+{
+    if (presetIdx >= 0 && presetIdx < 16)
+    {
+        midiPresetNotes[(size_t) presetIdx].store (-1, std::memory_order_relaxed);
+        saveSettingsToDisk();
+        notifyTuningChanged();  // Update UI to remove MIDI badge immediately
+    }
+}
+
+void ArabicMaqamTunerProcessor::clearAllMidiPresetNotes()
+{
+    for (int i = 0; i < 16; ++i)
+        midiPresetNotes[(size_t) i].store (-1, std::memory_order_relaxed);
+    saveSettingsToDisk();
+}
+
+// ── Direct MIDI device input ─────────────────────────────────────────────────
+
+juce::StringArray ArabicMaqamTunerProcessor::getAvailableMidiDevices() const
+{
+    juce::StringArray devices;
+    devices.add ("None");  // First option to disable
+    for (const auto& info : juce::MidiInput::getAvailableDevices())
+        devices.add (info.name);
+    return devices;
+}
+
+juce::String ArabicMaqamTunerProcessor::getMidiPresetDevice() const
+{
+    return midiPresetDeviceName;
+}
+
+void ArabicMaqamTunerProcessor::setMidiPresetDevice (const juce::String& deviceName)
+{
+    // Close existing input if any
+    if (midiPresetInput)
+    {
+        midiPresetInput->stop();
+        midiPresetInput.reset();
+    }
+
+    midiPresetDeviceName = deviceName;
+
+    if (deviceName.isEmpty() || deviceName == "None")
+        return;
+
+    // Find and open the device
+    for (const auto& info : juce::MidiInput::getAvailableDevices())
+    {
+        if (info.name == deviceName)
+        {
+            midiPresetInput = juce::MidiInput::openDevice (info.identifier, this);
+            if (midiPresetInput)
+            {
+                midiPresetInput->start();
+                DBG ("Opened MIDI device for preset triggering: " + deviceName);
+            }
+            else
+            {
+                DBG ("Failed to open MIDI device: " + deviceName);
+            }
+            break;
+        }
+    }
+}
+
+void ArabicMaqamTunerProcessor::handleIncomingMidiMessage (juce::MidiInput* /*source*/,
+                                                            const juce::MidiMessage& message)
+{
+    if (! message.isNoteOn())
+        return;
+
+    const int channel  = midiPresetChannel.load (std::memory_order_relaxed);
+    const int note     = message.getNoteNumber();
+    const int midiCh   = message.getChannel();  // 1-16
+
+    // Check channel filter first
+    if (channel != 0 && midiCh != channel)
+        return;
+
+    // Check if we're in MIDI learn mode
+    const int learnTarget = midiLearnTargetPreset.load (std::memory_order_relaxed);
+    if (learnTarget >= 0 && learnTarget < 16)
+    {
+        // Assign this note to the target preset
+        midiPresetNotes[(size_t) learnTarget].store (note, std::memory_order_relaxed);
+        midiLearnTargetPreset.store (-1, std::memory_order_relaxed);  // Exit learn mode
+
+        // Notify UI and save settings (we're on MIDI thread, so use callAsync)
+        std::weak_ptr<std::atomic<bool>> weak (alive);
+        juce::MessageManager::callAsync ([this, weak]
+        {
+            if (! isAlive (weak)) return;
+            saveSettingsToDisk();
+            if (onTuningStateChanged) onTuningStateChanged();
+        });
+        return;
+    }
+
+    // Check if this note is mapped to any preset
+    for (int i = 0; i < 16; ++i)
+    {
+        if (midiPresetNotes[(size_t) i].load (std::memory_order_relaxed) == note)
+        {
+            pendingMidiPreset.store (i, std::memory_order_relaxed);
+            return;
+        }
+    }
 }
 
 // ── Disk persistence ─────────────────────────────────────────────────────────
@@ -942,6 +1459,14 @@ void ArabicMaqamTunerProcessor::saveSettingsToDisk() const
     auto* obj = new juce::DynamicObject();
     obj->setProperty ("tuningSystemId", currentSystemId);
     obj->setProperty ("startingNote",   currentStartingNote);
+
+    // Save MIDI preset mappings
+    juce::Array<juce::var> midiNotesArr;
+    for (int i = 0; i < 16; ++i)
+        midiNotesArr.add (juce::var (midiPresetNotes[(size_t) i].load (std::memory_order_relaxed)));
+    obj->setProperty ("midiPresetNotes", midiNotesArr);
+    obj->setProperty ("midiPresetChannel", midiPresetChannel.load (std::memory_order_relaxed));
+    obj->setProperty ("midiPresetDevice", midiPresetDeviceName);
 
     const auto dir = getTanghimDir();
     dir.createDirectory();
@@ -965,6 +1490,26 @@ void ArabicMaqamTunerProcessor::loadSettingsFromDisk()
             currentSystemId     = sysId;
             currentStartingNote = note;
             DBG ("loadSettingsFromDisk: system=" + sysId + " note=" + note);
+        }
+
+        // Load MIDI preset mappings
+        auto midiNotesProp = obj->getProperty ("midiPresetNotes");
+        if (midiNotesProp.isArray())
+        {
+            auto* arr = midiNotesProp.getArray();
+            for (int i = 0; i < juce::jmin (16, arr->size()); ++i)
+                midiPresetNotes[(size_t) i].store (static_cast<int> ((*arr)[i]), std::memory_order_relaxed);
+        }
+
+        auto channelProp = obj->getProperty ("midiPresetChannel");
+        if (! channelProp.isVoid())
+            midiPresetChannel.store (static_cast<int> (channelProp), std::memory_order_relaxed);
+
+        auto deviceProp = obj->getProperty ("midiPresetDevice");
+        if (! deviceProp.isVoid())
+        {
+            midiPresetDeviceName = deviceProp.toString();
+            setMidiPresetDevice (midiPresetDeviceName);  // Actually open the device
         }
     }
 }

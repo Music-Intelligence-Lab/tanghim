@@ -19,9 +19,11 @@ interface Props {
   onVariantSelect: (chromaticIndex: number, variantIndex: number) => void
   onCentsDrag: (chromaticIndex: number, centsValue: number) => void
   onCentsDragEnd: (chromaticIndex: number, centsValue: number) => void
+  onGestureStart?: (chromaticIndex: number) => void
+  onGestureEnd?: (chromaticIndex: number) => void
 }
 
-const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidthPx, noteNames, perNoteOverrides, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, modifiedSlots, onVariantSelect, onCentsDrag, onCentsDragEnd }: Props) {
+const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidthPx, noteNames, perNoteOverrides, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, modifiedSlots, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
   const renderStart = Math.floor(startMidi)
   const pixelOffset = (startMidi - renderStart) * SLOT_WIDTH_PX
 
@@ -72,6 +74,8 @@ const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidt
               onVariantSelect={onVariantSelect}
               onCentsDrag={onCentsDrag}
               onCentsDragEnd={onCentsDragEnd}
+              onGestureStart={onGestureStart}
+              onGestureEnd={onGestureEnd}
             />
           )
         })}

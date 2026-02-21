@@ -19,9 +19,11 @@ interface Props {
   onVariantSelect: (chromaticIndex: number, variantIndex: number) => void
   onCentsDrag: (chromaticIndex: number, centsValue: number) => void
   onCentsDragEnd: (chromaticIndex: number, centsValue: number) => void
+  onGestureStart?: (chromaticIndex: number) => void
+  onGestureEnd?: (chromaticIndex: number) => void
 }
 
-const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, isModified, ipnLabel, solfege, paoName, onVariantSelect, onCentsDrag, onCentsDragEnd }: Props) {
+const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, isModified, ipnLabel, solfege, paoName, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
   const trackRef = useRef<HTMLDivElement>(null)
   const thumbRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
@@ -66,6 +68,9 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
     dragging.current = true
     thumbRef.current?.classList.add('dragging')
 
+    // Begin DAW automation gesture
+    onGestureStart?.(chromaticIndex)
+
     const cents = yToCents(e.clientY)
     onCentsDrag(chromaticIndex, cents)
 
@@ -79,6 +84,8 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
       thumbRef.current?.classList.remove('dragging')
       const c = yToCents(ev.clientY)
       onCentsDragEnd(chromaticIndex, c)
+      // End DAW automation gesture
+      onGestureEnd?.(chromaticIndex)
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
