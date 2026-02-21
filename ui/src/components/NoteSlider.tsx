@@ -13,13 +13,14 @@ interface Props {
   isMaqamTonic: boolean
   isMaqamTonicEquiv: boolean
   ipnLabel: string       // e.g. "C3", "A4"
+  solfege: string        // e.g. "Mi -b3", "Do 2"
   paoName: string        // e.g. "rāst", "—"
   onVariantSelect: (chromaticIndex: number, variantIndex: number) => void
   onCentsDrag: (chromaticIndex: number, centsValue: number) => void
   onCentsDragEnd: (chromaticIndex: number, centsValue: number) => void
 }
 
-const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, ipnLabel, paoName, onVariantSelect, onCentsDrag, onCentsDragEnd }: Props) {
+const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, ipnLabel, solfege, paoName, onVariantSelect, onCentsDrag, onCentsDragEnd }: Props) {
   const trackRef = useRef<HTMLDivElement>(null)
   const thumbRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
@@ -89,20 +90,22 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
 
   return (
     <div data-midi={midiNote} className={`note-slider ${isLocked ? 'locked' : ''} ${hasOverride ? 'has-override' : ''} ${isMaqamDegree ? 'maqam-degree' : ''} ${isMaqamDegreeEquiv ? 'maqam-degree-equiv' : ''} ${isMaqamTonic ? 'maqam-tonic' : ''} ${isMaqamTonicEquiv ? 'maqam-tonic-equiv' : ''}`}>
-      <div className="ipn-label">{ipnLabel}</div>
-
       <div className="track-wrap" ref={trackRef} onMouseDown={handleMouseDown}>
         <div className="track">
           {/* Snap markers on the left — clickable to snap to variant */}
           <div className="snap-markers">
-            {variantPcts.map((pct, i) => (
-              <div
-                key={i}
-                className={`snap-marker ${i === effectiveIndex ? 'active' : ''}`}
-                style={{ top: `${pct}%` }}
-                onMouseDown={(e) => handleSnapMarkerClick(e, i)}
-              />
-            ))}
+            {variantPcts.map((pct, i) => {
+              // Only show marker as active if selected AND slider value exactly matches
+              const isActive = i === effectiveIndex && centsOffset === slot.variants[i].midiCentsDeviation
+              return (
+                <div
+                  key={i}
+                  className={`snap-marker ${isActive ? 'active' : ''}`}
+                  style={{ top: `${pct}%` }}
+                  onMouseDown={(e) => handleSnapMarkerClick(e, i)}
+                />
+              )
+            })}
           </div>
           {/* Thumb */}
           <div
@@ -113,10 +116,16 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
         </div>
       </div>
 
-      {/* Cents deviation above note name */}
+      {/* Cents deviation */}
       <div className="cents">
         {centsOffset >= 0 ? '+' : ''}{centsOffset.toFixed(1)}¢
       </div>
+
+      {/* IPN label (e.g. "C3", "E-b3") */}
+      <div className="ipn-label">{ipnLabel}</div>
+
+      {/* Solfège (e.g. "Mi -b3", "Do 2") */}
+      <div className="solfege">{solfege}</div>
 
       {/* PAO note name — allowed to wrap to two lines, break at "/" */}
       <div className="note-name" title={slot.variants[effectiveIndex]?.englishName}>

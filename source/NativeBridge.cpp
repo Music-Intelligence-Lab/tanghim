@@ -438,6 +438,7 @@ juce::var NativeBridge::pitchClassToVar (const PitchClass& pc) const
     obj->setProperty ("noteName",           pc.noteName);
     obj->setProperty ("noteNameDisplay",    pc.noteNameDisplay);
     obj->setProperty ("englishName",        pc.englishName);
+    obj->setProperty ("solfege",            pc.solfege);
     obj->setProperty ("midiNoteNumber",     pc.midiNoteNumber);
     obj->setProperty ("midiCentsDeviation", pc.midiCentsDeviation);
     obj->setProperty ("cents",              pc.cents);

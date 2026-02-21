@@ -4,6 +4,7 @@ export interface PitchClassVariant {
   noteName: string;          // e.g. "segah"
   noteNameDisplay: string;   // e.g. "segāh" (with diacritics)
   englishName: string;       // e.g. "E-b3"
+  solfege: string;           // e.g. "Mi -b3", "Do 2", "Sol 1"
   midiNoteNumber: number;
   midiCentsDeviation: number;
   cents: number;

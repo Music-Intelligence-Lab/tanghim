@@ -263,6 +263,16 @@ export default function App() {
   // The gold thumb glow is applied via direct DOM classList manipulation using
   // data-midi attributes on each NoteSlider element.
   const midiActiveNotesRef = useRef(new Set<number>())
+  const visibleCountRef = useRef(visibleCount)
+  visibleCountRef.current = visibleCount
+
+  // Check if any note of the given pitch class is currently active
+  const isPitchClassActive = (chromaticIndex: number): boolean => {
+    for (const midi of midiActiveNotesRef.current) {
+      if (midi % 12 === chromaticIndex) return true
+    }
+    return false
+  }
 
   const onMidiActivity = useCallback((data: unknown) => {
     if (!data || typeof data !== 'object') return
@@ -277,18 +287,45 @@ export default function App() {
     for (const n of onNotes)  midiActiveNotesRef.current.add(n)
     for (const n of offNotes) midiActiveNotesRef.current.delete(n)
 
+    const usePitchClassMode = visibleCountRef.current <= 13
+
     // Apply final state to DOM — only mutate if the element's class doesn't already
     // match the ref. This eliminates redundant style recalcs when rapid repeated notes
     // cause the same note to appear in both on[] and off[] within a single timer tick.
     for (const n of onNotes) {
       if (!midiActiveNotesRef.current.has(n)) continue // cancelled by a later off
-      const thumb = document.querySelector(`[data-midi="${n}"] .thumb`)
-      if (thumb && !thumb.classList.contains('midi-hit')) thumb.classList.add('midi-hit')
+      if (usePitchClassMode) {
+        // Highlight ALL visible sliders with the same chromatic index
+        document.querySelectorAll('.note-slider .thumb').forEach(thumb => {
+          const slider = thumb.closest('.note-slider')
+          const midi = slider?.getAttribute('data-midi')
+          if (midi && parseInt(midi) % 12 === n % 12) {
+            if (!thumb.classList.contains('midi-hit')) thumb.classList.add('midi-hit')
+          }
+        })
+      } else {
+        const thumb = document.querySelector(`[data-midi="${n}"] .thumb`)
+        if (thumb && !thumb.classList.contains('midi-hit')) thumb.classList.add('midi-hit')
+      }
     }
     for (const n of offNotes) {
       if (midiActiveNotesRef.current.has(n)) continue // re-added by a later on
-      const thumb = document.querySelector(`[data-midi="${n}"] .thumb`)
-      if (thumb && thumb.classList.contains('midi-hit')) thumb.classList.remove('midi-hit')
+      if (usePitchClassMode) {
+        // Only remove highlight if NO other notes of this pitch class are active
+        const chromaticIndex = n % 12
+        if (!isPitchClassActive(chromaticIndex)) {
+          document.querySelectorAll('.note-slider .thumb').forEach(thumb => {
+            const slider = thumb.closest('.note-slider')
+            const midi = slider?.getAttribute('data-midi')
+            if (midi && parseInt(midi) % 12 === chromaticIndex) {
+              if (thumb.classList.contains('midi-hit')) thumb.classList.remove('midi-hit')
+            }
+          })
+        }
+      } else {
+        const thumb = document.querySelector(`[data-midi="${n}"] .thumb`)
+        if (thumb && thumb.classList.contains('midi-hit')) thumb.classList.remove('midi-hit')
+      }
     }
   }, [])
 
@@ -296,12 +333,21 @@ export default function App() {
   // won't have the class applied yet). Runs after React commits to DOM.
   useEffect(() => {
     const start = Math.floor(startMidi)
+    const usePitchClassMode = visibleCount <= 13
+
     for (let i = 0; i < visibleCount + 1 && start + i < 128; i++) {
       const midi = start + i
       const thumb = document.querySelector(`[data-midi="${midi}"] .thumb`)
       if (!thumb) continue
-      if (midiActiveNotesRef.current.has(midi)) thumb.classList.add('midi-hit')
-      else thumb.classList.remove('midi-hit')
+
+      if (usePitchClassMode) {
+        // In pitch class mode, highlight if ANY note of this pitch class is active
+        if (isPitchClassActive(midi % 12)) thumb.classList.add('midi-hit')
+        else thumb.classList.remove('midi-hit')
+      } else {
+        if (midiActiveNotesRef.current.has(midi)) thumb.classList.add('midi-hit')
+        else thumb.classList.remove('midi-hit')
+      }
     }
   }, [startMidi, visibleCount])
 

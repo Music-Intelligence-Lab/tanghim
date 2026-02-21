@@ -11,16 +11,19 @@
 
 .ipn-label {
   font-size: 11px;
-  font-weight: 600;
   color: var(--text-muted);
-  letter-spacing: 0.05em;
-  margin-left: 0; /* nudge toward track center */
+}
+
+.solfege {
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.8;
 }
 
 .track-wrap {
   flex: 1;
   position: relative;
-  cursor: ns-resize;
+  cursor: default;
   display: flex;
   justify-content: center;
   align-items: stretch;
@@ -76,10 +79,10 @@
   border-radius: 50%;
   box-shadow: 0 0 0 3px rgba(233,69,96,0.25);
   transition: top 0.1s ease;
-  cursor: ns-resize;
+  cursor: grab;
 }
 
-.thumb:active { cursor: ns-resize; box-shadow: 0 0 0 6px rgba(233,69,96,0.3); }
+.thumb:active { cursor: grabbing; box-shadow: 0 0 0 6px rgba(233,69,96,0.3); }
 
 .thumb.dragging { transition: none; }
 
@@ -89,6 +92,7 @@
 }
 
 .note-slider.locked .track-wrap { cursor: default; }
+.note-slider.locked .thumb { cursor: default; }
 
 /* Per-note override indicator */
 .note-slider.has-override .thumb {
@@ -97,10 +101,19 @@
 .note-slider.has-override .ipn-label {
   color: var(--accent, #50b4ff);
 }
+.note-slider.has-override .solfege {
+  color: var(--accent, #50b4ff);
+  opacity: 1;
+}
 
 /* Maqam degree highlight (gold) */
 .note-slider.maqam-degree .ipn-label {
   color: #ffc947;
+}
+
+.note-slider.maqam-degree .solfege {
+  color: #ffc947;
+  opacity: 1;
 }
 
 .note-slider.maqam-degree .thumb {
@@ -129,6 +142,11 @@
 
 .note-slider.maqam-degree-equiv .ipn-label {
   color: #ffc947;
+}
+
+.note-slider.maqam-degree-equiv .solfege {
+  color: #ffc947;
+  opacity: 1;
 }
 
 .note-slider.maqam-degree-equiv .note-name {

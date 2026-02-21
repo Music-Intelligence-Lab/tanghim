@@ -5,6 +5,8 @@
   border-bottom: 1px solid var(--border);
   overflow: hidden;
   min-height: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .note-slider-bank-inner {

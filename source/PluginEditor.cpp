@@ -10,7 +10,7 @@ ArabicMaqamTunerEditor::ArabicMaqamTunerEditor (ArabicMaqamTunerProcessor& p)
 {
     setSize (900, 590);
     setResizable (true, true);
-    setResizeLimits (884, 590, 2400, 900);
+    setResizeLimits (884, 590, 2400, 4000);
 
     // Create bridge first so we can register native functions in Options
     bridge = std::make_unique<NativeBridge> (processor);

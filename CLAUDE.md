@@ -34,6 +34,11 @@ cp -R "build/ArabicMaqamTuner_artefacts/Debug/VST3/Tanghim.vst3" ~/Library/Audio
 cp -R "build/ArabicMaqamTunerReceiver_artefacts/Debug/VST3/Tanghim Receiver.vst3" ~/Library/Audio/Plug-Ins/VST3/
 codesign --force --deep --sign - ~/Library/Audio/Plug-Ins/VST3/Tanghim.vst3
 codesign --force --deep --sign - ~/Library/Audio/Plug-Ins/VST3/Tanghim\ Receiver.vst3
+
+# Force version timestamp update (if version in status bar doesn't change after rebuild)
+# The __DATE__ and __TIME__ macros in NativeBridge.cpp only update when that file recompiles.
+# Touch it before building to force a new timestamp:
+touch source/NativeBridge.cpp
 ```
 
 ## Project Structure

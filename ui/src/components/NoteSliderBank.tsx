@@ -42,6 +42,9 @@ const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, visibleC
           const effectiveIndex = noteOverride !== undefined ? noteOverride : slot.selectedIndex
           const hasOverride = noteOverride !== undefined
 
+          // Get solfege from the effective variant
+          const solfege = slot.variants[effectiveIndex]?.solfege ?? '—'
+
           // Home octave: tonic to tonic+11. The octave above (tonic+12) is treated as equiv.
           const isDegree = maqamDegreeIndices.has(chromaticIndex)
           const inHomeOctave = maqamTonicMidi >= 0 && midi >= maqamTonicMidi && midi < maqamTonicMidi + 12
@@ -59,6 +62,7 @@ const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, visibleC
               isMaqamTonic={midi === maqamTonicMidi}
               isMaqamTonicEquiv={chromaticIndex === maqamTonicIndex && midi !== maqamTonicMidi}
               ipnLabel={ipnLabel}
+              solfege={solfege}
               paoName={paoName}
               onVariantSelect={onVariantSelect}
               onCentsDrag={onCentsDrag}
