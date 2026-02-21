@@ -10,7 +10,7 @@
 
 - move slider IPN name under cents value, add solfege under it (we already use it in the transposition dropdown) and then the PAO note name should stay as the last item so it can have multiple lines without shifting other items.
 
-- In the status bar add a badge/button that the user can click and drag onto their daw or their desktop that is a midi file rendering of the IPN notes used in a maqam . it's format should be like this sample midi file for maqam rast: maqām_rāst_al-rāst_C3_Do3.mid[text](maqām_rāst_al-rāst_C3_Do3.mid)
+- ~~In the status bar add a badge/button that the user can click and drag onto their daw or their desktop that is a midi file rendering of the IPN notes used in a maqam . it's format should be like this sample midi file for maqam rast: maqām_rāst_al-rāst_C3_Do3.mid~~ **DONE** - Native MIDI drag button in status bar (Feb 21 2026)
 
 - sometimes changing maqamat whilst playing causes midi notes to hang. we should find out why and fix.
 

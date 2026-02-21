@@ -61,6 +61,7 @@ source/
     MtsEspTransmitter.h/.cpp MTS-ESP transmitter wrapper (libMTSMaster.h)
     MpePitchBendProcessor.h/.cpp   MPE channel allocation + per-note pitch bend (shared with Receiver)
     MonoPitchBendProcessor.h/.cpp  14-bit mono pitch bend (shared with Receiver)
+    MidiFileGenerator.h/.cpp SMF Type 0 generator for maqam scale export
   receiver/
     ReceiverProcessor.h/.cpp MTS-ESP client + pitch bend MIDI effect processor
     ReceiverEditor.h/.cpp    Minimal JUCE-native editor (mode, PB range, status)
@@ -145,6 +146,29 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - Editor timer (30fps) exchanges bitmasks and sends arrays of MIDI note numbers to JS: `{ on: [60, 64], off: [48] }`
 - JS maintains a `Set<number>` of active MIDI notes — highlights only the exact note being played (gold thumb glow)
 - This replaced an earlier 12-bit pitch-class bitmask that lit up all octaves of the same note
+
+### Native Status Bar & MIDI Drag Export
+The status bar is rendered natively in JUCE (not WebView) to support drag-and-drop functionality:
+
+**Why native?** WKWebView on macOS exists in a separate window hierarchy from JUCE components. Native JUCE components cannot reliably appear on top of the WebView regardless of `setAlwaysOnTop()` or `toFront()` calls. The only solution is to not overlap them.
+
+**Layout:**
+- WebView bounds: `getLocalBounds().withTrimmedBottom(26)` — leaves 26px for native status bar
+- Native status bar: rendered in `paint()` with version+timestamp (left), status message (center), MIDI button and Updates button (right)
+- React StatusBar: hidden via CSS (`display: none`)
+
+**MidiDragButton (PluginEditor.h):**
+- Native JUCE component, visible only when a maqam is selected
+- `mouseDown`: generates temp MIDI file via `MidiFileGenerator`
+- `mouseDrag`: calls `DragAndDropContainer::performExternalDragDropOfFiles()`
+- Temp file persists until next `mouseDown` (DAWs need time to read the file)
+- File location: `~/Library/Caches/Tanghim/` (JUCE `tempDirectory` on macOS)
+
+**MIDI File Format (MidiFileGenerator):**
+- SMF Type 0, single track, 96 ticks/quarter note
+- Scale degrees played as chord, held for 1 quarter note
+- UTF-8 track name with maqam and tonic info
+- Filename: `maqām_rāst_al-rāst_C3_Do3.mid` (maqam display + "al-" + tonic PAO + IPN + solfège)
 
 ### Maqam Selector & Preset System
 - Two-dropdown selector: base maqam (searchable) + variant/transposition
