@@ -56,40 +56,6 @@ int main()
         END_TEST;
     }
 
-    // ── PitchClass::ipnReferenceFromEnglishName ────────────────────────────
-    {
-        TEST("ipnRef: 'C3' → 'C'")
-        CHECK (PitchClass::ipnReferenceFromEnglishName ("C3") == "C");
-        END_TEST;
-    }
-    {
-        TEST("ipnRef: 'E-b3' → 'E'  (Arabic musicological logic)")
-        CHECK (PitchClass::ipnReferenceFromEnglishName ("E-b3") == "E");
-        END_TEST;
-    }
-    {
-        TEST("ipnRef: 'D#3' → 'D#'")
-        CHECK (PitchClass::ipnReferenceFromEnglishName ("D#3") == "D#");
-        END_TEST;
-    }
-    {
-        TEST("ipnRef: 'Bb3' → 'Bb'")
-        // Bb is a standard flat — should be preserved (even though we use sharps internally,
-        // the ipnReferenceFromEnglishName returns what the englishName specifies)
-        auto r = PitchClass::ipnReferenceFromEnglishName ("Bb3");
-        CHECK (r == "Bb");
-        END_TEST;
-    }
-    {
-        TEST("ipnRef: 'B-b3' → 'B'  (microtonal B-halfflat is variant of B)")
-        CHECK (PitchClass::ipnReferenceFromEnglishName ("B-b3") == "B");
-        END_TEST;
-    }
-    {
-        TEST("ipnRef: 'G#3' → 'G#'")
-        CHECK (PitchClass::ipnReferenceFromEnglishName ("G#3") == "G#");
-        END_TEST;
-    }
 
     // ── chromaticIndexForIpnRef ────────────────────────────────────────────
     {

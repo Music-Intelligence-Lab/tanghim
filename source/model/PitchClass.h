@@ -57,43 +57,6 @@ struct PitchClass
         return true;
     }
 
-    /**
-     * Derive the IPN chromatic reference from an englishName string.
-     * Logic mirrors calculateIpnReferenceMidiNote.ts from DiArMaqAr.
-     *
-     * Examples:
-     *   "E-b3"  → "E"   (microtonal modifier stripped, base note preserved)
-     *   "D#3"   → "D#"  (standard sharp kept)
-     *   "Bb3"   → "Bb"  (standard flat kept)
-     *   "C3"    → "C"
-     */
-    static juce::String ipnReferenceFromEnglishName (const juce::String& englishName)
-    {
-        if (englishName.isEmpty()) return {};
-
-        // Match: base note (A-G), optional standard accidental (#/b),
-        //        optional microtonal modifier, digits
-        // The microtonal modifier is any non-digit chars after the accidental
-        // e.g. "-b", "-#", "+" — we strip these.
-        juce::String s = englishName.trim();
-
-        // Extract base note letter
-        if (s.isEmpty()) return {};
-        juce::String base = s.substring (0, 1).toUpperCase();
-
-        // Check for standard accidental immediately following the base letter
-        juce::String accidental;
-        if (s.length() > 1)
-        {
-            const auto c = s[1];
-            if (c == '#') accidental = "#";
-            else if (c == 'b' && s.length() > 2 && juce::CharacterFunctions::isDigit (s[2]))
-                accidental = "b";   // "Bb3" — 'b' followed by digit
-            // If 'b' is followed by non-digit it's a microtonal modifier → ignore
-        }
-
-        return base + accidental;
-    }
 };
 
 /** Ordered list of the 12 chromatic IPN references (flats for Eb, Ab, Bb). */

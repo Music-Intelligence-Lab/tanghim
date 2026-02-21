@@ -253,12 +253,7 @@ PitchClass ApiResponseParser::parseSinglePitchClass (const juce::var& obj)
     if (mnd.isNotEmpty())
         parseMidiNoteDeviation (mnd, pc.midiNoteNumber, pc.midiCentsDeviation);
 
-    // Use API-provided ipnReferenceNoteName if available, otherwise compute
-    juce::String apiIpn = get ("ipnReferenceNoteName").toString();
-    if (apiIpn.isNotEmpty())
-        pc.ipnReference = apiIpn;
-    else
-        pc.ipnReference = PitchClass::ipnReferenceFromEnglishName (pc.englishName);
+    pc.ipnReference = get ("ipnReferenceNoteName").toString();
 
     return pc;
 }
