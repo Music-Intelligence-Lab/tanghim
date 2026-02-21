@@ -113,6 +113,7 @@ export default function App() {
   const [maqamTonicMidi, setMaqamTonicMidi] = useState(-1)   // MIDI note of tonic, -1 = none
   const [isMaqamModified, setIsMaqamModified] = useState(false)  // true when slider adjusted while maqam selected
   const [modifiedSlots, setModifiedSlots] = useState<Set<number>>(new Set())  // chromatic indices of modified sliders
+  const [maqamDefaultPositions, setMaqamDefaultPositions] = useState<number[]>([])  // original variant indices when maqam was applied
   const maqamListRequested = useRef(false)
 
   const showStatus = useCallback((msg: string, durationMs = 4000) => {
@@ -419,24 +420,38 @@ export default function App() {
     setMaqamTonicMidi(-1)
     setIsMaqamModified(false)
     setModifiedSlots(new Set())
+    setMaqamDefaultPositions([])
     maqamListRequested.current = false
     await bridge.selectTuningSystem(systemId, startingNote)
   }
 
-  /** Snap marker click: select a specific variant. */
+  /** Snap marker click: select a specific variant (exact tuning system value). */
   const handleVariantSelect = useCallback(async (
     chromaticIndex: number,
     variantIndex: number
   ) => {
     const newState = await bridge.setSliderVariant(chromaticIndex, variantIndex)
     if (newState) setTuningState(newState)
-    // Manual slider change breaks preset association, marks maqam as modified
     setActivePresetIndex(-1)
-    if (selectedMaqamId) {
+
+    // Check if this variant matches the maqam's default for this slot
+    const isDefaultVariant = maqamDefaultPositions.length > 0 &&
+      maqamDefaultPositions[chromaticIndex] === variantIndex
+
+    if (isDefaultVariant) {
+      // Returning to maqam default → remove from modified set
+      setModifiedSlots(prev => {
+        const next = new Set(prev)
+        next.delete(chromaticIndex)
+        if (next.size === 0) setIsMaqamModified(false)
+        return next
+      })
+    } else if (selectedMaqamId) {
+      // Different variant than maqam default → mark as modified
       setIsMaqamModified(true)
       setModifiedSlots(prev => new Set(prev).add(chromaticIndex))
     }
-  }, [bridge, selectedMaqamId])
+  }, [bridge, maqamDefaultPositions, selectedMaqamId])
 
   /** Continuous drag: fire-and-forget update to C++ (MTS-ESP updates live).
    *  Uses requestAnimationFrame to throttle C++ calls to ~60fps. */
@@ -508,6 +523,8 @@ export default function App() {
     const newState = await bridge.applyMaqam(maqamId, transpositionIndex)
     if (newState) {
       setTuningState(newState)
+      // Capture the maqam's default variant positions for modification tracking
+      setMaqamDefaultPositions(newState.slots.map(s => s.selectedIndex))
       // Compute maqam degree highlights using paoNameMap (covers all octaves)
       const degrees = getAscendingDegrees(maqamId, transpositionIndex)
       setMaqamDegreeIndices(computeMaqamDegreeIndices(degrees, newState.paoNameMap))
@@ -577,17 +594,30 @@ export default function App() {
   }
 
   const handlePresetClick = async (presetIndex: number) => {
+    // Get the preset to access its maqam info
+    const preset = tuningState.presets[presetIndex]
+    if (!preset?.isAssigned) return
+
+    // First, apply the maqam to get its default positions (don't update UI state yet)
+    const maqamState = await bridge.applyMaqam(preset.maqamId, preset.setIndex)
+    const maqamDefaults = maqamState ? maqamState.slots.map(s => s.selectedIndex) : []
+    setMaqamDefaultPositions(maqamDefaults)
+
+    // Now apply the actual preset (this overwrites with saved positions/centsOffsets)
     const newState = await bridge.applyPreset(presetIndex)
     if (newState) setTuningState(newState)
     setActivePresetIndex(presetIndex)
 
-    // Derive modified slots by comparing centsOffset to selected variant's default
+    // Derive modified slots by comparing preset positions to maqam defaults
     const modified = new Set<number>()
-    if (newState) {
+    if (newState && maqamDefaults.length === 12) {
       for (let i = 0; i < 12; i++) {
         const slot = newState.slots[i]
+        // Modified if: variant differs from maqam default OR centsOffset differs from variant's deviation
         const variant = slot.variants[slot.selectedIndex]
-        if (variant && Math.abs(slot.centsOffset - variant.midiCentsDeviation) > 0.01) {
+        const variantDiffersFromDefault = slot.selectedIndex !== maqamDefaults[i]
+        const centsDiffersFromVariant = variant && Math.abs(slot.centsOffset - variant.midiCentsDeviation) > 0.01
+        if (variantDiffersFromDefault || centsDiffersFromVariant) {
           modified.add(i)
         }
       }
@@ -596,8 +626,7 @@ export default function App() {
     setIsMaqamModified(modified.size > 0)
 
     // Sync dropdown selection to match preset's maqam
-    const preset = tuningState.presets[presetIndex]
-    if (preset?.isAssigned) {
+    if (preset.isAssigned) {
       setSelectedMaqamId(preset.maqamId)
       setSelectedTransIdx(preset.setIndex)
       // Recompute maqam degree highlights using paoNameMap (covers all octaves)

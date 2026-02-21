@@ -181,6 +181,20 @@
   box-shadow: 0 0 0 3px rgba(38, 198, 218, 0.35);
 }
 
+/* Modified snap marker: cyan to match thumb */
+.note-slider.modified .snap-marker.active {
+  background: #26c6da;
+}
+
+/* Modified maqam degree snap marker: cyan instead of gold */
+.note-slider.maqam-degree.modified .snap-marker.active {
+  background: #26c6da;
+}
+
+.note-slider.maqam-degree-equiv.modified .snap-marker.active {
+  background: #26c6da;
+}
+
 /* MIDI hit on modified: white flash */
 .note-slider.modified .thumb.midi-hit {
   background: #fff;
