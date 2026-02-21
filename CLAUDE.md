@@ -129,7 +129,7 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - **Smooth scrolling**: `startMidi` is fractional (not integer), mouse wheel delta proportional to `deltaY / SLOT_WIDTH_PX`. NoteSliderBank renders an extra slider and uses CSS `translateX(BANK_LEFT_OFFSET_PX - pixelOffset)` for sub-pixel offset
 - **Left offset alignment**: `BANK_LEFT_OFFSET_PX = 16` in constants.ts — slider bank content is offset 16px from left edge to align with upper sections (which have 16px padding). Available width for sliders = container width - 16px
 - `RangeScroller` pans smoothly with `step="any"`, tick marks at every C, G, A. Double-click centers viewport on the maqam's octave
-- **Curtain effect centering**: When selecting a maqam or resizing, the viewport auto-centers on the maqam's octave using `centerMaqamOctave(tonicMidi, fractionalVisibleCount)`. At minimum width (≤12.5 sliders), centering is disabled to avoid partial sliders — octave starts flush at tonic
+- **Curtain effect centering**: When selecting a maqam or resizing, the viewport auto-centers on the maqam's octave using `centerMaqamOctave(tonicMidi, fractionalVisibleCount)`. Formula uses `(visibleCount - 11) / 2` because a 12-note octave spans 11 semitones (positions 0-11), so center is at +5.5 from tonic. At minimum width (≤12.5 sliders), centering is disabled to avoid partial sliders — octave starts flush at tonic
 - Plugin window: 832–2400px wide, 620–4000px tall (`PluginEditor.cpp: setResizeLimits`)
 - Min width = 16px left offset + 12 sliders × 68px = 832px (one octave aligned with upper sections)
 - Min height = maqam dropdown (max-height 480px) lines up flush with status bar
@@ -158,6 +158,8 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - `degreeNames` (ascending PAO names) stored in presets for degree highlighting
 - `centsOffsets` (12 doubles) stored in presets — restores exact slider tuning values even when modified from maqam defaults
 - Modified presets include ` *` suffix in display name to indicate custom tuning
+- **Tuning system persistence**: Modified presets store `tuningSystemId` and `startingNote`. When loaded in a different system, the plugin switches to the correct system first. Unmodified presets are portable (load in any system using that system's interpretation of the maqam)
+- **Async system switch pattern**: When loading a modified preset requiring a system switch, the callback is stored in `afterSystemSwitchRef` and executed when `onTuningStateChanged` fires after the system loads
 
 ### Maqam List Caching
 - `ApiDataCache` caches maqam list per tuning system
