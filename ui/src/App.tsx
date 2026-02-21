@@ -580,8 +580,21 @@ export default function App() {
     const newState = await bridge.applyPreset(presetIndex)
     if (newState) setTuningState(newState)
     setActivePresetIndex(presetIndex)
-    setIsMaqamModified(false)  // Reset modification flag when applying a preset
-    setModifiedSlots(new Set())
+
+    // Derive modified slots by comparing centsOffset to selected variant's default
+    const modified = new Set<number>()
+    if (newState) {
+      for (let i = 0; i < 12; i++) {
+        const slot = newState.slots[i]
+        const variant = slot.variants[slot.selectedIndex]
+        if (variant && Math.abs(slot.centsOffset - variant.midiCentsDeviation) > 0.01) {
+          modified.add(i)
+        }
+      }
+    }
+    setModifiedSlots(modified)
+    setIsMaqamModified(modified.size > 0)
+
     // Sync dropdown selection to match preset's maqam
     const preset = tuningState.presets[presetIndex]
     if (preset?.isAssigned) {
