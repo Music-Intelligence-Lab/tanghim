@@ -109,11 +109,10 @@ function findTonicMidi(
   return undefined
 }
 
-/** Center a maqam's octave (12 notes) within the visible slider viewport.
- *  Uses fractional visibleCount for smooth "curtain opening" effect.
- *  Note: 12 notes span 11 semitones (positions 0-11), so octave center is at +5.5 from tonic. */
+/** Center a maqam's octave (13 notes: tonic through its octave) within the visible slider viewport.
+ *  Uses fractional visibleCount for smooth "curtain opening" effect. */
 function centerMaqamOctave(tonicMidi: number, visibleCount: number): number {
-  const padding = Math.floor((visibleCount - 11) / 2)
+  const padding = Math.max(0, Math.floor((visibleCount - 13) / 2))
   return Math.max(0, Math.min(128 - visibleCount, tonicMidi - padding))
 }
 
