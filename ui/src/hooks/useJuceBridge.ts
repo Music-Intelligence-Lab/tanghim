@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef, useMemo } from 'react'
-import type { TuningState, TuningSystem, MaqamListEntry } from '../types'
+import type { TuningState, TuningSystem, MaqamListEntry, MaqamMidiDragData } from '../types'
 
 // ── JUCE native integration (no ./juce module import needed) ─────────────────
 //
@@ -148,6 +148,7 @@ export function useJuceBridge() {
     isTransposed: boolean,
     tonicNote: string,
     tonicIpn: string,
+    tonicSolfege: string,
     setIndex: number,
     sliderPositions: number[],
     degreeNames: string[],
@@ -156,7 +157,7 @@ export function useJuceBridge() {
     startingNote: string
   ) => {
     await callNative('assignPreset', presetIndex, maqamId, maqamDisplay,
-      baseMaqamId, isTransposed, tonicNote, tonicIpn, setIndex, sliderPositions, degreeNames, centsOffsets,
+      baseMaqamId, isTransposed, tonicNote, tonicIpn, tonicSolfege, setIndex, sliderPositions, degreeNames, centsOffsets,
       tuningSystemId, startingNote)
   }, [])
 
@@ -187,6 +188,16 @@ export function useJuceBridge() {
     await callNative('setStartMidi', value)
   }, [])
 
+  /** Get MIDI file data for current maqam (for drag export). */
+  const getMaqamMidiDragData = useCallback(async (): Promise<MaqamMidiDragData | undefined> => {
+    return callNative<MaqamMidiDragData>('getMaqamMidiDragData')
+  }, [])
+
+  /** Save MIDI file to Downloads folder. */
+  const saveMaqamMidiFile = useCallback(async (): Promise<{ path: string; filename: string } | undefined> => {
+    return callNative<{ path: string; filename: string }>('saveMaqamMidiFile')
+  }, [])
+
   return useMemo(() => ({
     getTuningSystems,
     selectTuningSystem,
@@ -202,8 +213,10 @@ export function useJuceBridge() {
     checkForUpdates,
     getCurrentState,
     setStartMidi,
+    getMaqamMidiDragData,
+    saveMaqamMidiFile,
   }), [getTuningSystems, selectTuningSystem, setSliderVariant, setNoteVariant,
        setSlotCents, setSlotCentsFinalize,
        applyPreset, assignPreset, clearPreset,
-       getMaqamList, applyMaqam, checkForUpdates, getCurrentState, setStartMidi])
+       getMaqamList, applyMaqam, checkForUpdates, getCurrentState, setStartMidi, getMaqamMidiDragData, saveMaqamMidiFile])
 }

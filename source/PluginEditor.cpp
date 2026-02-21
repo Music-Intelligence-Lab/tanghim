@@ -1,12 +1,15 @@
 #include "PluginEditor.h"
 #include "NativeBridge.h"
+#include "BuildTimestamp.h"
+#include "model/PitchClass.h"
+#include <map>
 
 #if EMBED_UI_BUNDLE
   #include "BinaryData.h"
 #endif
 
 ArabicMaqamTunerEditor::ArabicMaqamTunerEditor (ArabicMaqamTunerProcessor& p)
-    : AudioProcessorEditor (p), processor (p)
+    : AudioProcessorEditor (p), processor (p), midiDragButton (p)
 {
     setSize (832, 620);
     setResizable (true, true);
@@ -48,7 +51,25 @@ ArabicMaqamTunerEditor::ArabicMaqamTunerEditor (ArabicMaqamTunerProcessor& p)
 
     browser = std::make_unique<juce::WebBrowserComponent> (opts);
     addAndMakeVisible (*browser);
-    browser->setBounds (getLocalBounds());  // initial layout (resized() ran before browser existed)
+    // Reserve 26px at bottom for native status bar (resized() ran before browser existed)
+    browser->setBounds (getLocalBounds().withTrimmedBottom (26));
+
+    // Native status bar components
+    addAndMakeVisible (midiDragButton);
+    midiDragButton.setVisible (false);
+
+    addAndMakeVisible (updatesButton);
+    updatesButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    updatesButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::transparentBlack);
+    updatesButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff808099));
+    updatesButton.setColour (juce::TextButton::textColourOnId, juce::Colour (0xffe8b339));
+    updatesButton.onClick = [this] {
+        processor.checkForDataUpdates (
+            [] (auto) { /* onUpdatesFound - status shown via onStatusMessage */ },
+            [] { /* onNoUpdates - status shown via onStatusMessage */ },
+            [] (auto) { /* onError - status shown via onStatusMessage */ }
+        );
+    };
 
     // Set processor change callbacks
     processor.onTuningStateChanged   = [this] { emitTuningStateChanged(); };
@@ -79,11 +100,53 @@ ArabicMaqamTunerEditor::~ArabicMaqamTunerEditor()
 void ArabicMaqamTunerEditor::paint (juce::Graphics& g)
 {
     g.fillAll (juce::Colour (0xff1a1a2e)); // dark fallback while WebView loads
+
+    // Native status bar background (26px at bottom)
+    const int nativeStatusBarHeight = 26;
+    auto statusBarBounds = getLocalBounds().removeFromBottom (nativeStatusBarHeight);
+    g.setColour (juce::Colour (0xff16162b)); // --surface2 equivalent
+    g.fillRect (statusBarBounds);
+    g.setColour (juce::Colour (0xff2d2d4a)); // --border equivalent
+    g.drawHorizontalLine (statusBarBounds.getY(), 0.0f, static_cast<float> (getWidth()));
+
+    // Version + timestamp label (left side)
+    g.setColour (juce::Colour (0xff808099)); // --text-muted equivalent
+    g.setFont (11.0f);
+    juce::String versionText = "v" + juce::String (PLUGIN_VERSION) + " (" + juce::String (BUILD_TIMESTAMP) + ")";
+    g.drawText (versionText,
+                statusBarBounds.withTrimmedLeft (16).withWidth (200),
+                juce::Justification::centredLeft);
+
+    // Status message (center)
+    if (lastStatusMessage.isNotEmpty())
+    {
+        auto textBounds = statusBarBounds.reduced (120, 0); // Leave space for version and button
+        g.drawText (lastStatusMessage, textBounds, juce::Justification::centred);
+    }
 }
 
 void ArabicMaqamTunerEditor::resized()
 {
-    if (browser) browser->setBounds (getLocalBounds());
+    // Reserve 26px at bottom for native status bar (MIDI button overlay doesn't work on WKWebView)
+    const int nativeStatusBarHeight = 26;
+
+    if (browser)
+        browser->setBounds (getLocalBounds().withTrimmedBottom (nativeStatusBarHeight));
+
+    // Position native status bar components (right to left)
+    const int btnHeight = 18;
+    const int yPos = getHeight() - nativeStatusBarHeight + (nativeStatusBarHeight - btnHeight) / 2;
+    const int rightMargin = 16;
+    int rightEdge = getWidth() - rightMargin;
+
+    // Updates button (rightmost)
+    const int updatesBtnWidth = 70;
+    updatesButton.setBounds (rightEdge - updatesBtnWidth, yPos, updatesBtnWidth, btnHeight);
+    rightEdge -= updatesBtnWidth + 8;
+
+    // MIDI drag button (to the left of Updates)
+    const int midiBtnWidth = 42;
+    midiDragButton.setBounds (rightEdge - midiBtnWidth, yPos, midiBtnWidth, btnHeight);
 }
 
 // ── MIDI activity + MTS-ESP status polling ───────────────────────────────────
@@ -121,10 +184,19 @@ void ArabicMaqamTunerEditor::timerCallback()
         }
     }
 
+    // ── MIDI drag button visibility (~2Hz) ─────────────────────────────────
     // ── MTS-ESP status polling (~2Hz) ─────────────────────────────────────
     if (++mtsStatusFrameCounter >= 15)
     {
         mtsStatusFrameCounter = 0;
+
+        // Update MIDI drag button visibility based on maqam selection
+        const auto maqamId = processor.getCurrentMaqamId();
+        if (maqamId != lastMaqamId)
+        {
+            lastMaqamId = maqamId;
+            midiDragButton.setVisible (maqamId.isNotEmpty());
+        }
 
         const int  totalReceivers   = processor.mtsNumReceivers();
         const bool isMtsTransmitter = processor.isMtsTransmitter();
@@ -180,6 +252,8 @@ void ArabicMaqamTunerEditor::emitMaqamListLoaded()
 
 void ArabicMaqamTunerEditor::emitStatusMessage (const juce::String& msg)
 {
+    lastStatusMessage = msg;
+    repaint(); // Refresh native status bar
     if (browser) browser->emitEventIfBrowserIsVisible ("statusMessage", juce::var (msg));
 }
 
@@ -224,3 +298,110 @@ juce::WebBrowserComponent::Resource ArabicMaqamTunerEditor::getResourceForPath (
     return {};
 }
 #endif
+
+// ── MidiDragButton implementation ─────────────────────────────────────────────
+
+void MidiDragButton::prepareMidiFile()
+{
+    tempMidiFile = juce::File();
+
+    const juce::String maqamId = processor.getCurrentMaqamId();
+    if (maqamId.isEmpty()) return;
+
+    const auto& degreeNames = processor.getCurrentDegreeNames();
+    if (degreeNames.empty()) return;
+
+    // Build paoNameMap
+    std::map<juce::String, int> paoNameMap;
+    const auto& allPCs = processor.getCurrentPitchClasses();
+    for (const auto& pc : allPCs)
+    {
+        if (pc.noteName.isEmpty()) continue;
+        const int ci = chromaticIndexForIpnRef (pc.ipnReference);
+        if (ci >= 0) paoNameMap[pc.noteName] = ci;
+    }
+
+    // Find tonic
+    const juce::String tonicName = degreeNames[0];
+    auto tonicIt = paoNameMap.find (tonicName);
+    if (tonicIt == paoNameMap.end()) return;
+    const int tonicChromaticIdx = tonicIt->second;
+
+    int tonicMidi = -1;
+    for (const auto& pc : allPCs)
+    {
+        if (pc.noteName == tonicName && pc.midiNoteNumber >= 48 && pc.midiNoteNumber < 60)
+        {
+            tonicMidi = pc.midiNoteNumber;
+            break;
+        }
+    }
+    if (tonicMidi < 0)
+    {
+        for (const auto& pc : allPCs)
+        {
+            if (pc.noteName == tonicName)
+            {
+                tonicMidi = pc.midiNoteNumber;
+                break;
+            }
+        }
+    }
+    if (tonicMidi < 0) return;
+
+    // Build MIDI notes
+    std::vector<int> midiNotes;
+    for (const auto& degreeName : degreeNames)
+    {
+        auto it = paoNameMap.find (degreeName);
+        if (it == paoNameMap.end()) continue;
+        int interval = it->second - tonicChromaticIdx;
+        if (interval < 0) interval += 12;
+        int midiNote = tonicMidi + interval;
+        if (midiNote >= 0 && midiNote <= 127)
+            midiNotes.push_back (midiNote);
+    }
+    if (midiNotes.empty()) return;
+
+    // Build maqam info
+    MidiFileGenerator::MaqamInfo info;
+    info.maqamDisplay    = processor.getCurrentMaqamDisplay();
+    info.tonicPaoDisplay = processor.getCurrentTonicDisplay();
+    info.tonicIpn        = processor.getCurrentTonicEnglish();
+    info.tonicSolfege    = processor.getCurrentTonicSolfege();
+    info.midiNotes       = midiNotes;
+
+    if (info.maqamDisplay.isEmpty()) info.maqamDisplay = maqamId;
+    if (info.tonicPaoDisplay.isEmpty()) info.tonicPaoDisplay = tonicName;
+    if (info.tonicIpn.isEmpty())
+    {
+        static const char* IPN_NAMES[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+        info.tonicIpn = juce::String (IPN_NAMES[tonicMidi % 12]) + juce::String ((tonicMidi / 12) - 1);
+    }
+    if (info.tonicSolfege.isEmpty())
+    {
+        for (const auto& pc : allPCs)
+        {
+            if (pc.midiNoteNumber == tonicMidi)
+            {
+                info.tonicSolfege = pc.solfege;
+                break;
+            }
+        }
+    }
+
+    // Generate and write to temp file
+    auto midiData = MidiFileGenerator::generate (info);
+    auto filename = MidiFileGenerator::buildFilename (info);
+
+    auto tempDir = juce::File::getSpecialLocation (juce::File::tempDirectory);
+    tempDir.createDirectory(); // Ensure temp directory exists
+
+    tempMidiFile = tempDir.getChildFile (filename);
+    bool writeSuccess = tempMidiFile.replaceWithData (midiData.data(), midiData.size());
+
+    DBG ("MIDI file: " << tempMidiFile.getFullPathName()
+         << " | size=" << midiData.size()
+         << " | write=" << (writeSuccess ? "OK" : "FAILED")
+         << " | exists=" << (tempMidiFile.existsAsFile() ? "YES" : "NO"));
+}

@@ -25,6 +25,7 @@ export interface MaqamPreset {
   maqamId: string;
   maqamDisplay: string;
   tonicIpn: string;
+  tonicSolfege: string;
   baseMaqamId: string;
   isTransposed: boolean;
   tonicNote: string;
@@ -43,6 +44,13 @@ export interface MtsStatusUpdate {
   monoPbCount: number;
 }
 
+export interface MaqamMidiDragData {
+  filename: string;
+  midiBase64: string;
+  maqamDisplay: string;
+  tonicDisplay: string;
+}
+
 export interface TuningState {
   systemId: string;
   startingNote: string;
@@ -52,6 +60,7 @@ export interface TuningState {
   mpeCount: number;
   monoPbCount: number;
   pluginVersion: string;
+  buildTimestamp: string;
   slots: ChromaticSlot[];
   presets: MaqamPreset[];
   /** chromaticIndex → { octave → PAO display name } (all octaves). */

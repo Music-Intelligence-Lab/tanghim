@@ -1,5 +1,6 @@
 #pragma once
 #include "PluginProcessor.h"
+#include "engine/MidiFileGenerator.h"
 #include <juce_gui_extra/juce_gui_extra.h>
 
 /**
@@ -49,5 +50,11 @@ private:
     // ── JSON builders ─────────────────────────────────────────────────────────
     juce::var buildPresetsJson()    const;
     juce::var pitchClassToVar (const PitchClass& pc) const;
+
+    /** Build MIDI file data for current maqam (returns null if no maqam selected). */
+    juce::var buildMaqamMidiDragData() const;
+
+    /** Save MIDI file to Downloads folder, returns { path, filename } or null. */
+    juce::var saveMaqamMidiFile() const;
 
 };

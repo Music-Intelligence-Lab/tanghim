@@ -68,6 +68,7 @@ target_sources(ArabicMaqamTuner
         source/engine/MtsEspTransmitter.cpp
         source/engine/MpePitchBendProcessor.cpp
         source/engine/MonoPitchBendProcessor.cpp
+        source/engine/MidiFileGenerator.cpp
 )
 
 target_include_directories(ArabicMaqamTuner

@@ -65,6 +65,7 @@ public:
                            bool isTransposed,
                            const juce::String& tonicNoteName,
                            const juce::String& tonicIpnRef,
+                           const juce::String& tonicSolfege,
                            int pitchClassSetIndex,
                            const std::array<int, 12>& sliderPositions,
                            const std::vector<juce::String>& degreeNames,
@@ -96,6 +97,12 @@ public:
     const std::vector<juce::String>&         getCurrentDegreeNames()       const { return currentDegreeNames; }
     bool                                     getSessionRecallInProgress()  const { return sessionRecallInProgress; }
     bool                                     getHasRecalledSessionState()  const { return hasRecalledSessionState; }
+
+    // Maqam display info (for MIDI export)
+    juce::String                             getCurrentMaqamDisplay()      const { return currentMaqamDisplay; }
+    juce::String                             getCurrentTonicDisplay()      const { return currentTonicDisplay; }
+    juce::String                             getCurrentTonicEnglish()      const { return currentTonicEnglish; }
+    juce::String                             getCurrentTonicSolfege()      const { return currentTonicSolfege; }
 
     // ── Data update checker ───────────────────────────────────────────────────
     void checkForDataUpdates (std::function<void (std::vector<juce::String>)> onUpdatesFound,

@@ -22,6 +22,7 @@ const EMPTY_STATE: TuningState = {
   mpeCount: 0,
   monoPbCount: 0,
   pluginVersion: '',
+  buildTimestamp: '',
   slots: Array.from({ length: 12 }, (_, i) => ({
     ipnRef: ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'][i],
     selectedIndex: 0,
@@ -30,7 +31,7 @@ const EMPTY_STATE: TuningState = {
     centsOffset: 0,
   })),
   presets: Array.from({ length: 16 }, () => ({
-    isAssigned: false, maqamId: '', maqamDisplay: '', tonicIpn: '',
+    isAssigned: false, maqamId: '', maqamDisplay: '', tonicIpn: '', tonicSolfege: '',
     baseMaqamId: '', isTransposed: false, tonicNote: '', setIndex: -1, sliderPositions: [],
     centsOffsets: [],
     degreeNames: [],
@@ -605,7 +606,10 @@ export default function App() {
     const positions = tuningState.slots.map(s => s.selectedIndex)
     const centsOffsets = tuningState.slots.map(s => s.centsOffset)
 
-    // Resolve tonic display name and IPN for the selected transposition
+    // Resolve tonic display name, IPN, and solfege for the selected transposition
+    const tonicId = selectedTransIdx >= 0 && entry.transpositions[selectedTransIdx]
+      ? entry.transpositions[selectedTransIdx].tonicId
+      : entry.tonicId
     const tonicDisplay = selectedTransIdx >= 0 && entry.transpositions[selectedTransIdx]
       ? entry.transpositions[selectedTransIdx].tonicDisplay
       : entry.tonicDisplay
@@ -614,6 +618,7 @@ export default function App() {
     const tonicIpnLabel = tonicMidi
       ? `${IPN_NAMES[tonicMidi.chromaticIndex]}${Math.floor(tonicMidi.midi / 12) - 1}`
       : ''
+    const tonicSolfege = tuningState.paoNameInfo[tonicId]?.solfege || ''
 
     const degreeNames = getAscendingDegrees(selectedMaqamId, selectedTransIdx)
 
@@ -626,7 +631,7 @@ export default function App() {
 
     await bridge.assignPreset(
       presetIndex, entry.maqamId, displayName,
-      entry.familyId, selectedTransIdx >= 0, tonicDisplay, tonicIpnLabel,
+      entry.familyId, selectedTransIdx >= 0, tonicDisplay, tonicIpnLabel, tonicSolfege,
       selectedTransIdx, positions, degreeNames, centsOffsets, tuningSystemId, startingNote
     )
     // Update local preset state immediately
@@ -637,6 +642,7 @@ export default function App() {
         maqamId: entry.maqamId,
         maqamDisplay: displayName,
         tonicIpn: tonicIpnLabel,
+        tonicSolfege,
         baseMaqamId: entry.familyId,
         isTransposed: selectedTransIdx >= 0,
         tonicNote: tonicDisplay,
@@ -787,7 +793,7 @@ export default function App() {
     setTuningState(prev => {
       const presets = [...prev.presets]
       presets[presetIndex] = {
-        isAssigned: false, maqamId: '', maqamDisplay: '', tonicIpn: '',
+        isAssigned: false, maqamId: '', maqamDisplay: '', tonicIpn: '', tonicSolfege: '',
         baseMaqamId: '', isTransposed: false, tonicNote: '', setIndex: -1, sliderPositions: [],
         centsOffsets: [],
         degreeNames: [],
@@ -870,6 +876,7 @@ export default function App() {
       <StatusBar
         status={status}
         pluginVersion={tuningState.pluginVersion}
+        buildTimestamp={tuningState.buildTimestamp}
         onCheckForUpdates={handleCheckForUpdates}
       />
     </div>

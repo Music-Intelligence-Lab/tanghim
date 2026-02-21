@@ -19,10 +19,8 @@ export default function MaqamPresetButton({ preset, index, isActive, isDisabled,
   }
 
   const tonicLine = preset.tonicNote && preset.tonicIpn
-    ? `(${preset.tonicNote} | ${preset.tonicIpn})`
-    : preset.tonicNote
-      ? `(${preset.tonicNote})`
-      : ''
+    ? `${preset.tonicNote} | ${preset.tonicIpn}${preset.tonicSolfege ? ' | ' + preset.tonicSolfege : ''}`
+    : preset.tonicNote || ''
 
   return (
     <button

@@ -128,6 +128,7 @@ void ArabicMaqamTunerProcessor::getStateInformation (juce::MemoryBlock& dest)
         n.setProperty ("isTransposed",    p.isTransposed,     nullptr);
         n.setProperty ("tonicNote",       p.tonicNoteName,    nullptr);
         n.setProperty ("tonicIpn",        p.tonicIpnRef,      nullptr);
+        n.setProperty ("tonicSolfege",    p.tonicSolfege,     nullptr);
         n.setProperty ("setIdx",          p.pitchClassSetIndex, nullptr);
         for (int j = 0; j < 12; ++j)
             n.setProperty ("sp" + juce::String (j), p.sliderPositions[(size_t) j], nullptr);
@@ -208,6 +209,7 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
         p.isTransposed       = (bool) n.getProperty ("isTransposed", false);
         p.tonicNoteName      = n.getProperty ("tonicNote").toString();
         p.tonicIpnRef        = n.getProperty ("tonicIpn").toString();
+        p.tonicSolfege       = n.getProperty ("tonicSolfege").toString();
         p.pitchClassSetIndex = (int) n.getProperty ("setIdx", -1);
         for (int j = 0; j < 12; ++j)
             p.sliderPositions[(size_t) j] = (int) n.getProperty ("sp" + juce::String (j), 0);
@@ -602,6 +604,7 @@ void ArabicMaqamTunerProcessor::assignPreset (int idx,
                                                bool isTransposed,
                                                const juce::String& tonicNote,
                                                const juce::String& tonicIpn,
+                                               const juce::String& tonicSolfege,
                                                int setIdx,
                                                const std::array<int, 12>& positions,
                                                const std::vector<juce::String>& degreeNames,
@@ -618,6 +621,7 @@ void ArabicMaqamTunerProcessor::assignPreset (int idx,
     p.isTransposed       = isTransposed;
     p.tonicNoteName      = tonicNote;
     p.tonicIpnRef        = tonicIpn;
+    p.tonicSolfege       = tonicSolfege;
     p.pitchClassSetIndex = setIdx;
     p.sliderPositions    = positions;
     p.degreeNames        = degreeNames;
@@ -984,6 +988,7 @@ void ArabicMaqamTunerProcessor::savePresetsToDisk() const
         obj->setProperty ("isTransposed",    p.isTransposed);
         obj->setProperty ("tonicNote",       p.tonicNoteName);
         obj->setProperty ("tonicIpn",        p.tonicIpnRef);
+        obj->setProperty ("tonicSolfege",    p.tonicSolfege);
         obj->setProperty ("setIdx",          p.pitchClassSetIndex);
 
         juce::Array<juce::var> sp;
@@ -1035,6 +1040,7 @@ void ArabicMaqamTunerProcessor::loadPresetsFromDisk()
             p.isTransposed       = (bool) obj->getProperty ("isTransposed");
             p.tonicNoteName      = obj->getProperty ("tonicNote").toString();
             p.tonicIpnRef        = obj->getProperty ("tonicIpn").toString();
+            p.tonicSolfege       = obj->getProperty ("tonicSolfege").toString();
             p.pitchClassSetIndex = (int) obj->getProperty ("setIdx");
 
             if (auto* spArr = obj->getProperty ("sliderPositions").getArray())

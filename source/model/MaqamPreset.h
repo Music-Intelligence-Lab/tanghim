@@ -20,6 +20,7 @@ struct MaqamPreset
     bool         isTransposed   = false;
     juce::String tonicNoteName;
     juce::String tonicIpnRef;           // e.g. "C"
+    juce::String tonicSolfege;          // e.g. "Do"
     int          pitchClassSetIndex = -1; // Index into the loaded TwelvePitchClassSet list
 
     // The 12 slider variant indices this maqam implies (index into
@@ -49,6 +50,7 @@ struct MaqamPreset
         isTransposed    = false;
         tonicNoteName   = {};
         tonicIpnRef     = {};
+        tonicSolfege    = {};
         pitchClassSetIndex = -1;
         sliderPositions.fill (0);
         centsOffsets.fill (0.0);

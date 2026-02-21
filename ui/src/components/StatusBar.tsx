@@ -3,13 +3,19 @@ import './StatusBar.css'
 interface Props {
   status: string
   pluginVersion: string
+  buildTimestamp: string
   onCheckForUpdates: () => void
 }
 
-export default function StatusBar({ status, pluginVersion, onCheckForUpdates }: Props) {
+export default function StatusBar({
+  status,
+  pluginVersion,
+  buildTimestamp,
+  onCheckForUpdates,
+}: Props) {
   const versionDisplay = pluginVersion
-    ? `v${pluginVersion} (${__BUILD_TIMESTAMP__})`
-    : `(${__BUILD_TIMESTAMP__})`
+    ? `v${pluginVersion} (${buildTimestamp})`
+    : `(${buildTimestamp})`
 
   return (
     <div className="status-bar">

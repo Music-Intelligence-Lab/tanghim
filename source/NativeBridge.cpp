@@ -1,4 +1,6 @@
 #include "NativeBridge.h"
+#include "BuildTimestamp.h"
+#include "engine/MidiFileGenerator.h"
 
 NativeBridge::NativeBridge (ArabicMaqamTunerProcessor& p)
     : processor (p)
@@ -77,40 +79,41 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
         });
 
     // ── assignPreset(index, maqamId, maqamDisplay, baseMaqamId, isTransposed,
-    //                 tonicNote, tonicIpn, setIndex, [sliderPos x12]) ────────
+    //                 tonicNote, tonicIpn, tonicSolfege, setIndex, [sliderPos x12], ...) ────────
     opts = opts.withNativeFunction ("assignPreset",
         [this] (const juce::Array<juce::var>& args, Completion complete)
         {
-            const int idx               = args.size() > 0 ? (int) args[0] : 0;
-            const juce::String id       = args.size() > 1 ? args[1].toString() : "";
-            const juce::String disp     = args.size() > 2 ? args[2].toString() : "";
-            const juce::String baseId   = args.size() > 3 ? args[3].toString() : "";
-            const bool transposed       = args.size() > 4 ? (bool) args[4] : false;
-            const juce::String tonicN   = args.size() > 5 ? args[5].toString() : "";
-            const juce::String tonicIpn = args.size() > 6 ? args[6].toString() : "";
-            const int setIdx            = args.size() > 7 ? (int) args[7] : -1;
+            const int idx                   = args.size() > 0 ? (int) args[0] : 0;
+            const juce::String id           = args.size() > 1 ? args[1].toString() : "";
+            const juce::String disp         = args.size() > 2 ? args[2].toString() : "";
+            const juce::String baseId       = args.size() > 3 ? args[3].toString() : "";
+            const bool transposed           = args.size() > 4 ? (bool) args[4] : false;
+            const juce::String tonicN       = args.size() > 5 ? args[5].toString() : "";
+            const juce::String tonicIpn     = args.size() > 6 ? args[6].toString() : "";
+            const juce::String tonicSolfege = args.size() > 7 ? args[7].toString() : "";
+            const int setIdx                = args.size() > 8 ? (int) args[8] : -1;
 
             std::array<int, 12> positions;
             positions.fill (0);
-            if (args.size() > 8 && args[8].isArray())
-                for (int i = 0; i < 12 && i < args[8].size(); ++i)
-                    positions[(size_t) i] = (int) args[8][i];
+            if (args.size() > 9 && args[9].isArray())
+                for (int i = 0; i < 12 && i < args[9].size(); ++i)
+                    positions[(size_t) i] = (int) args[9][i];
 
             std::vector<juce::String> degreeNames;
-            if (args.size() > 9 && args[9].isArray())
-                for (int i = 0; i < args[9].size(); ++i)
-                    degreeNames.push_back (args[9][i].toString());
+            if (args.size() > 10 && args[10].isArray())
+                for (int i = 0; i < args[10].size(); ++i)
+                    degreeNames.push_back (args[10][i].toString());
 
             std::array<double, 12> centsOffsets;
             centsOffsets.fill (0.0);
-            if (args.size() > 10 && args[10].isArray())
-                for (int i = 0; i < 12 && i < args[10].size(); ++i)
-                    centsOffsets[(size_t) i] = (double) args[10][i];
+            if (args.size() > 11 && args[11].isArray())
+                for (int i = 0; i < 12 && i < args[11].size(); ++i)
+                    centsOffsets[(size_t) i] = (double) args[11][i];
 
-            const juce::String tuningSystemId = args.size() > 11 ? args[11].toString() : "";
-            const juce::String startingNote   = args.size() > 12 ? args[12].toString() : "";
+            const juce::String tuningSystemId = args.size() > 12 ? args[12].toString() : "";
+            const juce::String startingNote   = args.size() > 13 ? args[13].toString() : "";
 
-            processor.assignPreset (idx, id, disp, baseId, transposed, tonicN, tonicIpn, setIdx,
+            processor.assignPreset (idx, id, disp, baseId, transposed, tonicN, tonicIpn, tonicSolfege, setIdx,
                                     positions, degreeNames, centsOffsets, tuningSystemId, startingNote);
             complete (buildPresetsJson());
         });
@@ -173,6 +176,23 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
                 [complete] (juce::String /*err*/) { complete (juce::var (juce::Array<juce::var>())); });
         });
 
+    // ── getMaqamMidiDragData() ────────────────────────────────────────────────
+    // Returns MIDI file data (base64) + filename for drag-and-drop export.
+    // Only returns data if a maqam is currently selected.
+    opts = opts.withNativeFunction ("getMaqamMidiDragData",
+        [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
+        {
+            complete (buildMaqamMidiDragData());
+        });
+
+    // ── saveMaqamMidiFile() ──────────────────────────────────────────────────
+    // Saves MIDI file to Downloads folder and returns the path.
+    opts = opts.withNativeFunction ("saveMaqamMidiFile",
+        [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
+        {
+            complete (saveMaqamMidiFile());
+        });
+
     return opts;
 }
 
@@ -197,6 +217,7 @@ juce::var NativeBridge::buildTuningStateJson() const
     root->setProperty ("mpeCount",        receiverCounts.mpeReceivers);
     root->setProperty ("monoPbCount",     receiverCounts.monoPbReceivers);
     root->setProperty ("pluginVersion",    juce::String (PLUGIN_VERSION));
+    root->setProperty ("buildTimestamp",   juce::String (BUILD_TIMESTAMP));
 
     // 12 slider slots
     juce::Array<juce::var> slots;
@@ -382,6 +403,7 @@ juce::var NativeBridge::buildPresetsJson() const
         obj->setProperty ("isTransposed",  p.isTransposed);
         obj->setProperty ("tonicNote",     p.tonicNoteName);
         obj->setProperty ("tonicIpn",      p.tonicIpnRef);
+        obj->setProperty ("tonicSolfege",  p.tonicSolfege);
         obj->setProperty ("setIndex",      p.pitchClassSetIndex);
 
         juce::Array<juce::var> sp;
@@ -462,5 +484,262 @@ juce::var NativeBridge::pitchClassToVar (const PitchClass& pc) const
     obj->setProperty ("fraction",           pc.fraction);
     obj->setProperty ("ipnReference",       pc.ipnReference);
     return juce::var (obj);
+}
+
+juce::var NativeBridge::buildMaqamMidiDragData() const
+{
+    // Check if a maqam is selected
+    const juce::String maqamId = processor.getCurrentMaqamId();
+    if (maqamId.isEmpty())
+        return juce::var(); // null
+
+    const auto& degreeNames = processor.getCurrentDegreeNames();
+    if (degreeNames.empty())
+        return juce::var();
+
+    // Build paoNameMap: PAO idName → chromaticIndex (from ALL pitch classes)
+    std::map<juce::String, int> paoNameMap;
+    const auto& allPCs = processor.getCurrentPitchClasses();
+    for (const auto& pc : allPCs)
+    {
+        if (pc.noteName.isEmpty()) continue;
+        const int ci = chromaticIndexForIpnRef (pc.ipnReference);
+        if (ci >= 0)
+            paoNameMap[pc.noteName] = ci;
+    }
+
+    // Find tonic MIDI note (first degree)
+    const juce::String tonicName = degreeNames[0];
+    auto tonicIt = paoNameMap.find (tonicName);
+    if (tonicIt == paoNameMap.end())
+        return juce::var();
+    const int tonicChromaticIdx = tonicIt->second;
+
+    // Find tonic MIDI from pitch classes (prefer octave 3 / MIDI 48-59 range)
+    int tonicMidi = -1;
+    for (const auto& pc : allPCs)
+    {
+        if (pc.noteName == tonicName && pc.midiNoteNumber >= 48 && pc.midiNoteNumber < 60)
+        {
+            tonicMidi = pc.midiNoteNumber;
+            break;
+        }
+    }
+    // Fallback: use any MIDI note with this name
+    if (tonicMidi < 0)
+    {
+        for (const auto& pc : allPCs)
+        {
+            if (pc.noteName == tonicName)
+            {
+                tonicMidi = pc.midiNoteNumber;
+                break;
+            }
+        }
+    }
+    if (tonicMidi < 0)
+        return juce::var();
+
+    // Build list of MIDI notes for all degrees
+    std::vector<int> midiNotes;
+    for (const auto& degreeName : degreeNames)
+    {
+        auto it = paoNameMap.find (degreeName);
+        if (it == paoNameMap.end()) continue;
+        const int degreeChromatic = it->second;
+
+        // Calculate MIDI note relative to tonic
+        int interval = degreeChromatic - tonicChromaticIdx;
+        if (interval < 0) interval += 12; // wrap around octave
+
+        int midiNote = tonicMidi + interval;
+        // If interval wraps past 12, the note is in the next octave
+        // (handled by the interval calculation)
+
+        if (midiNote >= 0 && midiNote <= 127)
+            midiNotes.push_back (midiNote);
+    }
+
+    if (midiNotes.empty())
+        return juce::var();
+
+    // Get maqam display info
+    MidiFileGenerator::MaqamInfo info;
+    info.maqamDisplay    = processor.getCurrentMaqamDisplay();
+    info.tonicPaoDisplay = processor.getCurrentTonicDisplay();
+    info.tonicIpn        = processor.getCurrentTonicEnglish();
+    info.tonicSolfege    = processor.getCurrentTonicSolfege();
+    info.midiNotes       = midiNotes;
+
+    // Fallback display names from pitch class data if not set
+    if (info.maqamDisplay.isEmpty())
+        info.maqamDisplay = maqamId;
+    if (info.tonicPaoDisplay.isEmpty())
+        info.tonicPaoDisplay = tonicName;
+    if (info.tonicIpn.isEmpty())
+    {
+        // Build IPN from tonic MIDI note
+        static const char* IPN_NAMES[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+        const int octave = (tonicMidi / 12) - 1;
+        info.tonicIpn = juce::String (IPN_NAMES[tonicMidi % 12]) + juce::String (octave);
+    }
+    if (info.tonicSolfege.isEmpty())
+    {
+        // Try to get solfege from pitch class data
+        for (const auto& pc : allPCs)
+        {
+            if (pc.midiNoteNumber == tonicMidi)
+            {
+                info.tonicSolfege = pc.solfege;
+                break;
+            }
+        }
+    }
+
+    // Generate MIDI file
+    auto midiData = MidiFileGenerator::generate (info);
+    auto filename = MidiFileGenerator::buildFilename (info);
+
+    DBG ("MIDI data size: " << (int) midiData.size() << " bytes");
+    DBG ("MIDI filename: " << filename);
+
+    // Encode as base64 (remove whitespace for data URI compatibility)
+    juce::MemoryBlock block (midiData.data(), midiData.size());
+    juce::String base64 = juce::Base64::toBase64 (block.getData(), block.getSize());
+
+    DBG ("Base64 length: " << base64.length());
+    DBG ("Base64 first 50: " << base64.substring (0, 50));
+
+    auto* result = new juce::DynamicObject();
+    result->setProperty ("filename", filename);
+    result->setProperty ("midiBase64", base64);
+    result->setProperty ("maqamDisplay", info.maqamDisplay);
+    result->setProperty ("tonicDisplay", info.tonicPaoDisplay);
+    return juce::var (result);
+}
+
+juce::var NativeBridge::saveMaqamMidiFile() const
+{
+    // Check if a maqam is selected
+    const juce::String maqamId = processor.getCurrentMaqamId();
+    if (maqamId.isEmpty())
+        return juce::var();
+
+    const auto& degreeNames = processor.getCurrentDegreeNames();
+    if (degreeNames.empty())
+        return juce::var();
+
+    // Build paoNameMap: PAO idName → chromaticIndex
+    std::map<juce::String, int> paoNameMap;
+    const auto& allPCs = processor.getCurrentPitchClasses();
+    for (const auto& pc : allPCs)
+    {
+        if (pc.noteName.isEmpty()) continue;
+        const int ci = chromaticIndexForIpnRef (pc.ipnReference);
+        if (ci >= 0)
+            paoNameMap[pc.noteName] = ci;
+    }
+
+    // Find tonic
+    const juce::String tonicName = degreeNames[0];
+    auto tonicIt = paoNameMap.find (tonicName);
+    if (tonicIt == paoNameMap.end())
+        return juce::var();
+    const int tonicChromaticIdx = tonicIt->second;
+
+    int tonicMidi = -1;
+    for (const auto& pc : allPCs)
+    {
+        if (pc.noteName == tonicName && pc.midiNoteNumber >= 48 && pc.midiNoteNumber < 60)
+        {
+            tonicMidi = pc.midiNoteNumber;
+            break;
+        }
+    }
+    if (tonicMidi < 0)
+    {
+        for (const auto& pc : allPCs)
+        {
+            if (pc.noteName == tonicName)
+            {
+                tonicMidi = pc.midiNoteNumber;
+                break;
+            }
+        }
+    }
+    if (tonicMidi < 0)
+        return juce::var();
+
+    // Build MIDI notes list
+    std::vector<int> midiNotes;
+    for (const auto& degreeName : degreeNames)
+    {
+        auto it = paoNameMap.find (degreeName);
+        if (it == paoNameMap.end()) continue;
+        const int degreeChromatic = it->second;
+        int interval = degreeChromatic - tonicChromaticIdx;
+        if (interval < 0) interval += 12;
+        int midiNote = tonicMidi + interval;
+        if (midiNote >= 0 && midiNote <= 127)
+            midiNotes.push_back (midiNote);
+    }
+
+    if (midiNotes.empty())
+        return juce::var();
+
+    // Build maqam info
+    MidiFileGenerator::MaqamInfo info;
+    info.maqamDisplay    = processor.getCurrentMaqamDisplay();
+    info.tonicPaoDisplay = processor.getCurrentTonicDisplay();
+    info.tonicIpn        = processor.getCurrentTonicEnglish();
+    info.tonicSolfege    = processor.getCurrentTonicSolfege();
+    info.midiNotes       = midiNotes;
+
+    if (info.maqamDisplay.isEmpty()) info.maqamDisplay = maqamId;
+    if (info.tonicPaoDisplay.isEmpty()) info.tonicPaoDisplay = tonicName;
+    if (info.tonicIpn.isEmpty())
+    {
+        static const char* IPN_NAMES[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+        const int octave = (tonicMidi / 12) - 1;
+        info.tonicIpn = juce::String (IPN_NAMES[tonicMidi % 12]) + juce::String (octave);
+    }
+    if (info.tonicSolfege.isEmpty())
+    {
+        for (const auto& pc : allPCs)
+        {
+            if (pc.midiNoteNumber == tonicMidi)
+            {
+                info.tonicSolfege = pc.solfege;
+                break;
+            }
+        }
+    }
+
+    // Generate MIDI file
+    auto midiData = MidiFileGenerator::generate (info);
+    auto filename = MidiFileGenerator::buildFilename (info);
+
+    // Save to Downloads folder
+    auto downloadsDir = juce::File::getSpecialLocation (juce::File::userHomeDirectory)
+                            .getChildFile ("Downloads");
+    auto outputFile = downloadsDir.getChildFile (filename);
+
+    // Make filename unique if it already exists
+    int counter = 1;
+    while (outputFile.existsAsFile())
+    {
+        auto stem = filename.upToLastOccurrenceOf (".", false, false);
+        auto ext = filename.fromLastOccurrenceOf (".", true, false);
+        outputFile = downloadsDir.getChildFile (stem + "_" + juce::String (counter++) + ext);
+    }
+
+    // Write the file
+    if (! outputFile.replaceWithData (midiData.data(), midiData.size()))
+        return juce::var();
+
+    auto* result = new juce::DynamicObject();
+    result->setProperty ("path", outputFile.getFullPathName());
+    result->setProperty ("filename", outputFile.getFileName());
+    return juce::var (result);
 }
 
