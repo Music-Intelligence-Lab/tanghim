@@ -461,6 +461,9 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
     currentTranspositionIdx = -1;
     currentActivePresetIdx  = -1;
     currentDegreeNames.clear();
+    currentDegreeIpnRefs.fill ({});
+    currentDegreeSolfegeRefs.fill ({});
+    currentTranspositionIdMap.clear();
 
     auto doLoad = [this, systemId, startingNote, onComplete] ()
     {
@@ -839,6 +842,139 @@ void ArabicMaqamTunerProcessor::applyMaqam (const juce::String& maqamId, int tra
             }
         }
     }
+
+    // Fetch maqam detail for context-aware IPN labels and solfege (async, updates on arrival)
+    currentDegreeIpnRefs.fill ({});
+    currentDegreeSolfegeRefs.fill ({});
+    fetchAndApplyMaqamDetail();
+}
+
+void ArabicMaqamTunerProcessor::applyDegreeIpnRefs (const MaqamDetailResult& detail)
+{
+    currentDegreeIpnRefs.fill ({});
+    currentDegreeSolfegeRefs.fill ({});
+    for (const auto& pc : detail.ascendingDegrees)
+    {
+        if (pc.ipnReference.isEmpty()) continue;
+        const int ci = chromaticIndexForIpnRef (pc.ipnReference);
+        if (ci >= 0)
+        {
+            currentDegreeIpnRefs[(size_t) ci] = pc.ipnReference;
+            if (pc.solfege.isNotEmpty())
+                currentDegreeSolfegeRefs[(size_t) ci] = pc.solfege;
+        }
+    }
+}
+
+void ArabicMaqamTunerProcessor::fetchAndApplyMaqamDetail()
+{
+    if (currentSystemId.isEmpty() || currentStartingNote.isEmpty()) return;
+    if (currentMaqamId.isEmpty()) return;
+
+    // Determine the maqam endpoint ID and transposition ID
+    // For transpositions, we need to look up the transposition idName from
+    // the base maqam's availableTranspositions mapping.
+    juce::String fetchMaqamId = currentMaqamId;
+    juce::String transpositionId;
+
+    if (currentTranspositionIdx >= 0)
+    {
+        // Find the tonic ID for the current transposition
+        const MaqamListEntry* found = nullptr;
+        for (const auto& mle : currentMaqamList)
+        {
+            if (mle.maqamId == currentMaqamId)
+            {
+                found = &mle;
+                break;
+            }
+        }
+
+        if (found != nullptr && currentTranspositionIdx < (int) found->transpositions.size())
+        {
+            const auto& tonicId = found->transpositions[(size_t) currentTranspositionIdx].tonicId;
+
+            // Look up the transposition idName from the cached base maqam detail
+            auto transIt = currentTranspositionIdMap.find (tonicId);
+            if (transIt != currentTranspositionIdMap.end())
+            {
+                transpositionId = transIt->second;
+            }
+            else
+            {
+                // We don't have the transposition map yet — fetch the base maqam first
+                // to get availableTranspositions, then re-invoke for the transposition
+                std::weak_ptr<std::atomic<bool>> weak (alive);
+                const auto sysId = currentSystemId;
+                const auto startNote = currentStartingNote;
+                const auto maqId = currentMaqamId;
+
+                if (dataCache.hasMaqamDetail (sysId, startNote, maqId))
+                {
+                    const auto& baseDetail = dataCache.getMaqamDetail (sysId, startNote, maqId);
+                    currentTranspositionIdMap = baseDetail.transpositionIdMap;
+                    auto it2 = currentTranspositionIdMap.find (tonicId);
+                    if (it2 != currentTranspositionIdMap.end())
+                        transpositionId = it2->second;
+                }
+                else
+                {
+                    // Fetch base maqam detail to get the transposition map
+                    apiClient.fetchMaqamDetail (maqId, sysId, startNote,
+                        [this, weak, sysId, startNote, maqId] (MaqamDetailResult baseDetail)
+                        {
+                            if (! isAlive (weak)) return;
+                            if (currentMaqamId != maqId) return; // user changed maqam
+
+                            dataCache.storeMaqamDetail (sysId, startNote, maqId, baseDetail);
+                            currentTranspositionIdMap = baseDetail.transpositionIdMap;
+
+                            // Now re-invoke to fetch the transposition with the map populated
+                            fetchAndApplyMaqamDetail();
+                        });
+                    return;
+                }
+            }
+        }
+    }
+
+    // Build the cache key: for transpositions, include the transpositionId
+    // so each transposition is cached separately
+    juce::String cacheKey = transpositionId.isNotEmpty()
+        ? (currentMaqamId + ":" + transpositionId)
+        : currentMaqamId;
+
+    // Check cache first
+    if (dataCache.hasMaqamDetail (currentSystemId, currentStartingNote, cacheKey))
+    {
+        const auto& detail = dataCache.getMaqamDetail (currentSystemId, currentStartingNote, cacheKey);
+        applyDegreeIpnRefs (detail);
+        if (! currentTranspositionIdMap.empty() || currentTranspositionIdx < 0)
+            currentTranspositionIdMap = detail.transpositionIdMap;
+        notifyTuningChanged();
+        return;
+    }
+
+    // Fetch from API
+    std::weak_ptr<std::atomic<bool>> weak (alive);
+    const auto sysId = currentSystemId;
+    const auto startNote = currentStartingNote;
+    const auto maqId = currentMaqamId;
+
+    apiClient.fetchMaqamDetail (fetchMaqamId, sysId, startNote,
+        [this, weak, sysId, startNote, cacheKey, maqId] (MaqamDetailResult detail)
+        {
+            if (! isAlive (weak)) return;
+            if (currentMaqamId != maqId) return; // user changed maqam while fetching
+
+            dataCache.storeMaqamDetail (sysId, startNote, cacheKey, detail);
+            applyDegreeIpnRefs (detail);
+            if (! detail.transpositionIdMap.empty())
+                currentTranspositionIdMap = detail.transpositionIdMap;
+            notifyTuningChanged();
+        },
+        {} /* onError — silently fallback to default IPN labels */,
+        transpositionId);
 }
 
 void ArabicMaqamTunerProcessor::clearPreset (int idx)

@@ -43,6 +43,8 @@ const EMPTY_STATE: TuningState = {
   paoNameMap: {},
   paoOrder: [],
   paoNameInfo: {},
+  degreeIpnMap: {},
+  degreeSolfegeMap: {},
   selectedMaqamId: '',
   transpositionIndex: -1,
   activePresetIndex: -1,
@@ -983,6 +985,8 @@ export default function App() {
           bankWidthPx={bankWidthPx}
           noteNames={tuningState.noteNames}
           perNoteOverrides={tuningState.perNoteOverrides}
+          degreeIpnMap={tuningState.degreeIpnMap}
+          degreeSolfegeMap={tuningState.degreeSolfegeMap}
           maqamDegreeIndices={maqamDegreeIndices}
           maqamTonicIndex={maqamTonicIndex}
           maqamTonicMidi={maqamTonicMidi}

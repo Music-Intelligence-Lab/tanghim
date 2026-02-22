@@ -77,6 +77,14 @@ export interface TuningState {
   paoOrder: string[];
   /** PAO idName → { englishName, solfege } for display in transposition dropdown. */
   paoNameInfo: Record<string, { englishName: string; solfege: string }>;
+  /** Degree-aware IPN references from maqam detail API.
+   *  Key = chromatic index (0-11) as string, value = IPN letter name (e.g. "Gb", "F#").
+   *  Only populated for degree slots when a maqam is selected. */
+  degreeIpnMap: Record<string, string>;
+  /** Degree-aware solfege from maqam detail API.
+   *  Key = chromatic index (0-11) as string, value = solfege string (e.g. "Sol-b3", "Fa#3").
+   *  Only populated for degree slots when a maqam is selected. */
+  degreeSolfegeMap: Record<string, string>;
   /** Currently selected maqam ID (e.g. "maqam_rast"), empty if none. */
   selectedMaqamId: string;
   /** Transposition index within the maqam (-1 = base tonic). */

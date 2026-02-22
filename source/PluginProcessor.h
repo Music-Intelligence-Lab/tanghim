@@ -105,6 +105,8 @@ public:
     const std::vector<juce::String>&         getCurrentDegreeNames()       const { return currentDegreeNames; }
     bool                                     getSessionRecallInProgress()  const { return sessionRecallInProgress; }
     bool                                     getHasRecalledSessionState()  const { return hasRecalledSessionState; }
+    const std::array<juce::String, 12>&      getDegreeIpnRefs()            const { return currentDegreeIpnRefs; }
+    const std::array<juce::String, 12>&      getDegreeSolfegeRefs()        const { return currentDegreeSolfegeRefs; }
 
     // Maqam display info (for MIDI export)
     juce::String                             getCurrentMaqamDisplay()      const { return currentMaqamDisplay; }
@@ -203,6 +205,11 @@ private:
     bool                      sessionRecallInProgress = false;
     int                       currentTonicChromatic  = 0;   // 0-11, used for tonic-relative slot mapping
 
+    // ── Maqam detail data (context-aware IPN references + solfege) ─────────
+    std::array<juce::String, 12> currentDegreeIpnRefs;              // per chromatic slot, empty = no override
+    std::array<juce::String, 12> currentDegreeSolfegeRefs;          // per chromatic slot, empty = no override
+    std::map<juce::String, juce::String> currentTranspositionIdMap;  // tonicId → transposition idName
+
     // ── Direct MIDI device input for preset triggering ──────────────────────
     std::unique_ptr<juce::MidiInput> midiPresetInput;
     juce::String                     midiPresetDeviceName;  // Empty = disabled
@@ -219,6 +226,8 @@ private:
     // ── Internal helpers ──────────────────────────────────────────────────────
     void rebuildTuningStateFromCache();
     void fetchMaqamListIfNeeded();
+    void fetchAndApplyMaqamDetail();
+    void applyDegreeIpnRefs (const MaqamDetailResult& detail);
     void applyMaqamDegrees (const MaqamDegrees& degrees);
     void notifyTuningChanged();
     juce::String buildScaleName() const;

@@ -2,21 +2,23 @@
 
 - Add an internal oscillator (triangle wave) with ADSR and allow computer keyboard input so user can play the tuner without needing MIDI input if desired. This should be activated by a button named "Oscillator" or "Osc" next to the MTS-ESP, MPE and Pitch Bend badges. The oscillator should be **enableable alongside** the other output modes (not mutually exclusive) so the user can play both the internal oscillator and their synth simultaneously to verify the synth is producing the correct tuning
 
-- Make presets and sliders **MIDI-mappable and automatable** (JUCE AudioProcessorParameter integration)
+- our use of enharmonic equivalents in the UI needs to be maqam dependent, meaning that the sequence of maqam degrees should always have a unique natural regardless of the accidental, for example, saba should be d e f gb a bb c, and hijaz should be d eb f# g a bb c. does it makes sense to you?
 
-- when a maqam is selected and its tuning sliders are modified, do not deselect it's degrees.. keep them selected but add an asterix * to the maqam name, so it can be saved in the presets as a "modified" version of that maqam.
+- add a global tuning UI element that allows to change the "reference frequency" of the entire tuning system up or down... it should have a knob and a text box so user can be precise or work by ear. In common practice this is referred to as "Master Tune" but that is fucking racist, also incorrect. Call it Reference Freq. The number displayed should be the frequency in Hz of the tuning systems's starting note name or the first pitch class in its octave 1, and although the modification will probably have to be in cents, we should display Hz.
+
+- in status bar, "Preset MIDI" should say, "Preset MIDI Mapping via:"
+
+- still need to fix the automation not refreshing fast enough in the transmitter VST UI
 
 - Add **cache status icons** to tuning system dropdown items (aligned far-right) showing whether the data related to each tuning system is already cached or needs to be downloaded (this includes maqamat and transpositions not just the tuning system data)
 
-- move slider IPN name under cents value, add solfege under it (we already use it in the transposition dropdown) and then the PAO note name should stay as the last item so it can have multiple lines without shifting other items.
-
-- ~~In the status bar add a badge/button that the user can click and drag onto their daw or their desktop that is a midi file rendering of the IPN notes used in a maqam . it's format should be like this sample midi file for maqam rast: maqām_rāst_al-rāst_C3_Do3.mid~~ **DONE** - Native MIDI drag button in status bar (Feb 21 2026)
+- add a button next to update in the status bar to clear cache
 
 - sometimes changing maqamat whilst playing causes midi notes to hang. we should find out why and fix.
 
 - I need you to document your research about enabeling "tuning" in Max and M4L devices in our diary. This will be useful for later so we can create a guide for how to do it and save ourselves this work in the future.
 
-- Update all references to Arabic Maqam Tuner including C++ class names and any styling etc... we should have none, everything should be Tanghīm. And change our project directory name to "tanghim".
+- Update all references to Arabic Maqam Tuner including C++ class names and any styling etc... we should have none, everything should be Tanghīm/Tanghim. And change our project directory name to "tanghim".
 
 
 ## Performance

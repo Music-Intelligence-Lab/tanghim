@@ -193,9 +193,21 @@ void ApiDataCache::loadFromDisk()
         lazyKeys.insert (key);
     }
 
+    // Scan maqam detail directory for lazy loading
+    const auto detailDir = getMaqamDetailDirectory();
+    if (detailDir.isDirectory())
+    {
+        for (const auto& f : detailDir.findChildFiles (juce::File::findFiles, false, "*.json"))
+        {
+            const juce::String key = f.getFileNameWithoutExtension().replaceCharacter ('_', ':');
+            maqamDetailLazyKeys.insert (key);
+        }
+    }
+
     const auto elapsed = juce::Time::getMillisecondCounterHiRes() - startTime;
     DBG ("ApiDataCache::loadFromDisk: scanned " + juce::String ((int) lazyKeys.size())
-         + " cached entries in " + juce::String (elapsed, 1) + " ms (lazy, not yet deserialized)");
+         + " tuning + " + juce::String ((int) maqamDetailLazyKeys.size())
+         + " maqam detail entries in " + juce::String (elapsed, 1) + " ms (lazy)");
 }
 
 void ApiDataCache::clearAll()
@@ -203,9 +215,132 @@ void ApiDataCache::clearAll()
     juce::ScopedLock sl (lock);
     cache.clear();
     lazyKeys.clear();
+    maqamDetailCache.clear();
+    maqamDetailLazyKeys.clear();
     tuningSystemsList.clear();
     hasSystems = false;
     getCacheDirectory().deleteRecursively();
+    getMaqamDetailDirectory().deleteRecursively();
+}
+
+// ── Maqam detail cache ─────────────────────────────────────────────────────
+
+juce::File ApiDataCache::getMaqamDetailDirectory() const
+{
+    return getCacheDirectory().getChildFile ("maqam-detail");
+}
+
+juce::File ApiDataCache::getMaqamDetailFile (const juce::String& key) const
+{
+    return getMaqamDetailDirectory().getChildFile (key.replaceCharacter (':', '_') + ".json");
+}
+
+juce::String ApiDataCache::makeMaqamDetailKey (const juce::String& systemId,
+                                                const juce::String& startingNote,
+                                                const juce::String& maqamId) const
+{
+    return systemId + ":" + startingNote + ":" + maqamId;
+}
+
+bool ApiDataCache::hasMaqamDetail (const juce::String& systemId,
+                                    const juce::String& startingNote,
+                                    const juce::String& maqamId) const
+{
+    juce::ScopedLock sl (lock);
+    const auto key = makeMaqamDetailKey (systemId, startingNote, maqamId);
+    return maqamDetailCache.count (key) > 0 || maqamDetailLazyKeys.count (key) > 0;
+}
+
+const MaqamDetailResult& ApiDataCache::getMaqamDetail (const juce::String& systemId,
+                                                        const juce::String& startingNote,
+                                                        const juce::String& maqamId) const
+{
+    juce::ScopedLock sl (lock);
+    static MaqamDetailResult empty;
+    const auto key = makeMaqamDetailKey (systemId, startingNote, maqamId);
+    ensureMaqamDetailLoaded (key);
+    auto it = maqamDetailCache.find (key);
+    return (it != maqamDetailCache.end()) ? it->second : empty;
+}
+
+void ApiDataCache::storeMaqamDetail (const juce::String& systemId,
+                                      const juce::String& startingNote,
+                                      const juce::String& maqamId,
+                                      MaqamDetailResult detail)
+{
+    juce::ScopedLock sl (lock);
+    const auto key = makeMaqamDetailKey (systemId, startingNote, maqamId);
+    maqamDetailLazyKeys.erase (key);
+    maqamDetailCache[key] = std::move (detail);
+    saveMaqamDetailToDisk (key, maqamDetailCache[key]);
+}
+
+void ApiDataCache::ensureMaqamDetailLoaded (const juce::String& key) const
+{
+    if (maqamDetailCache.count (key) > 0) return;
+    if (maqamDetailLazyKeys.count (key) == 0) return;
+
+    const auto file = getMaqamDetailFile (key);
+    if (file.existsAsFile())
+    {
+        const auto json = juce::JSON::parse (file.loadFileAsString());
+        if (json.getDynamicObject() != nullptr)
+            maqamDetailCache[key] = jsonToMaqamDetail (json);
+    }
+    maqamDetailLazyKeys.erase (key);
+}
+
+void ApiDataCache::saveMaqamDetailToDisk (const juce::String& key,
+                                           const MaqamDetailResult& detail) const
+{
+    const auto dir = getMaqamDetailDirectory();
+    if (! dir.isDirectory())
+    {
+        const auto result = dir.createDirectory();
+        if (result.failed()) return;
+    }
+    getMaqamDetailFile (key).replaceWithText (juce::JSON::toString (maqamDetailToJson (detail)));
+}
+
+juce::var ApiDataCache::maqamDetailToJson (const MaqamDetailResult& detail)
+{
+    auto* obj = new juce::DynamicObject();
+
+    juce::Array<juce::var> degrees;
+    for (const auto& pc : detail.ascendingDegrees)
+        degrees.add (pitchClassToJson (pc));
+    obj->setProperty ("ascendingDegrees", degrees);
+
+    auto* transMap = new juce::DynamicObject();
+    for (const auto& [tonicId, transId] : detail.transpositionIdMap)
+        transMap->setProperty (tonicId, transId);
+    obj->setProperty ("transpositionIdMap", juce::var (transMap));
+
+    return juce::var (obj);
+}
+
+MaqamDetailResult ApiDataCache::jsonToMaqamDetail (const juce::var& json)
+{
+    MaqamDetailResult result;
+    if (json.getDynamicObject() == nullptr) return result;
+    const auto& p = json.getDynamicObject()->getProperties();
+
+    const juce::var* degrees = p.getVarPointer ("ascendingDegrees");
+    if (degrees && degrees->isArray())
+    {
+        for (int i = 0; i < degrees->size(); ++i)
+            result.ascendingDegrees.push_back (jsonToPitchClass ((*degrees)[i]));
+    }
+
+    const juce::var* transMap = p.getVarPointer ("transpositionIdMap");
+    if (transMap && transMap->getDynamicObject())
+    {
+        const auto& tp = transMap->getDynamicObject()->getProperties();
+        for (int i = 0; i < tp.size(); ++i)
+            result.transpositionIdMap[tp.getName (i).toString()] = tp.getValueAt (i).toString();
+    }
+
+    return result;
 }
 
 bool ApiDataCache::isInMemory (const juce::String& systemId,

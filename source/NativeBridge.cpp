@@ -456,6 +456,23 @@ juce::var NativeBridge::buildTuningStateJson() const
     root->setProperty ("paoOrder", juce::var (paoOrderArr));
     root->setProperty ("paoNameInfo", juce::var (paoNameInfoObj));
 
+    // Degree-aware IPN + solfege references (from maqam detail API — e.g. Saba shows "Gb" not "F#")
+    auto* degreeIpnMapObj = new juce::DynamicObject();
+    auto* degreeSolfegeMapObj = new juce::DynamicObject();
+    {
+        const auto& ipnRefs = processor.getDegreeIpnRefs();
+        const auto& solfegeRefs = processor.getDegreeSolfegeRefs();
+        for (int i = 0; i < 12; ++i)
+        {
+            if (ipnRefs[(size_t) i].isNotEmpty())
+                degreeIpnMapObj->setProperty (juce::String (i), ipnRefs[(size_t) i]);
+            if (solfegeRefs[(size_t) i].isNotEmpty())
+                degreeSolfegeMapObj->setProperty (juce::String (i), solfegeRefs[(size_t) i]);
+        }
+    }
+    root->setProperty ("degreeIpnMap", juce::var (degreeIpnMapObj));
+    root->setProperty ("degreeSolfegeMap", juce::var (degreeSolfegeMapObj));
+
     // Maqam selection state (for session recall + JS sync)
     root->setProperty ("selectedMaqamId",        processor.getCurrentMaqamId());
     root->setProperty ("transpositionIndex",     processor.getCurrentTranspositionIdx());

@@ -3,7 +3,19 @@
 #include "../model/TuningSystem.h"
 #include "../model/MaqamListEntry.h"
 #include <juce_core/juce_core.h>
+#include <map>
 #include <vector>
+
+/**
+ * Result of parsing a maqam detail API response.
+ * Contains ascending degree pitch classes and a mapping from
+ * tonicId → transposition idName (for looking up transposition endpoints).
+ */
+struct MaqamDetailResult
+{
+    std::vector<PitchClass> ascendingDegrees;
+    std::map<juce::String, juce::String> transpositionIdMap;  // tonicId → transposition idName
+};
 
 /**
  * Pure static functions that parse raw juce::var JSON responses from the
@@ -34,10 +46,10 @@ public:
     static std::vector<MaqamListEntry> parseMaqamList (const juce::var& json);
 
     /**
-     * Parse GET /maqamat/{idName}?...&pitchClassDataType=midiNoteDeviation
-     * Returns the ascending pitch classes from the maqam detail response.
+     * Parse GET /maqamat/{idName}?...&pitchClassDataType=all
+     * Returns ascending pitch classes and available transposition mapping.
      */
-    static std::vector<PitchClass> parseMaqamDetail (const juce::var& json);
+    static MaqamDetailResult parseMaqamDetail (const juce::var& json);
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     /**

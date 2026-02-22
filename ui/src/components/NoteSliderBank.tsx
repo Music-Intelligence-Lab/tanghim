@@ -12,6 +12,8 @@ interface Props {
   bankWidthPx: number
   noteNames: Record<string, Record<string, string>>
   perNoteOverrides: Record<string, number>
+  degreeIpnMap: Record<string, string>
+  degreeSolfegeMap: Record<string, string>
   maqamDegreeIndices: Set<number>
   maqamTonicIndex: number
   maqamTonicMidi: number
@@ -23,7 +25,7 @@ interface Props {
   onGestureEnd?: (chromaticIndex: number) => void
 }
 
-const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidthPx, noteNames, perNoteOverrides, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, modifiedSlots, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
+const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidthPx, noteNames, perNoteOverrides, degreeIpnMap, degreeSolfegeMap, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, modifiedSlots, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
   const renderStart = Math.floor(startMidi)
   const pixelOffset = (startMidi - renderStart) * SLOT_WIDTH_PX
 
@@ -38,7 +40,8 @@ const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidt
           const midi = renderStart + i
           const chromaticIndex = midi % 12
           const ipnOctave = Math.floor(midi / 12) - 1
-          const ipnLabel = `${IPN_NAMES[chromaticIndex]}${ipnOctave}`
+          const ipnName = degreeIpnMap?.[String(chromaticIndex)] ?? IPN_NAMES[chromaticIndex]
+          const ipnLabel = `${ipnName}${ipnOctave}`
           const paoName = noteNames?.[String(chromaticIndex)]?.[String(ipnOctave)] ?? '—'
           const slot = slots[chromaticIndex]
 
@@ -47,8 +50,8 @@ const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidt
           const effectiveIndex = noteOverride !== undefined ? noteOverride : slot.selectedIndex
           const hasOverride = noteOverride !== undefined
 
-          // Get solfege from the effective variant
-          const solfege = slot.variants[effectiveIndex]?.solfege ?? '—'
+          // Get solfege: prefer maqam detail source (same as IPN), fall back to variant
+          const solfege = degreeSolfegeMap?.[String(chromaticIndex)] ?? slot.variants[effectiveIndex]?.solfege ?? '—'
 
           // Home octave: tonic to tonic+11. The octave above (tonic+12) is treated as equiv.
           const isDegree = maqamDegreeIndices.has(chromaticIndex)

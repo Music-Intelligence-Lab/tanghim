@@ -98,6 +98,17 @@ IPN references respect Arabic maqam theory. Microtonal modifiers indicate what a
 - Chromatic order uses sharps internally: `C, C#, D, D#, E, F, F#, G, G#, A, A#, B`
 - Logic implemented in `PitchClass::ipnReferenceFromEnglishName()`
 
+### Context-Aware IPN Labels & Solfege (Maqam Detail API)
+Slider IPN labels and solfege are context-aware when a maqam is selected — both come from the same maqam detail data source:
+- **Problem**: The same pitch at chromatic index 6 should show "F#" in Hijaz (degree III, since G is degree IV) but "Gb" in Saba (degree IV, since F is degree III). IPN and solfege must be consistent (same data source).
+- **Solution**: The maqam detail API (`GET /maqamat/{id}?pitchClassDataType=all`) provides per-degree `ipnReferenceNoteName` and `solfege`
+- `MaqamDetailResult` struct: `ascendingDegrees` (vector of PitchClass) + `transpositionIdMap` (tonicId → transposition idName)
+- `currentDegreeIpnRefs[12]` + `currentDegreeSolfegeRefs[12]`: per chromatic slot overrides from maqam detail
+- `degreeIpnMap` + `degreeSolfegeMap` in tuning state JSON: chromatic index → IPN / solfege string
+- NoteSliderBank uses degree maps when available, falls back to tuning system data
+- Cached per `systemId:startingNote:maqamId` in `~/Library/Tanghim/cache/maqam-detail/`
+- For transpositions: base maqam detail provides `availableTranspositions` mapping, then transposition-specific detail is fetched with `&transpositionId=` parameter
+
 ### Octave/Register Mapping (IMPORTANT)
 Pitch classes are filtered by **MIDI note number**, NOT by the API's `octave` field:
 - The API's `octave` field is **tonic-relative** — a G-based system has octave 1 spanning G2–F#3, not C3–B3
@@ -222,7 +233,9 @@ Base URL: `https://diarmaqar.netlify.app/api`
 Key endpoints:
 - `GET /tuning-systems` — list all systems
 - `GET /tuning-systems/{id}/{startingNote}/pitch-classes?pitchClassDataType=all` — all pitch data
-- `GET /maqamat?tuningSystem={id}&startingNote={note}` — maqam list with transpositions and degrees
+- `GET /tuning-systems/{id}/{startingNote}/maqamat?includeMaqamDegrees=true&includeTranspositions=true` — maqam list with degrees
+- `GET /maqamat/{maqamId}?tuningSystem={id}&startingNote={note}&pitchClassDataType=all` — maqam detail with context-aware IPN
+- `GET /maqamat/{maqamId}?tuningSystem={id}&startingNote={note}&pitchClassDataType=all&transpositionId={idName}` — transposed maqam detail
 
 ### Response structure (important for parsing)
 

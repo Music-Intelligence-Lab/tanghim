@@ -2,6 +2,7 @@
 #include "../model/PitchClass.h"
 #include "../model/TuningSystem.h"
 #include "../model/MaqamListEntry.h"
+#include "ApiResponseParser.h"
 #include <juce_core/juce_core.h>
 #include <juce_events/juce_events.h>
 #include <functional>
@@ -54,16 +55,18 @@ public:
         ErrorCb onError = {});
 
     /**
-     * GET /maqamat/{maqamId}?tuningSystem={id}&startingNote={note}&pitchClassDataType=midiNoteDeviation
-     * Returns ascending/descending pitch data for a specific maqam.
-     * The callback receives the ascending pitch classes (parsed to PitchClass structs).
+     * GET /maqamat/{maqamId}?tuningSystem={id}&startingNote={note}&pitchClassDataType=all
+     * Optionally with &transpositionId={idName} for transposed maqamat.
+     * Returns ascending degree pitch classes with context-aware IPN references,
+     * plus available transposition mapping (tonicId → transposition idName).
      */
     void fetchMaqamDetail (
         const juce::String& maqamId,
         const juce::String& systemId,
         const juce::String& startingNote,
-        std::function<void (std::vector<PitchClass>)> onSuccess,
-        ErrorCb onError = {});
+        std::function<void (MaqamDetailResult)> onSuccess,
+        ErrorCb onError = {},
+        const juce::String& transpositionId = {});
 
     /** Run a generic job on the background thread (e.g. cache preloading). */
     void runOnThread (std::function<void()> job);

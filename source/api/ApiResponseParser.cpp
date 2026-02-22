@@ -149,30 +149,49 @@ std::vector<MaqamListEntry> ApiResponseParser::parseMaqamList (const juce::var& 
     return result;
 }
 
-std::vector<PitchClass> ApiResponseParser::parseMaqamDetail (const juce::var& json)
+MaqamDetailResult ApiResponseParser::parseMaqamDetail (const juce::var& json)
 {
-    std::vector<PitchClass> result;
+    MaqamDetailResult result;
 
-    // Response: { maqam: {...}, pitchData: { ascending: [...], descending: [...] }, ... }
-    const juce::var* arr = nullptr;
-    if (auto* root = json.getDynamicObject())
+    auto* root = json.getDynamicObject();
+    if (root == nullptr) return result;
+
+    // Parse pitchData.ascending
+    const juce::var* pitchData = root->getProperties().getVarPointer ("pitchData");
+    if (pitchData && pitchData->getDynamicObject())
     {
-        const juce::var* pitchData = root->getProperties().getVarPointer ("pitchData");
-        if (pitchData && pitchData->getDynamicObject())
+        const auto& pdProps = pitchData->getDynamicObject()->getProperties();
+        const juce::var* ascending = pdProps.getVarPointer ("ascending");
+        if (ascending && ascending->isArray())
         {
-            const auto& pdProps = pitchData->getDynamicObject()->getProperties();
-            const juce::var* ascending = pdProps.getVarPointer ("ascending");
-            if (ascending && ascending->isArray())
-                arr = ascending;
+            for (int i = 0; i < ascending->size(); ++i)
+            {
+                auto pc = parseSinglePitchClass ((*ascending)[i]);
+                if (pc.isValid())
+                    result.ascendingDegrees.push_back (std::move (pc));
+            }
         }
     }
-    if (arr == nullptr) return result;
 
-    for (int i = 0; i < arr->size(); ++i)
+    // Parse availableTranspositions: [ { idName, tonic: { idName } }, ... ]
+    const juce::var* transArr = root->getProperties().getVarPointer ("availableTranspositions");
+    if (transArr && transArr->isArray())
     {
-        auto pc = parseSinglePitchClass ((*arr)[i]);
-        if (pc.isValid())
-            result.push_back (std::move (pc));
+        for (int i = 0; i < transArr->size(); ++i)
+        {
+            const auto& entry = (*transArr)[i];
+            if (entry.getDynamicObject() == nullptr) continue;
+            const auto& ep = entry.getDynamicObject()->getProperties();
+
+            const juce::var* transIdName = ep.getVarPointer ("idName");
+            const juce::var* tonicObj = ep.getVarPointer ("tonic");
+            if (transIdName && tonicObj && tonicObj->getDynamicObject())
+            {
+                const juce::var* tonicIdName = tonicObj->getDynamicObject()->getProperties().getVarPointer ("idName");
+                if (tonicIdName)
+                    result.transpositionIdMap[tonicIdName->toString()] = transIdName->toString();
+            }
+        }
     }
 
     return result;
