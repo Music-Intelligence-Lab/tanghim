@@ -62,6 +62,7 @@ source/
     MpePitchBendProcessor.h/.cpp   MPE channel allocation + per-note pitch bend (shared with Receiver)
     MonoPitchBendProcessor.h/.cpp  14-bit mono pitch bend (shared with Receiver)
     MidiFileGenerator.h/.cpp SMF Type 0 generator for maqam scale export
+    TriangleOscillator.h     Header-only polyphonic triangle wave reference oscillator
   receiver/
     ReceiverProcessor.h/.cpp MTS-ESP client + pitch bend MIDI effect processor
     ReceiverEditor.h/.cpp    Minimal JUCE-native editor (mode, PB range, status)
@@ -155,6 +156,19 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - UI: SVG arc knob (drag ±cents, Shift=fine, dbl-click=reset), editable Hz input, cents display, ±100 cent semitone buttons
 - Bridge: `setReferenceFreqCents` (fire-and-forget), `setReferenceFreqCentsFinalize` (returns state), gesture start/end
 - APVTS: `ref_freq` param for DAW automation, saved/restored in session state
+
+### Internal Reference Oscillator
+- Polyphonic triangle-wave oscillator (16 pre-allocated voices, header-only in `TriangleOscillator.h`)
+- Toggled via "Osc" badge in `OutputModeSelector` (warm coral, clickable)
+- **Additive** — runs alongside MTS-ESP/MPE/Pitch Bend simultaneously
+- Output level: -18 dBFS (`* 0.125`), naive triangle (no band-limiting needed for reference)
+- Envelope: 5ms linear attack, 100ms linear release (no clicks)
+- Per-buffer frequency update from `TuningEngine::getFrequencyForMidiNote()` — slider drag heard immediately
+- `oscillatorEnabled` (`std::atomic<bool>`) — lock-free audio thread read, `allNotesOff()` on disable
+- No APVTS parameter (utility toggle, not a musical parameter)
+- Persisted in DAW session state + `~/Library/Tanghim/settings.json`
+- `getTailLengthSeconds()` = 0.15 (100ms release needs DAW to keep processing after note-off)
+- Bridge: `setOscillatorEnabled(bool)` fire-and-forget, `oscillatorEnabled` in tuning state JSON
 
 ### Per-Note Overrides
 - Per-MIDI-note variant overrides allow different variants for the same pitch class in different octaves

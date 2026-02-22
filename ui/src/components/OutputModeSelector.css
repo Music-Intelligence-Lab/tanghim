@@ -28,6 +28,13 @@
   opacity: 0.8;
 }
 
+.mts-badge-osc {
+  color: #ffab91;
+  border-color: rgba(255, 171, 145, 0.4);
+  cursor: pointer;
+}
+.mts-badge-osc:hover { opacity: 0.8; }
+
 .mts-badge-native {
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 40%, transparent);

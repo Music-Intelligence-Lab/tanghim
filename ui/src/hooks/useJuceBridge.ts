@@ -198,6 +198,13 @@ export function useJuceBridge() {
     return callNative<{ path: string; filename: string }>('saveMaqamMidiFile')
   }, [])
 
+  // ── Internal reference oscillator ────────────────────────────────────────
+
+  /** Toggle internal reference oscillator on/off. Fire-and-forget. */
+  const setOscillatorEnabled = useCallback(async (enabled: boolean): Promise<void> => {
+    await callNative('setOscillatorEnabled', enabled)
+  }, [])
+
   // ── Reference frequency control ──────────────────────────────────────────
 
   /** Fire-and-forget: update reference freq offset (live MTS-ESP update). */
@@ -291,6 +298,7 @@ export function useJuceBridge() {
     setNoteVariant,
     setSlotCents,
     setSlotCentsFinalize,
+    setOscillatorEnabled,
     setReferenceFreqCents,
     setReferenceFreqCentsFinalize,
     beginRefFreqGesture,
@@ -318,7 +326,7 @@ export function useJuceBridge() {
     setMidiPresetChannel,
     getMidiPresetChannel,
   }), [getTuningSystems, selectTuningSystem, setSliderVariant, setNoteVariant,
-       setSlotCents, setSlotCentsFinalize,
+       setSlotCents, setSlotCentsFinalize, setOscillatorEnabled,
        setReferenceFreqCents, setReferenceFreqCentsFinalize, beginRefFreqGesture, endRefFreqGesture,
        applyPreset, assignPreset, clearPreset,
        getMaqamList, applyMaqam, checkForUpdates, getCurrentState, setStartMidi, getMaqamMidiDragData, saveMaqamMidiFile,

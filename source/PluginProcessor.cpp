@@ -116,13 +116,18 @@ ArabicMaqamTunerProcessor::~ArabicMaqamTunerProcessor()
 
 // ── AudioProcessor interface ──────────────────────────────────────────────────
 
-void ArabicMaqamTunerProcessor::prepareToPlay (double /*sampleRate*/, int /*samplesPerBlock*/) {}
+void ArabicMaqamTunerProcessor::prepareToPlay (double sampleRate, int /*samplesPerBlock*/)
+{
+    oscillator.prepare (sampleRate);
+}
 void ArabicMaqamTunerProcessor::releaseResources() {}
 
 void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<float>& audio,
                                                juce::MidiBuffer& midi)
 {
     audio.clear();
+
+    const bool oscOn = oscillatorEnabled.load (std::memory_order_relaxed);
 
     // Track Note On / Note Off activity for UI feedback (lock-free, per-note)
     // Preset triggering is handled via direct MIDI device input (handleIncomingMidiMessage)
@@ -133,9 +138,38 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<float>& audio,
         const auto word = note >> 5;                        // 0-3
         const auto bit  = uint32_t (1u << (note & 31));
         if (msg.isNoteOn())
+        {
             noteOnBits[word].fetch_or (bit, std::memory_order_relaxed);
+            if (oscOn)
+                oscillator.noteOn (note, tuningEngine.getFrequencyForMidiNote (note));
+        }
         else if (msg.isNoteOff())
+        {
             noteOffBits[word].fetch_or (bit, std::memory_order_relaxed);
+            if (oscOn)
+                oscillator.noteOff (note);
+        }
+    }
+
+    // Generate reference oscillator audio if enabled
+    if (oscOn)
+    {
+        // Update active voice frequencies from TuningEngine (live slider drag feedback)
+        for (auto& v : oscillator.voices)
+        {
+            if (v.active && v.midiNote >= 0)
+                v.updateFrequency (tuningEngine.getFrequencyForMidiNote (v.midiNote),
+                                   oscillator.sampleRate);
+        }
+
+        const int numSamples  = audio.getNumSamples();
+        const int numChannels = audio.getNumChannels();
+        for (int s = 0; s < numSamples; ++s)
+        {
+            const auto sample = static_cast<float> (oscillator.processSample() * 0.125);
+            for (int ch = 0; ch < numChannels; ++ch)
+                audio.addSample (ch, s, sample);
+        }
     }
 
     // MIDI passes through unchanged — tuning is applied via MTS-ESP shared memory.
@@ -147,6 +181,8 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<double>& audio,
 {
     audio.clear();
 
+    const bool oscOn = oscillatorEnabled.load (std::memory_order_relaxed);
+
     for (const auto metadata : midi)
     {
         const auto msg  = metadata.getMessage();
@@ -154,9 +190,36 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<double>& audio,
         const auto word = note >> 5;
         const auto bit  = uint32_t (1u << (note & 31));
         if (msg.isNoteOn())
+        {
             noteOnBits[word].fetch_or (bit, std::memory_order_relaxed);
+            if (oscOn)
+                oscillator.noteOn (note, tuningEngine.getFrequencyForMidiNote (note));
+        }
         else if (msg.isNoteOff())
+        {
             noteOffBits[word].fetch_or (bit, std::memory_order_relaxed);
+            if (oscOn)
+                oscillator.noteOff (note);
+        }
+    }
+
+    if (oscOn)
+    {
+        for (auto& v : oscillator.voices)
+        {
+            if (v.active && v.midiNote >= 0)
+                v.updateFrequency (tuningEngine.getFrequencyForMidiNote (v.midiNote),
+                                   oscillator.sampleRate);
+        }
+
+        const int numSamples  = audio.getNumSamples();
+        const int numChannels = audio.getNumChannels();
+        for (int s = 0; s < numSamples; ++s)
+        {
+            const double sample = oscillator.processSample() * 0.125;
+            for (int ch = 0; ch < numChannels; ++ch)
+                audio.addSample (ch, s, sample);
+        }
     }
 }
 
@@ -269,6 +332,9 @@ void ArabicMaqamTunerProcessor::getStateInformation (juce::MemoryBlock& dest)
 
     // Reference frequency offset (global concert pitch)
     state.setProperty ("referenceCentsOffset", referenceCentsOffset, nullptr);
+
+    // Internal reference oscillator
+    state.setProperty ("oscillatorEnabled", oscillatorEnabled.load (std::memory_order_relaxed), nullptr);
 
     // Include APVTS state as a child
     state.addChild (apvts.copyState(), -1, nullptr);
@@ -383,6 +449,11 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
     auto refCentsProp = state.getProperty ("referenceCentsOffset", juce::var());
     if (! refCentsProp.isVoid())
         referenceCentsOffset = juce::jlimit (-700.0, 700.0, (double) refCentsProp);
+
+    // Restore oscillator enabled state
+    auto oscEnabledProp = state.getProperty ("oscillatorEnabled", juce::var());
+    if (! oscEnabledProp.isVoid())
+        oscillatorEnabled.store ((bool) oscEnabledProp, std::memory_order_relaxed);
 
     auto slidersNode = state.getChildWithName ("SliderPositions");
     std::array<int, 12> savedPositions;
@@ -1073,6 +1144,15 @@ void ArabicMaqamTunerProcessor::endRefFreqGesture()
         refFreqParam->endChangeGesture();
 }
 
+// ── Internal reference oscillator ──────────────────────────────────────────────
+
+void ArabicMaqamTunerProcessor::setOscillatorEnabled (bool enabled)
+{
+    const bool wasEnabled = oscillatorEnabled.exchange (enabled, std::memory_order_relaxed);
+    if (wasEnabled && ! enabled)
+        oscillator.allNotesOff();
+}
+
 // ── Accessors ─────────────────────────────────────────────────────────────────
 
 const std::vector<TuningSystem>& ArabicMaqamTunerProcessor::getTuningSystems() const
@@ -1714,6 +1794,7 @@ void ArabicMaqamTunerProcessor::saveSettingsToDisk() const
     obj->setProperty ("midiPresetNotes", midiNotesArr);
     obj->setProperty ("midiPresetChannel", midiPresetChannel.load (std::memory_order_relaxed));
     obj->setProperty ("midiPresetDevice", midiPresetDeviceName);
+    obj->setProperty ("oscillatorEnabled", oscillatorEnabled.load (std::memory_order_relaxed));
 
     const auto dir = getTanghimDir();
     dir.createDirectory();
@@ -1810,6 +1891,10 @@ void ArabicMaqamTunerProcessor::loadSettingsFromDisk()
             midiPresetDeviceName = deviceProp.toString();
             setMidiPresetDevice (midiPresetDeviceName);  // Actually open the device
         }
+
+        auto oscEnabledProp = obj->getProperty ("oscillatorEnabled");
+        if (! oscEnabledProp.isVoid())
+            oscillatorEnabled.store ((bool) oscEnabledProp, std::memory_order_relaxed);
     }
 }
 

@@ -6,6 +6,7 @@
 #include "api/ApiDataCache.h"
 #include "api/DataUpdateChecker.h"
 #include "engine/TuningEngine.h"
+#include "engine/TriangleOscillator.h"
 #include "receiver/ReceiverRegistry.h"
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_audio_devices/juce_audio_devices.h>
@@ -47,7 +48,7 @@ public:
     bool   acceptsMidi()   const override { return true; }
     bool   producesMidi()  const override { return true; }
     bool   isMidiEffect()  const override { return false; }
-    double getTailLengthSeconds() const override { return 0.0; }
+    double getTailLengthSeconds() const override { return 0.15; }
     int    getNumPrograms() override { return 1; }
     int    getCurrentProgram() override { return 0; }
     void   setCurrentProgram (int) override {}
@@ -56,6 +57,11 @@ public:
 
     void getStateInformation (juce::MemoryBlock& dest) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
+
+    // ── Internal reference oscillator ──────────────────────────────────────────
+    std::atomic<bool> oscillatorEnabled { false };
+    void setOscillatorEnabled (bool enabled);
+    bool getOscillatorEnabled() const { return oscillatorEnabled.load (std::memory_order_relaxed); }
 
     // ── Reference frequency control ───────────────────────────────────────────
     void   setReferenceCentsOffset (double cents);
@@ -244,6 +250,7 @@ private:
     ApiDataCache     dataCache;
     DataUpdateChecker updateChecker;
     TuningEngine     tuningEngine;
+    TriangleOscillator oscillator;
 
     // ── Internal helpers ──────────────────────────────────────────────────────
     void rebuildTuningStateFromCache();

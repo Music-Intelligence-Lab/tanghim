@@ -18,6 +18,7 @@ const EMPTY_STATE: TuningState = {
   systemId: '',
   startingNote: '',
   isMtsTransmitter: false,
+  oscillatorEnabled: false,
   mtsReceivers: 0,
   mtsNativeCount: 0,
   mpeCount: 0,
@@ -707,6 +708,12 @@ export default function App() {
     bridge.endRefFreqGesture()
   }, [bridge])
 
+  const handleOscillatorToggle = useCallback(() => {
+    const newEnabled = !tuningState.oscillatorEnabled
+    setTuningState(prev => ({ ...prev, oscillatorEnabled: newEnabled }))
+    bridge.setOscillatorEnabled(newEnabled)
+  }, [bridge, tuningState.oscillatorEnabled])
+
   const handleMaqamSelect = async (maqamId: string, transpositionIndex: number) => {
     setSelectedMaqamId(maqamId)
     setSelectedTransIdx(transpositionIndex)
@@ -1002,9 +1009,11 @@ export default function App() {
           />
           <OutputModeSelector
             isMtsTransmitter={tuningState.isMtsTransmitter}
+            oscillatorEnabled={tuningState.oscillatorEnabled}
             mtsNativeCount={tuningState.mtsNativeCount}
             mpeCount={tuningState.mpeCount}
             monoPbCount={tuningState.monoPbCount}
+            onOscillatorToggle={handleOscillatorToggle}
           />
         </div>
       </div>
