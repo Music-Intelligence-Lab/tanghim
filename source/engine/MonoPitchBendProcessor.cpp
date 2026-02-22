@@ -13,6 +13,8 @@ void MonoPitchBendProcessor::allNotesOff (juce::MidiBuffer& out, int samplePos)
         out.addEvent (juce::MidiMessage::pitchWheel (activeChannel, 8192), samplePos);
         activeNote = -1;
     }
+    userPitchBend = 8192;
+    activeCentsDeviation = 0.0;
 }
 
 void MonoPitchBendProcessor::process (const juce::MidiBuffer&       in,
@@ -32,10 +34,15 @@ void MonoPitchBendProcessor::process (const juce::MidiBuffer&       in,
 
             const int note = msg.getNoteNumber();
             const double dev = (note >= 0 && note < 128) ? centsDeviationTable[(size_t) note] : 0.0;
-            const int bv = bendValue (dev, pbRange);
+            activeCentsDeviation = dev;
+
+            // Combine microtuning offset with current user PB wheel position
+            const int microBend = bendValue (dev, pbRange);
+            const int userOffset = userPitchBend - 8192;
+            const int combined = static_cast<int> (std::clamp (microBend + userOffset, 0, 16383));
 
             // Insert pitch bend then the note
-            out.addEvent (juce::MidiMessage::pitchWheel (msg.getChannel(), bv), pos);
+            out.addEvent (juce::MidiMessage::pitchWheel (msg.getChannel(), combined), pos);
             out.addEvent (msg, pos);
 
             activeNote    = note;
@@ -50,6 +57,15 @@ void MonoPitchBendProcessor::process (const juce::MidiBuffer&       in,
                 activeNote = -1;
             }
             // Swallowed: Note Off for a note we already cut
+        }
+        else if (msg.isPitchWheel())
+        {
+            // Intercept PB wheel: combine with microtuning offset
+            userPitchBend = msg.getPitchWheelValue();
+            const int microBend = bendValue (activeCentsDeviation, pbRange);
+            const int userOffset = userPitchBend - 8192;
+            const int combined = static_cast<int> (std::clamp (microBend + userOffset, 0, 16383));
+            out.addEvent (juce::MidiMessage::pitchWheel (msg.getChannel(), combined), pos);
         }
         else
         {

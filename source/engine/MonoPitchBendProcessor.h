@@ -32,6 +32,8 @@ private:
     int pbRange;
     int activeNote = -1;    ///< Currently sounding MIDI note (-1 = none)
     int activeChannel = 1;  ///< Channel of the active note
+    int userPitchBend = 8192;        ///< Incoming PB wheel value (center = 8192)
+    double activeCentsDeviation = 0.0; ///< Cents deviation of the active/last note
 
     static int bendValue (double centsDeviation, int rangeSemitones);
 };

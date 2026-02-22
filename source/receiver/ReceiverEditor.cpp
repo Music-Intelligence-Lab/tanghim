@@ -311,7 +311,8 @@ void ReceiverEditor::updatePbDisplay()
 
 void ReceiverEditor::setPbValue (int newVal)
 {
-    newVal = juce::jlimit (1, 96, newVal);
+    const int minVal = isMpeMode() ? 1 : 2;
+    newVal = juce::jlimit (minVal, 96, newVal);
     auto* param = dynamic_cast<juce::AudioParameterInt*> (
         processor.apvts.getParameter (isMpeMode() ? "mpePbRange" : "monoPbRange"));
 

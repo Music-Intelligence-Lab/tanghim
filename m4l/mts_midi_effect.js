@@ -28,6 +28,9 @@ var nextCh = 0;
 // Mono PB active note tracking (monophonic)
 var monoActiveNote = -1;
 
+// User pitch bend wheel tracking (for combining with microtuning in Mono PB)
+var userPitchBend = 8192;  // center (no user bend)
+
 // ── Inlet handlers ──────────────────────────────────────────────────
 
 function list() {
@@ -70,10 +73,7 @@ function updateActivePitchBend(note, cents) {
     } else {
         // Mono PB: check if this is the currently held note
         if (note === monoActiveNote) {
-            var bv = calcBend(cents);
-            var lsb = bv & 0x7F;
-            var msb = (bv >> 7) & 0x7F;
-            outlet(0, 0xE0, lsb, msb);
+            sendCombinedMonoBend(cents);
         }
     }
 }
@@ -97,10 +97,11 @@ function set_mode(m) {
     }
 
     mode = m;
-    // Reset MPE state
+    // Reset state
     noteToChannel = {};
     for (var i = 0; i < 15; i++) channelInUse[i] = false;
     nextCh = 0;
+    userPitchBend = 8192;
 
     if (m === 0) {
         // Entering MPE: reset PB on ch1 so leftover Mono PB doesn't
@@ -119,7 +120,36 @@ function set_mpe_bend_range(r) {
 }
 
 function set_mono_bend_range(r) {
-    monoBendRange = Math.max(1, Math.min(96, r));
+    monoBendRange = Math.max(2, Math.min(96, r));
+}
+
+// ── Incoming pitch bend wheel handler ────────────────────────────────
+// Routed from midiparse outlet 5 via "prepend pitchbend"
+
+function pitchbend(val) {
+    // midiparse outlet 5 outputs 0-127 (7-bit, MSB only).
+    // Convert to 14-bit for internal tracking: 64→8192 (center)
+    userPitchBend = val << 7;
+    if (mode === 0) {
+        // MPE: forward on ch1 as raw MIDI PB bytes (LSB=0, MSB=val)
+        outlet(0, 0xE0, 0, val);
+    } else {
+        // Mono PB: recalculate combined PB for active note
+        if (monoActiveNote >= 0) {
+            sendCombinedMonoBend(table[monoActiveNote]);
+        }
+    }
+}
+
+// ── Combined microtuning + user PB for Mono mode ────────────────────
+
+function sendCombinedMonoBend(cents) {
+    var microBend = calcBend(cents);
+    var userOffset = userPitchBend - 8192;
+    var combined = Math.max(0, Math.min(16383, microBend + userOffset));
+    var lsb = combined & 0x7F;
+    var msb = (combined >> 7) & 0x7F;
+    outlet(0, 0xE0, lsb, msb);
 }
 
 // ── Mono Pitch Bend ─────────────────────────────────────────────────
@@ -131,10 +161,7 @@ function processMonoPB(pitch, vel) {
             outlet(0, 0x80, monoActiveNote, 64);
 
         var cents = (pitch >= 0 && pitch < 128) ? table[pitch] : 0;
-        var bv = calcBend(cents);
-        var lsb = bv & 0x7F;
-        var msb = (bv >> 7) & 0x7F;
-        outlet(0, 0xE0, lsb, msb);          // Pitch Bend ch1
+        sendCombinedMonoBend(cents);         // Combined microtuning + user PB
         outlet(0, 0x90, pitch, vel);         // Note On ch1
         monoActiveNote = pitch;
     } else {

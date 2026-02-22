@@ -57,7 +57,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ReceiverProcessor::createPar
 
     params.push_back (std::make_unique<juce::AudioParameterInt> (
         juce::ParameterID ("monoPbRange", 1), "Mono PB Range",
-        1, 96, 2));
+        2, 96, 2));
 
     // 128 cents-deviation parameters for Max/M4L parameter bridge
     for (int i = 0; i < 128; ++i)

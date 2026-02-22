@@ -78,9 +78,16 @@ p.add_line(midiin, midiparse)
 # midiparse outlet 0 (notes) → js inlet 0
 p.add_line(midiparse, js, outlet=0, inlet=0)
 
-# midiparse passthrough: outlets 1-6 → midiformat inlets 1-6
-for i in range(1, 7):
+# midiparse passthrough: outlets 1-4, 6 → midiformat (skip 5 = pitch bend)
+for i in [1, 2, 3, 4, 6]:
     p.add_line(midiparse, midiformat, outlet=i, inlet=i)
+
+# midiparse outlet 5 (pitch bend) → js for combining with microtuning PB
+prepend_pb = p.add("prepend pitchbend",
+    numinlets=1, numoutlets=1, outlettype=[""],
+    patching_rect=[200, 115, 112, 22])
+p.add_line(midiparse, prepend_pb, outlet=5, inlet=0)
+p.add_line(prepend_pb, js)
 
 # js → midiout
 p.add_line(js, midiout)
@@ -286,7 +293,7 @@ mono_bend_dial = p.add_box(Box(
             "parameter_linknames": 1,
             "parameter_longname": "Mono PB Range",
             "parameter_mmax": 96.0,
-            "parameter_mmin": 1.0,
+            "parameter_mmin": 2.0,
             "parameter_shortname": "PB Range",
             "parameter_type": 1,
             "parameter_unitstyle": 9,

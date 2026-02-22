@@ -409,6 +409,17 @@ The M4L wrapper is needed because Ableton doesn't support VST3 MIDI effects nati
 - **Never reset pitch bend on Note Off** — causes audible snap during synth release tail
 - Next Note On always sets PB before sounding, so no stale value issue
 
+### Pitch Bend Wheel Combining
+Both C++ Receiver (`MonoPitchBendProcessor`) and M4L js combine user PB wheel with microtuning offset:
+- **Formula**: `combined = clamp(microBend + (userPitchBend - 8192), 0, 16383)`
+- User PB tracked as 14-bit internally (`userPitchBend`, center = 8192)
+- On Note On: store `activeCentsDeviation`, compute combined bend
+- On PB wheel: recompute combined bend using stored deviation
+- On Note Off: don't reset (release tail keeps pitch)
+- Reset `userPitchBend = 8192` on mode switch and `allNotesOff()`
+- **midiparse outlet 5**: Outputs **0-127 (7-bit, MSB only)**, NOT 14-bit. Convert with `val << 7` before use as 14-bit. Consistent with `bendin` (without `@hires`), `midiselect`, `midiformat`
+- MPE mode: PB wheel forwarded on ch1 as zone manager PB (`outlet(0, 0xE0, 0, val)`)
+
 ### M4L Install & Deploy
 - **Install folder**: `~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim/`
 - Files needed: `Tanghim Receiver.amxd` + `mts_midi_effect.js`
