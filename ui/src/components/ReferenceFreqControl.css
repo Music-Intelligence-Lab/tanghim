@@ -1,0 +1,84 @@
+.ref-freq-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ref-freq-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+/* ── Knob ─────────────────────────────────────────────────────────────── */
+.ref-freq-knob {
+  width: 36px;
+  height: 36px;
+  cursor: ns-resize;
+  flex-shrink: 0;
+}
+
+.ref-freq-knob svg {
+  display: block;
+}
+
+/* ── Hz input ─────────────────────────────────────────────────────────── */
+.ref-freq-hz-input {
+  width: 72px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 2px 4px;
+  text-align: right;
+  outline: none;
+}
+
+.ref-freq-hz-input:focus {
+  border-color: var(--accent);
+}
+
+/* ── Semitone buttons ────────────────────────────────────────────────── */
+.ref-freq-semitone-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ref-freq-semitone-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.ref-freq-semitone-btn:active {
+  background: var(--border);
+}
+
+/* ── Cents display ────────────────────────────────────────────────────── */
+.ref-freq-cents {
+  color: var(--text-muted);
+  font-size: 11px;
+  min-width: 56px;
+  text-align: center;
+}

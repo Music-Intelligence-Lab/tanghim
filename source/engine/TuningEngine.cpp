@@ -23,10 +23,19 @@ int  TuningEngine::mtsNumReceivers()   const { return mtsEsp ? mtsEsp->numReceiv
 // ── Tuning update ─────────────────────────────────────────────────────────────
 
 void TuningEngine::updateTuning (const ActiveTuningState& state,
+                                  double referenceCentsOffset,
                                   const juce::String& scaleName)
 {
-    const auto newFreqs  = state.buildFrequencyTable();
+    auto newFreqs  = state.buildFrequencyTable();
     const auto newCents  = state.buildCentsDeviationTable();
+
+    // Apply global reference frequency offset (concert pitch shift)
+    if (referenceCentsOffset != 0.0)
+    {
+        const double ratio = std::pow (2.0, referenceCentsOffset / 1200.0);
+        for (auto& f : newFreqs)
+            f *= ratio;
+    }
 
     {
         juce::ScopedLock sl (tuningLock);

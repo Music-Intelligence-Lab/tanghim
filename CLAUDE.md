@@ -147,6 +147,15 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - Min height = maqam dropdown (max-height 480px) lines up flush with status bar
 - Default window: 832×620, default start MIDI: 48 (C3), default 12 visible sliders
 
+### Reference Frequency Control
+- Global concert pitch offset: `referenceCentsOffset` (±700 cents, default 0)
+- Applied as frequency multiplier in `TuningEngine::updateTuning()` after building the 128-note table: `f *= 2^(cents/1200)`
+- `referenceNoteMidi` = MIDI note of tonic in octave 1, used for Hz display: `defaultHz = 440 * 2^((midi-69)/12)`
+- **Resets to 0 on starting note/system change** — each starting note is a fresh reference point
+- UI: SVG arc knob (drag ±cents, Shift=fine, dbl-click=reset), editable Hz input, cents display, ±100 cent semitone buttons
+- Bridge: `setReferenceFreqCents` (fire-and-forget), `setReferenceFreqCentsFinalize` (returns state), gesture start/end
+- APVTS: `ref_freq` param for DAW automation, saved/restored in session state
+
 ### Per-Note Overrides
 - Per-MIDI-note variant overrides allow different variants for the same pitch class in different octaves
 - Override indicator: blue thumb glow + accent-coloured IPN label
@@ -408,16 +417,17 @@ m4l/
 
 ## APVTS: MIDI-Mappable & Automatable Sliders + Presets
 
-The Transmitter plugin has 13 APVTS parameters exposed for DAW automation and MIDI CC mapping:
+The Transmitter plugin has 14 APVTS parameters exposed for DAW automation and MIDI CC mapping:
 
 | Parameter ID | Type | Range | Default | Purpose |
 |---|---|---|---|---|
 | `slot_0`–`slot_11` | `AudioParameterFloat` | -100.0 to +100.0 cents | 0.0 | Cents deviation for each chromatic slot |
+| `ref_freq` | `AudioParameterFloat` | -700.0 to +700.0 cents | 0.0 | Global reference frequency offset (concert pitch) |
 | `preset` | `AudioParameterChoice` | "None", "1"–"16" (17 choices) | 0 (None) | Active preset index |
 
 **Key behaviors:**
 - Bidirectional sync: UI changes update APVTS params (for DAW recording); DAW automation updates tuning state (for playback)
-- Gesture marking: `beginSliderGesture()`/`endSliderGesture()` called from JS on mousedown/mouseup for proper DAW automation recording
+- Gesture marking: `beginSliderGesture()`/`endSliderGesture()` and `beginRefFreqGesture()`/`endRefFreqGesture()` called from JS on mousedown/mouseup for proper DAW automation recording
 - Feedback loop prevention: Single guard flag (`updatingParamsFromCode`) prevents recursive updates
 - Per-note overrides remain UI-only (not exposed as parameters)
 

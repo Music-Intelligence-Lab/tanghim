@@ -198,6 +198,28 @@ export function useJuceBridge() {
     return callNative<{ path: string; filename: string }>('saveMaqamMidiFile')
   }, [])
 
+  // ── Reference frequency control ──────────────────────────────────────────
+
+  /** Fire-and-forget: update reference freq offset (live MTS-ESP update). */
+  const setReferenceFreqCents = useCallback(async (cents: number): Promise<void> => {
+    await callNative('setReferenceFreqCents', cents)
+  }, [])
+
+  /** Finalize reference freq offset (returns full TuningState). */
+  const setReferenceFreqCentsFinalize = useCallback(async (cents: number): Promise<TuningState | undefined> => {
+    return callNative<TuningState>('setReferenceFreqCentsFinalize', cents)
+  }, [])
+
+  /** Begin ref freq gesture for DAW automation. */
+  const beginRefFreqGesture = useCallback(async (): Promise<void> => {
+    await callNative('beginRefFreqGesture')
+  }, [])
+
+  /** End ref freq gesture for DAW automation. */
+  const endRefFreqGesture = useCallback(async (): Promise<void> => {
+    await callNative('endRefFreqGesture')
+  }, [])
+
   // ── Gesture marking for DAW automation recording ─────────────────────────
 
   /** Begin slider gesture (call on mousedown for proper DAW automation). */
@@ -269,6 +291,10 @@ export function useJuceBridge() {
     setNoteVariant,
     setSlotCents,
     setSlotCentsFinalize,
+    setReferenceFreqCents,
+    setReferenceFreqCentsFinalize,
+    beginRefFreqGesture,
+    endRefFreqGesture,
     applyPreset,
     assignPreset,
     clearPreset,
@@ -293,6 +319,7 @@ export function useJuceBridge() {
     getMidiPresetChannel,
   }), [getTuningSystems, selectTuningSystem, setSliderVariant, setNoteVariant,
        setSlotCents, setSlotCentsFinalize,
+       setReferenceFreqCents, setReferenceFreqCentsFinalize, beginRefFreqGesture, endRefFreqGesture,
        applyPreset, assignPreset, clearPreset,
        getMaqamList, applyMaqam, checkForUpdates, getCurrentState, setStartMidi, getMaqamMidiDragData, saveMaqamMidiFile,
        beginSliderGesture, endSliderGesture, beginPresetGesture, endPresetGesture,

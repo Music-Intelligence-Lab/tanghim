@@ -6,6 +6,7 @@ import { SLOT_WIDTH_PX } from './constants'
 import './App.css'
 
 import TuningSystemSelector from './components/TuningSystemSelector'
+import ReferenceFreqControl from './components/ReferenceFreqControl'
 import OutputModeSelector from './components/OutputModeSelector'
 import MaqamSelector from './components/MaqamSelector'
 import MaqamPresetBar from './components/MaqamPresetBar'
@@ -23,6 +24,10 @@ const EMPTY_STATE: TuningState = {
   monoPbCount: 0,
   pluginVersion: '',
   buildTimestamp: '',
+  referenceFreqCents: 0,
+  referenceFreqHz: 440,
+  referenceDefaultHz: 440,
+  referenceNoteName: '',
   slots: Array.from({ length: 12 }, (_, i) => ({
     ipnRef: ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'][i],
     selectedIndex: 0,
@@ -663,6 +668,45 @@ export default function App() {
     bridge.endSliderGesture(chromaticIndex)
   }, [bridge])
 
+  // ── Reference frequency handlers ────────────────────────────────────────
+  const pendingRefFreqRef = useRef<number>(0)
+  const refFreqRafRef = useRef<number>(0)
+
+  const handleRefFreqDrag = useCallback((cents: number) => {
+    // Optimistic local state update
+    const defaultHz = tuningState.referenceDefaultHz || 440
+    setTuningState(prev => ({
+      ...prev,
+      referenceFreqCents: cents,
+      referenceFreqHz: defaultHz * Math.pow(2, cents / 1200),
+    }))
+    // RAF-throttled bridge call
+    pendingRefFreqRef.current = cents
+    if (!refFreqRafRef.current) {
+      refFreqRafRef.current = requestAnimationFrame(() => {
+        refFreqRafRef.current = 0
+        bridge.setReferenceFreqCents(pendingRefFreqRef.current)
+      })
+    }
+  }, [bridge, tuningState.referenceDefaultHz])
+
+  const handleRefFreqDragEnd = useCallback(async (cents: number) => {
+    if (refFreqRafRef.current) {
+      cancelAnimationFrame(refFreqRafRef.current)
+      refFreqRafRef.current = 0
+    }
+    const newState = await bridge.setReferenceFreqCentsFinalize(cents)
+    if (newState) setTuningState(newState)
+  }, [bridge])
+
+  const handleRefFreqGestureStart = useCallback(() => {
+    bridge.beginRefFreqGesture()
+  }, [bridge])
+
+  const handleRefFreqGestureEnd = useCallback(() => {
+    bridge.endRefFreqGesture()
+  }, [bridge])
+
   const handleMaqamSelect = async (maqamId: string, transpositionIndex: number) => {
     setSelectedMaqamId(maqamId)
     setSelectedTransIdx(transpositionIndex)
@@ -938,18 +982,31 @@ export default function App() {
   return (
     <div className="app">
       <div className="top-bar">
-        <TuningSystemSelector
-          systems={tuningSystems}
-          currentSystemId={tuningState.systemId}
-          currentStartingNote={tuningState.startingNote}
-          onSelect={handleSystemSelect}
-        />
-        <OutputModeSelector
-          isMtsTransmitter={tuningState.isMtsTransmitter}
-          mtsNativeCount={tuningState.mtsNativeCount}
-          mpeCount={tuningState.mpeCount}
-          monoPbCount={tuningState.monoPbCount}
-        />
+        <div className="top-bar-left">
+          <TuningSystemSelector
+            systems={tuningSystems}
+            currentSystemId={tuningState.systemId}
+            currentStartingNote={tuningState.startingNote}
+            onSelect={handleSystemSelect}
+          />
+        </div>
+        <div className="top-bar-right">
+          <ReferenceFreqControl
+            cents={tuningState.referenceFreqCents}
+            hz={tuningState.referenceFreqHz}
+            defaultHz={tuningState.referenceDefaultHz}
+            onDrag={handleRefFreqDrag}
+            onDragEnd={handleRefFreqDragEnd}
+            onGestureStart={handleRefFreqGestureStart}
+            onGestureEnd={handleRefFreqGestureEnd}
+          />
+          <OutputModeSelector
+            isMtsTransmitter={tuningState.isMtsTransmitter}
+            mtsNativeCount={tuningState.mtsNativeCount}
+            mpeCount={tuningState.mpeCount}
+            monoPbCount={tuningState.monoPbCount}
+          />
+        </div>
       </div>
 
       <MaqamSelector

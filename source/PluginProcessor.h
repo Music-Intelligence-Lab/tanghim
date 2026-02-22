@@ -57,6 +57,17 @@ public:
     void getStateInformation (juce::MemoryBlock& dest) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    // ── Reference frequency control ───────────────────────────────────────────
+    void   setReferenceCentsOffset (double cents);
+    void   finalizeReferenceCentsOffset (double cents);
+    double getReferenceCentsOffset() const { return referenceCentsOffset; }
+    double getReferenceDefaultHz() const;
+    double getReferenceCurrentHz() const;
+    juce::String getReferenceNoteDisplayName() const { return referenceNoteDisplayName; }
+    int    getReferenceNoteMidi() const { return referenceNoteMidi; }
+    void   beginRefFreqGesture();
+    void   endRefFreqGesture();
+
     // ── Tuning control (called from NativeBridge on message thread) ───────────
     void loadTuningSystem (const juce::String& systemId,
                            const juce::String& startingNote,
@@ -173,6 +184,7 @@ public:
     // Parameter pointers for quick access (non-owning)
     std::array<juce::AudioParameterFloat*, kNumSlotParams> slotParams {};
     juce::AudioParameterChoice* presetParam = nullptr;
+    juce::AudioParameterFloat*  refFreqParam = nullptr;
 
     // ── APVTS Listener ───────────────────────────────────────────────────────
     void parameterChanged (const juce::String& parameterID, float newValue) override;
@@ -188,6 +200,11 @@ public:
     void clearCache();
 
 private:
+    // ── Reference frequency state ─────────────────────────────────────────────
+    double       referenceCentsOffset     = 0.0;
+    int          referenceNoteMidi        = 60;   // MIDI note of tonic in octave 1
+    juce::String referenceNoteDisplayName;        // PAO display name (e.g. "yegāh")
+
     // ── Core state ────────────────────────────────────────────────────────────
     juce::String              currentSystemId;
     juce::String              currentStartingNote;

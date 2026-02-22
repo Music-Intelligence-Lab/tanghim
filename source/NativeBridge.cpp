@@ -231,6 +231,42 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
             complete (juce::var());
         });
 
+    // ── setReferenceFreqCents(cents) ───────────────────────────────────────
+    // Fire-and-forget during continuous knob drag — updates MTS-ESP immediately.
+    opts = opts.withNativeFunction ("setReferenceFreqCents",
+        [this] (const juce::Array<juce::var>& args, Completion complete)
+        {
+            if (args.size() >= 1)
+                processor.setReferenceCentsOffset ((double) args[0]);
+            complete (juce::var());
+        });
+
+    // ── setReferenceFreqCentsFinalize(cents) ────────────────────────────────
+    // Called on mouseup — updates tuning + returns full state for WebView sync.
+    opts = opts.withNativeFunction ("setReferenceFreqCentsFinalize",
+        [this] (const juce::Array<juce::var>& args, Completion complete)
+        {
+            if (args.size() >= 1)
+                processor.finalizeReferenceCentsOffset ((double) args[0]);
+            complete (buildTuningStateJson());
+        });
+
+    // ── beginRefFreqGesture() ───────────────────────────────────────────────
+    opts = opts.withNativeFunction ("beginRefFreqGesture",
+        [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
+        {
+            processor.beginRefFreqGesture();
+            complete (juce::var());
+        });
+
+    // ── endRefFreqGesture() ─────────────────────────────────────────────────
+    opts = opts.withNativeFunction ("endRefFreqGesture",
+        [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
+        {
+            processor.endRefFreqGesture();
+            complete (juce::var());
+        });
+
     // ── setMidiPresetBaseNote(baseNote) ──────────────────────────────────────
     // ── startMidiLearn(presetIndex) ─────────────────────────────────────────
     // Start MIDI Learn for a preset. Next MIDI note received will be mapped.
@@ -330,6 +366,12 @@ juce::var NativeBridge::buildTuningStateJson() const
     root->setProperty ("monoPbCount",     receiverCounts.monoPbReceivers);
     root->setProperty ("pluginVersion",    juce::String (PLUGIN_VERSION));
     root->setProperty ("buildTimestamp",   juce::String (BUILD_TIMESTAMP));
+
+    // Reference frequency data
+    root->setProperty ("referenceFreqCents",  processor.getReferenceCentsOffset());
+    root->setProperty ("referenceFreqHz",     processor.getReferenceCurrentHz());
+    root->setProperty ("referenceDefaultHz",  processor.getReferenceDefaultHz());
+    root->setProperty ("referenceNoteName",   processor.getReferenceNoteDisplayName());
 
     // 12 slider slots
     juce::Array<juce::var> slots;

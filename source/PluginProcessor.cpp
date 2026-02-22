@@ -22,6 +22,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout ArabicMaqamTunerProcessor::c
             0.0f));
     }
 
+    // Reference frequency offset (±700 cents = a perfect fifth each direction)
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID ("ref_freq", 1), "Ref Freq",
+        juce::NormalisableRange<float> (-700.0f, 700.0f, 0.01f),
+        0.0f));
+
     // Preset param: "None" + presets 1-16
     juce::StringArray presetChoices;
     presetChoices.add ("None");
@@ -50,6 +56,9 @@ ArabicMaqamTunerProcessor::ArabicMaqamTunerProcessor()
     presetParam = dynamic_cast<juce::AudioParameterChoice*> (
         apvts.getParameter ("preset"));
 
+    refFreqParam = dynamic_cast<juce::AudioParameterFloat*> (
+        apvts.getParameter ("ref_freq"));
+
     // Initialize MIDI preset note mappings to -1 (unmapped)
     for (int i = 0; i < 16; ++i)
         midiPresetNotes[i].store (-1, std::memory_order_relaxed);
@@ -58,6 +67,7 @@ ArabicMaqamTunerProcessor::ArabicMaqamTunerProcessor()
     for (int i = 0; i < kNumSlotParams; ++i)
         apvts.addParameterListener ("slot_" + juce::String (i), this);
     apvts.addParameterListener ("preset", this);
+    apvts.addParameterListener ("ref_freq", this);
     dataCache.loadFromDisk();
     loadPresetsFromDisk();
     loadSettingsFromDisk();
@@ -98,6 +108,7 @@ ArabicMaqamTunerProcessor::~ArabicMaqamTunerProcessor()
     for (int i = 0; i < kNumSlotParams; ++i)
         apvts.removeParameterListener ("slot_" + juce::String (i), this);
     apvts.removeParameterListener ("preset", this);
+    apvts.removeParameterListener ("ref_freq", this);
 
     alive->store (false, std::memory_order_release);
     apiClient.cancelPending();
@@ -256,6 +267,9 @@ void ArabicMaqamTunerProcessor::getStateInformation (juce::MemoryBlock& dest)
     // Tonic chromatic index for tonic-relative slot mapping
     state.setProperty ("tonicChromatic", currentTonicChromatic, nullptr);
 
+    // Reference frequency offset (global concert pitch)
+    state.setProperty ("referenceCentsOffset", referenceCentsOffset, nullptr);
+
     // Include APVTS state as a child
     state.addChild (apvts.copyState(), -1, nullptr);
 
@@ -365,6 +379,11 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
     if (! tonicChromProp.isVoid())
         currentTonicChromatic = juce::jlimit (0, 11, (int) tonicChromProp);
 
+    // Restore reference frequency offset
+    auto refCentsProp = state.getProperty ("referenceCentsOffset", juce::var());
+    if (! refCentsProp.isVoid())
+        referenceCentsOffset = juce::jlimit (-700.0, 700.0, (double) refCentsProp);
+
     auto slidersNode = state.getChildWithName ("SliderPositions");
     std::array<int, 12> savedPositions;
     std::array<double, 12> savedCentsOffsets;
@@ -432,7 +451,7 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
             syncAllSlotParamsFromState();
             syncPresetParamFromState();
 
-            tuningEngine.updateTuning (activeTuningState, buildScaleName());
+            tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
             notifyTuningChanged();
         });
     }
@@ -464,6 +483,15 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
     currentDegreeIpnRefs.fill ({});
     currentDegreeSolfegeRefs.fill ({});
     currentTranspositionIdMap.clear();
+
+    // Reset reference frequency offset (starting note change = new reference point)
+    referenceCentsOffset = 0.0;
+    if (refFreqParam != nullptr)
+    {
+        updatingParamsFromCode = true;
+        refFreqParam->setValueNotifyingHost (refFreqParam->convertTo0to1 (0.0f));
+        updatingParamsFromCode = false;
+    }
 
     auto doLoad = [this, systemId, startingNote, onComplete] ()
     {
@@ -527,11 +555,22 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
                 sl.centsOffset = v->midiCentsDeviation;
         }
 
+        // Find the tonic pitch class (pitchClassIndex==0, octave==1) for reference frequency
+        for (const auto& pc : data.pitchClasses)
+        {
+            if (pc.pitchClassIndex == 0 && pc.octave == 1)
+            {
+                referenceNoteMidi = pc.midiNoteNumber;
+                referenceNoteDisplayName = pc.noteNameDisplay;
+                break;
+            }
+        }
+
         // Sync APVTS params after tuning system load
         syncAllSlotParamsFromState();
         syncPresetParamFromState();
 
-        tuningEngine.updateTuning (activeTuningState, buildScaleName());
+        tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
         if (onStatusMessage) onStatusMessage (buildScaleName());
         notifyTuningChanged();
         if (onComplete) onComplete();
@@ -617,7 +656,7 @@ void ArabicMaqamTunerProcessor::setSliderVariant (int chromaticIndex, int varian
     syncSlotParamFromState (chromaticIndex);
     syncPresetParamFromState();
 
-    tuningEngine.updateTuning (activeTuningState, buildScaleName());
+    tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
     notifyTuningChanged();
 }
 
@@ -647,7 +686,7 @@ void ArabicMaqamTunerProcessor::setSlotCents (int chromaticIndex, double centsVa
     syncSlotParamFromState (chromaticIndex);
 
     // Update MTS-ESP immediately (live pitch change) — no WebView push
-    tuningEngine.updateTuning (activeTuningState, buildScaleName());
+    tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
 }
 
 void ArabicMaqamTunerProcessor::finalizeSlotCents (int chromaticIndex, double centsValue)
@@ -673,7 +712,7 @@ void ArabicMaqamTunerProcessor::setNoteVariant (int midiNote, int variantIndex)
     // Sync preset param only (per-note overrides don't affect slot params)
     syncPresetParamFromState();
 
-    tuningEngine.updateTuning (activeTuningState, buildScaleName());
+    tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
     notifyTuningChanged();
 }
 
@@ -736,7 +775,7 @@ void ArabicMaqamTunerProcessor::applyPreset (int idx)
     syncAllSlotParamsFromState();
     syncPresetParamFromState();
 
-    tuningEngine.updateTuning (activeTuningState, buildScaleName());
+    tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
     notifyTuningChanged();
 }
 
@@ -988,6 +1027,52 @@ void ArabicMaqamTunerProcessor::clearPreset (int idx)
     savePresetsToDisk();
 }
 
+// ── Reference frequency control ───────────────────────────────────────────────
+
+double ArabicMaqamTunerProcessor::getReferenceDefaultHz() const
+{
+    return 440.0 * std::pow (2.0, (referenceNoteMidi - 69) / 12.0);
+}
+
+double ArabicMaqamTunerProcessor::getReferenceCurrentHz() const
+{
+    return getReferenceDefaultHz() * std::pow (2.0, referenceCentsOffset / 1200.0);
+}
+
+void ArabicMaqamTunerProcessor::setReferenceCentsOffset (double cents)
+{
+    referenceCentsOffset = juce::jlimit (-700.0, 700.0, cents);
+
+    // Sync APVTS param
+    if (refFreqParam != nullptr)
+    {
+        updatingParamsFromCode = true;
+        refFreqParam->setValueNotifyingHost (
+            refFreqParam->convertTo0to1 (static_cast<float> (referenceCentsOffset)));
+        updatingParamsFromCode = false;
+    }
+
+    tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
+}
+
+void ArabicMaqamTunerProcessor::finalizeReferenceCentsOffset (double cents)
+{
+    setReferenceCentsOffset (cents);
+    notifyTuningChanged();
+}
+
+void ArabicMaqamTunerProcessor::beginRefFreqGesture()
+{
+    if (refFreqParam != nullptr)
+        refFreqParam->beginChangeGesture();
+}
+
+void ArabicMaqamTunerProcessor::endRefFreqGesture()
+{
+    if (refFreqParam != nullptr)
+        refFreqParam->endChangeGesture();
+}
+
 // ── Accessors ─────────────────────────────────────────────────────────────────
 
 const std::vector<TuningSystem>& ArabicMaqamTunerProcessor::getTuningSystems() const
@@ -1165,7 +1250,7 @@ void ArabicMaqamTunerProcessor::applyMaqamDegrees (const MaqamDegrees& degrees)
     syncAllSlotParamsFromState();
     syncPresetParamFromState();
 
-    tuningEngine.updateTuning (activeTuningState, buildScaleName());
+    tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
     notifyTuningChanged();
 }
 
@@ -1275,7 +1360,7 @@ void ArabicMaqamTunerProcessor::parameterChanged (const juce::String& parameterI
         // asynchronously from syncAllSlotParamsFromState, after updatingParamsFromCode
         // is reset, which would incorrectly clear maqam state.
 
-        tuningEngine.updateTuning (activeTuningState, buildScaleName());
+        tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
 
         // Debug: track automation rate
         static int slotChangeCount = 0;
@@ -1296,6 +1381,13 @@ void ArabicMaqamTunerProcessor::parameterChanged (const juce::String& parameterI
             onSlotCentsChanged (chromaticIdx, centsValue);
         else
             notifyTuningChanged();
+    }
+    // Handle reference frequency parameter
+    else if (parameterID == "ref_freq")
+    {
+        referenceCentsOffset = juce::jlimit (-700.0, 700.0, (double) newValue);
+        tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
+        notifyTuningChanged();
     }
     // Handle preset parameter
     else if (parameterID == "preset")
@@ -1655,7 +1747,7 @@ void ArabicMaqamTunerProcessor::clearCache()
     }
 
     // Update MTS-ESP tuning table and notify UI
-    tuningEngine.updateTuning (activeTuningState, buildScaleName());
+    tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
     notifyTuningChanged();
 
     // Re-fetch tuning systems list from API (cache is empty now)

@@ -61,6 +61,14 @@ export interface TuningState {
   monoPbCount: number;
   pluginVersion: string;
   buildTimestamp: string;
+  /** Current reference frequency offset in cents (0 = default). */
+  referenceFreqCents: number;
+  /** Current reference frequency in Hz (with offset applied). */
+  referenceFreqHz: number;
+  /** Default reference frequency in Hz (at 0 offset). */
+  referenceDefaultHz: number;
+  /** PAO display name of the reference/tonic note (e.g. "yegāh"). */
+  referenceNoteName: string;
   slots: ChromaticSlot[];
   presets: MaqamPreset[];
   /** chromaticIndex → { octave → PAO display name } (all octaves). */

@@ -35,6 +35,7 @@ public:
      * Safe to call from the message thread.
      */
     void updateTuning (const ActiveTuningState& state,
+                       double referenceCentsOffset = 0.0,
                        const juce::String& scaleName = {});
 
     // ── Current tuning data (for display / serialisation) ────────────────────
