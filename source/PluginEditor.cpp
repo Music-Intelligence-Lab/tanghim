@@ -277,6 +277,24 @@ void ArabicMaqamTunerEditor::timerCallback()
             staleCleanupCounter = 0;
             ReceiverRegistry::cleanStale (10.0);
         }
+
+        // ── MIDI device list refresh (~2Hz) ────────────────────────────────
+        {
+            const auto currentDevices = processor.getAvailableMidiDevices();
+            if (currentDevices != lastKnownMidiDevices)
+            {
+                lastKnownMidiDevices = currentDevices;
+                populateMidiDeviceList();
+            }
+
+            // Retry opening device if configured but not yet open
+            // (e.g. device wasn't available at plugin construction)
+            const auto deviceName = processor.getMidiPresetDevice();
+            if (deviceName.isNotEmpty() && ! processor.isMidiPresetDeviceOpen())
+            {
+                processor.setMidiPresetDevice (deviceName);
+            }
+        }
     }
 }
 
@@ -488,6 +506,7 @@ void ArabicMaqamTunerEditor::setupMidiPresetControls()
     midiDeviceSelector.setColour (juce::ComboBox::arrowColourId, textColor);
     midiDeviceSelector.onChange = [this] { onMidiDeviceChanged(); };
     populateMidiDeviceList();
+    lastKnownMidiDevices = processor.getAvailableMidiDevices();
 
     // MIDI channel selector dropdown
     addAndMakeVisible (midiChannelSelector);
@@ -521,24 +540,26 @@ void ArabicMaqamTunerEditor::onMidiChannelChanged()
 
 void ArabicMaqamTunerEditor::populateMidiDeviceList()
 {
-    midiDeviceSelector.clear();
+    midiDeviceSelector.clear (juce::dontSendNotification);
     const auto devices = processor.getAvailableMidiDevices();
     for (int i = 0; i < devices.size(); ++i)
         midiDeviceSelector.addItem (devices[i], i + 1);
 
-    // Select current device or "None"
+    // Select current device or "None" — use dontSendNotification to avoid
+    // triggering onChange (which would close+reopen the device or erase the
+    // saved device name if the device isn't found yet at editor construction)
     const auto currentDevice = processor.getMidiPresetDevice();
     if (currentDevice.isEmpty())
     {
-        midiDeviceSelector.setSelectedId (1);  // "None"
+        midiDeviceSelector.setSelectedId (1, juce::dontSendNotification);  // "None"
     }
     else
     {
         const int idx = devices.indexOf (currentDevice);
         if (idx >= 0)
-            midiDeviceSelector.setSelectedId (idx + 1);
+            midiDeviceSelector.setSelectedId (idx + 1, juce::dontSendNotification);
         else
-            midiDeviceSelector.setSelectedId (1);  // "None" if device not found
+            midiDeviceSelector.setSelectedId (1, juce::dontSendNotification);  // "None" if device not found yet
     }
 }
 

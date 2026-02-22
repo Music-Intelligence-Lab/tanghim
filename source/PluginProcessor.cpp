@@ -1610,6 +1610,11 @@ juce::String ArabicMaqamTunerProcessor::getMidiPresetDevice() const
     return midiPresetDeviceName;
 }
 
+bool ArabicMaqamTunerProcessor::isMidiPresetDeviceOpen() const
+{
+    return midiPresetInput != nullptr;
+}
+
 void ArabicMaqamTunerProcessor::setMidiPresetDevice (const juce::String& deviceName)
 {
     // Close existing input if any

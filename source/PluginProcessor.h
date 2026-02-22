@@ -172,6 +172,7 @@ public:
     juce::StringArray getAvailableMidiDevices() const;
     juce::String      getMidiPresetDevice() const;
     void              setMidiPresetDevice (const juce::String& deviceName);
+    bool              isMidiPresetDeviceOpen() const;
 
     // MidiInputCallback override
     void handleIncomingMidiMessage (juce::MidiInput* source,

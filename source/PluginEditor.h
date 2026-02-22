@@ -216,6 +216,7 @@ private:
     juce::Label        midiPresetLabel { {}, "Preset MIDI Map Config:" };
     juce::ComboBox     midiDeviceSelector;    // Direct MIDI device for preset triggering
     juce::ComboBox     midiChannelSelector;   // Channel selector (All, 1-16)
+    juce::StringArray  lastKnownMidiDevices;  // For detecting device list changes
     void setupMidiPresetControls();
     void populateMidiDeviceList();
     void populateMidiChannelList();
