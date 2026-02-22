@@ -468,7 +468,14 @@ For reliable preset triggering during performance, we open a **direct MIDI input
 - `midiPresetDeviceName` (String): Selected device name, persisted to settings
 - Processor inherits from `juce::MidiInputCallback`
 - `handleIncomingMidiMessage()`: Processes Note On from direct input
+- `setMidiPresetDevice()`: skips close+reopen if already open with same name (prevents CoreMIDI reconnection failures during startup)
+- `setStateInformation()`: only overrides device from session state if non-empty (protects settings.json device from empty session values)
 - Device/channel saved to `~/Library/Tanghim/settings.json`
+
+**Preset channel filtering in `processBlock()`:**
+- When `midiPresetChannel` is set to a specific channel (1-16), all MIDI messages on that channel are skipped in `processBlock()` — no oscillator triggering, no MIDI activity feedback
+- When set to "All" (0), no filtering is applied (no way to distinguish preset MIDI from performance MIDI)
+- This prevents the DAW's MIDI routing from double-triggering preset notes on the oscillator
 
 ### User Interaction
 

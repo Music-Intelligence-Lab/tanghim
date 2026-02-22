@@ -129,11 +129,20 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<float>& audio,
 
     const bool oscOn = oscillatorEnabled.load (std::memory_order_relaxed);
 
+    // Filter out MIDI on the preset trigger channel (avoids oscillator / activity
+    // feedback for notes intended only for preset switching)
+    const int presetCh = midiPresetChannel.load (std::memory_order_relaxed);
+
     // Track Note On / Note Off activity for UI feedback (lock-free, per-note)
     // Preset triggering is handled via direct MIDI device input (handleIncomingMidiMessage)
     for (const auto metadata : midi)
     {
         const auto msg  = metadata.getMessage();
+
+        // Skip messages on the preset MIDI channel (1-16); 0 = "All" → don't filter
+        if (presetCh > 0 && msg.getChannel() == presetCh)
+            continue;
+
         const auto note = msg.getNoteNumber();
         const auto word = note >> 5;                        // 0-3
         const auto bit  = uint32_t (1u << (note & 31));
@@ -182,10 +191,15 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<double>& audio,
     audio.clear();
 
     const bool oscOn = oscillatorEnabled.load (std::memory_order_relaxed);
+    const int presetCh = midiPresetChannel.load (std::memory_order_relaxed);
 
     for (const auto metadata : midi)
     {
         const auto msg  = metadata.getMessage();
+
+        if (presetCh > 0 && msg.getChannel() == presetCh)
+            continue;
+
         const auto note = msg.getNoteNumber();
         const auto word = note >> 5;
         const auto bit  = uint32_t (1u << (note & 31));
@@ -438,7 +452,13 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
 
     auto midiDeviceProp = state.getProperty ("midiPresetDevice", juce::var());
     if (! midiDeviceProp.isVoid())
-        setMidiPresetDevice (midiDeviceProp.toString());
+    {
+        const auto sessionDevice = midiDeviceProp.toString();
+        // Only override if session state has a device; don't let an empty
+        // session value clear a working device loaded from settings.json
+        if (sessionDevice.isNotEmpty())
+            setMidiPresetDevice (sessionDevice);
+    }
 
     // Restore tonic chromatic index
     auto tonicChromProp = state.getProperty ("tonicChromatic", juce::var());
@@ -1697,6 +1717,10 @@ bool ArabicMaqamTunerProcessor::isMidiPresetDeviceOpen() const
 
 void ArabicMaqamTunerProcessor::setMidiPresetDevice (const juce::String& deviceName)
 {
+    // Already open with the same device — nothing to do
+    if (deviceName == midiPresetDeviceName && midiPresetInput != nullptr)
+        return;
+
     // Close existing input if any
     if (midiPresetInput)
     {
