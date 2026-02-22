@@ -183,6 +183,10 @@ public:
     void beginPresetGesture();
     void endPresetGesture();
 
+    // ── Disk persistence (public for editor access) ──────────────────────────
+    void saveSettingsToDisk() const;
+    void clearCache();
+
 private:
     // ── Core state ────────────────────────────────────────────────────────────
     juce::String              currentSystemId;
@@ -247,7 +251,6 @@ private:
     void syncPresetParamFromState();
 
     // ── Disk persistence ─────────────────────────────────────────────────────
-    void saveSettingsToDisk() const;
     void loadSettingsFromDisk();
     void savePresetsToDisk() const;
     void loadPresetsFromDisk();

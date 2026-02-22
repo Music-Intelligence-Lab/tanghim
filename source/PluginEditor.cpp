@@ -71,6 +71,26 @@ ArabicMaqamTunerEditor::ArabicMaqamTunerEditor (ArabicMaqamTunerProcessor& p)
         );
     };
 
+    addAndMakeVisible (clearCacheButton);
+    clearCacheButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    clearCacheButton.setColour (juce::TextButton::buttonOnColourId, juce::Colours::transparentBlack);
+    clearCacheButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff808099));
+    clearCacheButton.setColour (juce::TextButton::textColourOnId, juce::Colour (0xffe8b339));
+    clearCacheButton.onClick = [this] {
+        processor.clearCache();
+
+        // Visual feedback: flash button text, revert after 1.5s
+        clearCacheButton.setButtonText (juce::CharPointer_UTF8 ("\xe2\x9c\x93 Cleared!"));
+        clearCacheButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff4caf50));
+        juce::Timer::callAfterDelay (1500, [safeThis = juce::Component::SafePointer (this)] {
+            if (safeThis)
+            {
+                safeThis->clearCacheButton.setButtonText (juce::CharPointer_UTF8 ("\xc3\x97 Clear Cache"));
+                safeThis->clearCacheButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff808099));
+            }
+        });
+    };
+
     // Setup MIDI preset trigger controls
     setupMidiPresetControls();
 
@@ -143,9 +163,14 @@ void ArabicMaqamTunerEditor::resized()
     // Updates button (rightmost)
     const int updatesBtnWidth = 70;
     updatesButton.setBounds (rightEdge - updatesBtnWidth, yPos, updatesBtnWidth, btnHeight);
-    rightEdge -= updatesBtnWidth + 8;
+    rightEdge -= updatesBtnWidth + 4;
 
-    // MIDI drag button (to the left of Updates)
+    // Clear Cache button (to the left of Updates)
+    const int clearCacheBtnWidth = 80;
+    clearCacheButton.setBounds (rightEdge - clearCacheBtnWidth, yPos, clearCacheBtnWidth, btnHeight);
+    rightEdge -= clearCacheBtnWidth + 8;
+
+    // MIDI drag button (to the left of Clear Cache)
     const int midiBtnWidth = 42;
     midiDragButton.setBounds (rightEdge - midiBtnWidth, yPos, midiBtnWidth, btnHeight);
     rightEdge -= midiBtnWidth + 12;
@@ -160,7 +185,7 @@ void ArabicMaqamTunerEditor::resized()
     midiDeviceSelector.setBounds (rightEdge - deviceSelectorWidth, yPos, deviceSelectorWidth, btnHeight);
     rightEdge -= deviceSelectorWidth + 4;
 
-    const int prefixWidth = 70;
+    const int prefixWidth = 130;
     midiPresetLabel.setBounds (rightEdge - prefixWidth, yPos, prefixWidth, btnHeight);
 }
 
@@ -530,4 +555,6 @@ void ArabicMaqamTunerEditor::onMidiDeviceChanged()
         if (selected - 1 < devices.size())
             processor.setMidiPresetDevice (devices[selected - 1]);
     }
+
+    processor.saveSettingsToDisk();
 }

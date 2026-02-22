@@ -43,6 +43,7 @@ export default function TuningSystemSelector({ systems, currentSystemId, current
         value={currentSystemId}
         onChange={handleSystemChange}
         className="select-system"
+        placeholder="Select tanghīm…"
       />
 
       {current && current.startingNotes.length > 1 && (

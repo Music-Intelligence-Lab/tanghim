@@ -2,8 +2,6 @@
 
 - Add an internal oscillator (triangle wave) with ADSR and allow computer keyboard input so user can play the tuner without needing MIDI input if desired. This should be activated by a button named "Oscillator" or "Osc" next to the MTS-ESP, MPE and Pitch Bend badges. The oscillator should be **enableable alongside** the other output modes (not mutually exclusive) so the user can play both the internal oscillator and their synth simultaneously to verify the synth is producing the correct tuning
 
-- our use of enharmonic equivalents in the UI needs to be maqam dependent, meaning that the sequence of maqam degrees should always have a unique natural regardless of the accidental, for example, saba should be d e f gb a bb c, and hijaz should be d eb f# g a bb c. does it makes sense to you?
-
 - add a global tuning UI element that allows to change the "reference frequency" of the entire tuning system up or down... it should have a knob and a text box so user can be precise or work by ear. In common practice this is referred to as "Master Tune" but that is fucking racist, also incorrect. Call it Reference Freq. The number displayed should be the frequency in Hz of the tuning systems's starting note name or the first pitch class in its octave 1, and although the modification will probably have to be in cents, we should display Hz.
 
 - in status bar, "Preset MIDI" should say, "Preset MIDI Mapping via:"

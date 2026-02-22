@@ -165,7 +165,7 @@ The status bar is rendered natively in JUCE (not WebView) to support drag-and-dr
 
 **Layout:**
 - WebView bounds: `getLocalBounds().withTrimmedBottom(26)` — leaves 26px for native status bar
-- Native status bar: rendered in `paint()` with version+timestamp (left), status message (center), MIDI button and Updates button (right)
+- Native status bar: rendered in `paint()` with version+timestamp (left); right-aligned controls: Preset MIDI Map Config label + device/channel dropdowns, MIDI drag button, Clear Cache button, Updates button
 - React StatusBar: hidden via CSS (`display: none`)
 
 **MidiDragButton (PluginEditor.h):**
@@ -434,9 +434,10 @@ MIDI Learn allows mapping MIDI notes to presets for instant maqam switching duri
 
 For reliable preset triggering during performance, we open a **direct MIDI input** that bypasses DAW routing entirely.
 
-**Native status bar controls:**
+**Native status bar controls (label: "Preset MIDI Map Config:"):**
 - **MIDI Input dropdown**: Select from available MIDI devices (or "None" to disable)
 - **Channel dropdown**: Filter by channel (1-16) or "All" for any channel
+- **Clear Cache button**: Clears all cached API data (`dataCache.clearAll()`) — both `~/Library/Tanghim/cache/` and `~/Library/Tanghim/cache/maqam-detail/`
 
 **Device management (`PluginProcessor`):**
 - `midiPresetInput` (unique_ptr<MidiInput>): Direct MIDI input device

@@ -208,11 +208,12 @@ private:
     // Native status bar components
     MidiDragButton     midiDragButton;
     juce::String       lastMaqamId;
-    juce::TextButton   updatesButton { juce::CharPointer_UTF8 ("\xe2\x86\xbb Updates") }; // ↻ Updates
+    juce::TextButton   updatesButton { juce::CharPointer_UTF8 ("\xe2\x9f\xb3 Updates") }; // ⟳ Updates
+    juce::TextButton   clearCacheButton { juce::CharPointer_UTF8 ("\xc3\x97 Clear Cache") }; // × Clear Cache
 
     // MIDI preset trigger configuration (MIDI Learn per-preset)
     StatusBarLookAndFeel statusBarLnF;
-    juce::Label        midiPresetLabel { {}, "Preset MIDI:" };
+    juce::Label        midiPresetLabel { {}, "Preset MIDI Map Config:" };
     juce::ComboBox     midiDeviceSelector;    // Direct MIDI device for preset triggering
     juce::ComboBox     midiChannelSelector;   // Channel selector (All, 1-16)
     void setupMidiPresetControls();

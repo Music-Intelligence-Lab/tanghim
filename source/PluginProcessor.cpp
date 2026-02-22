@@ -1624,6 +1624,58 @@ void ArabicMaqamTunerProcessor::saveSettingsToDisk() const
        .replaceWithText (juce::JSON::toString (juce::var (obj)));
 }
 
+void ArabicMaqamTunerProcessor::clearCache()
+{
+    dataCache.clearAll();
+
+    // Reset all tuning state to initial load state
+    currentSystemId.clear();
+    currentStartingNote.clear();
+    currentMaqamList.clear();
+    currentMaqamDisplay.clear();
+    currentTonicDisplay.clear();
+    currentTonicEnglish.clear();
+    currentTonicSolfege.clear();
+    currentMaqamId.clear();
+    currentTranspositionIdx = -1;
+    currentActivePresetIdx  = -1;
+    currentDegreeNames.clear();
+    currentDegreeIpnRefs.fill ({});
+    currentDegreeSolfegeRefs.fill ({});
+    currentTranspositionIdMap.clear();
+
+    // Reset slider state
+    activeTuningState.clearPerNoteOverrides();
+    for (int i = 0; i < 12; ++i)
+    {
+        auto& slot = activeTuningState.slots[(size_t) i];
+        slot.variants.clear();
+        slot.selectedIndex = 0;
+        slot.centsOffset   = 0.0;
+    }
+
+    // Update MTS-ESP tuning table and notify UI
+    tuningEngine.updateTuning (activeTuningState, buildScaleName());
+    notifyTuningChanged();
+
+    // Re-fetch tuning systems list from API (cache is empty now)
+    std::weak_ptr<std::atomic<bool>> weak (alive);
+    apiClient.fetchTuningSystems (
+        [this, weak] (std::vector<TuningSystem> systems)
+        {
+            if (! isAlive (weak)) return;
+            dataCache.setTuningSystemsList (std::move (systems));
+            if (onTuningSystemsLoaded) onTuningSystemsLoaded();
+        },
+        [this, weak] (juce::String err)
+        {
+            if (! isAlive (weak)) return;
+            if (onStatusMessage) onStatusMessage ("Network error: " + err);
+        });
+
+    DBG ("Cache cleared — reset to init state");
+}
+
 void ArabicMaqamTunerProcessor::loadSettingsFromDisk()
 {
     const auto file = getTanghimDir().getChildFile ("settings.json");
