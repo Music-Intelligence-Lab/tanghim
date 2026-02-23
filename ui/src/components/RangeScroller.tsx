@@ -56,7 +56,17 @@ export default function RangeScroller({ startMidi, visibleCount, maqamTonicMidi,
           max={maxStart}
           step="any"
           value={startMidi}
-          onChange={e => onChange(Number(e.target.value))}
+          onChange={e => {
+            const raw = Number(e.target.value)
+            // Magnetic snap: if within 1.5 MIDI notes of a tick mark (C, G, A), snap to it
+            for (let m = Math.floor(raw) - 1; m <= Math.ceil(raw) + 1; m++) {
+              if (m >= 0 && TICK_CLASSES.has(m % 12) && Math.abs(raw - m) < 1.1) {
+                onChange(m)
+                return
+              }
+            }
+            onChange(raw)
+          }}
           onMouseDown={e => {
             const now = Date.now()
             // Only record on the first mousedown — ignore the second click of a dblclick

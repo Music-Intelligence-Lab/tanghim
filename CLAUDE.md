@@ -139,9 +139,9 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - **Thumb cursor**: `ns-resize` (double-arrow vertical) — indicates free drag
 - **Live MTS-ESP update**: Tuning updates on every mousemove via fire-and-forget `setSlotCents` bridge call (RAF-throttled ~60fps). `setSlotCentsFinalize` on mouseup returns full TuningState for React state sync
 - **Persistence**: `centsOffset` saved per slot in DAW session state. Backward-compatible: old sessions derive `centsOffset` from selected variant's `midiCentsDeviation`
-- **Smooth scrolling**: `startMidi` is fractional (not integer), mouse wheel delta proportional to `deltaY / SLOT_WIDTH_PX`. NoteSliderBank renders an extra slider and uses CSS `translateX(BANK_LEFT_OFFSET_PX - pixelOffset)` for sub-pixel offset
+- **No mouse/trackpad scrolling** on the slider bank — panning is only via `RangeScroller`
 - **Left offset alignment**: `BANK_LEFT_OFFSET_PX = 16` in constants.ts — slider bank content is offset 16px from left edge to align with upper sections (which have 16px padding). Available width for sliders = container width - 16px
-- `RangeScroller` pans smoothly with `step="any"`, tick marks at every C, G, A. Double-click centers viewport on the maqam's octave
+- `RangeScroller`: `step="any"` with magnetic snap to C/G/A tick marks (within 1.1 MIDI notes). Tick marks at every C, G, A. Double-click centers viewport on the maqam's octave
 - **Curtain effect centering**: Viewport auto-centers on the maqam's octave (or C3 if no maqam) using `centerMaqamOctave(tonicMidi, visibleCount)`. Formula: `padding = Math.max(0, Math.floor((visibleCount - 13) / 2))`. An octave = 13 sliders (tonic through its octave above). The `Math.max(0, ...)` prevents negative padding when viewport < 13 sliders. Centering is consistent across: plugin load, tuning system select, maqam select, preset load, and range slider double-click
 - Plugin window: 832–2400px wide, 620–4000px tall (`PluginEditor.cpp: setResizeLimits`)
 - Min width = 16px left offset + 12 sliders × 68px = 832px (one octave aligned with upper sections)
@@ -201,8 +201,10 @@ The status bar is rendered natively in JUCE (not WebView) to support drag-and-dr
 **MIDI File Format (MidiFileGenerator):**
 - SMF Type 0, single track, 96 ticks/quarter note
 - Scale degrees played as chord, held for 1 quarter note
-- UTF-8 track name with maqam and tonic info
-- Filename: `maqām_rāst_al-rāst_C3_Do3.mid` (maqam display + "al-" + tonic PAO + IPN + solfège)
+- Track name: ASCII transliteration (ā→a, ī→i, etc.) — DAWs interpret MIDI text events as Mac Roman, not UTF-8
+- Filename: UTF-8 `maqām_rāst_(rāst-C3-Do3).mid` — format: `maqamname_(PAOname-IPN-solfege).mid`
+- Filesystem-unsafe chars (`/`, `:`, `\`) replaced with `-` in both track name and filename
+- Temp file location: `~/Library/Tanghim/midi-export/`
 
 ### Maqam Selector & Preset System
 - Two-dropdown selector: base maqam (searchable) + variant/transposition

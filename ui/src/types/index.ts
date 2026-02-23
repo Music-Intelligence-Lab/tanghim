@@ -126,6 +126,7 @@ export interface TuningSystem {
   displayName: string;
   shortName: string;
   year: number;
+  yearStr: string;    // e.g. "950a" — preserves letter suffix for chronological sort
   startingNotes: StartingNote[];
 }
 

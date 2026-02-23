@@ -11,6 +11,7 @@ struct TuningSystem
     juce::String displayName;                // e.g. "Ibn Sīnā (1037) 7-Fret Oud 17-Tone"
     juce::String shortName;                  // e.g. "Ibn Sīnā (1037)"
     int          year                 = 0;
+    juce::String yearStr;                    // e.g. "950a" — preserves letter suffix for chronological sort
     int          pitchClassesPerOctave = 12;
     double       referenceFrequency   = 440.0; // Hz for the reference pitch
 

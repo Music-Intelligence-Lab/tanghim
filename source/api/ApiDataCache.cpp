@@ -1,4 +1,5 @@
 #include "ApiDataCache.h"
+#include <algorithm>
 
 ApiDataCache::ApiDataCache()
 {
@@ -11,6 +12,11 @@ ApiDataCache::~ApiDataCache() = default;
 
 void ApiDataCache::setTuningSystemsList (std::vector<TuningSystem> systems)
 {
+    // Sort chronologically by year
+    std::sort (systems.begin(), systems.end(),
+               [] (const TuningSystem& a, const TuningSystem& b)
+               { return a.year != b.year ? a.year < b.year : a.yearStr < b.yearStr; });
+
     juce::ScopedLock sl (lock);
     tuningSystemsList = std::move (systems);
     hasSystems = true;
@@ -159,6 +165,7 @@ void ApiDataCache::loadFromDisk()
                 ts.id                    = get("id").toString();
                 ts.displayName           = get("displayName").toString();
                 ts.shortName             = get("shortName").toString();
+                ts.yearStr               = get("yearStr").toString();
                 ts.year                  = (int) get("year");
                 ts.pitchClassesPerOctave = (int) get("pitchClassesPerOctave");
                 ts.referenceFrequency    = (double) get("referenceFrequency");
@@ -181,6 +188,10 @@ void ApiDataCache::loadFromDisk()
 
                 if (ts.isValid()) tuningSystemsList.push_back (std::move (ts));
             }
+            // Sort chronologically by year
+            std::sort (tuningSystemsList.begin(), tuningSystemsList.end(),
+                       [] (const TuningSystem& a, const TuningSystem& b)
+               { return a.year != b.year ? a.year < b.year : a.yearStr < b.yearStr; });
             hasSystems = ! tuningSystemsList.empty();
         }
     }
@@ -443,6 +454,7 @@ void ApiDataCache::saveSystemsListToDisk() const
         obj->setProperty ("displayName", ts.displayName);
         obj->setProperty ("shortName",   ts.shortName);
         obj->setProperty ("year",        ts.year);
+        obj->setProperty ("yearStr",     ts.yearStr);
         obj->setProperty ("pitchClassesPerOctave", ts.pitchClassesPerOctave);
         obj->setProperty ("referenceFrequency", ts.referenceFrequency);
         obj->setProperty ("version",     ts.version);

@@ -206,7 +206,6 @@ export default function App() {
 
         // Center viewport on maqam when requested (e.g., MIDI preset trigger)
         if (centerOnMaqam) {
-          setIsUserScrolling(false)
         }
       }
     } else if (!isMaqamModifiedRef.current && !selectedMaqamIdRef.current) {
@@ -351,10 +350,8 @@ export default function App() {
 
   // ── Slider bank layout ───────────────────────────────────────────────────
   const [startMidi, setStartMidi] = useState(48) // default C3
-  const [isUserScrolling, setIsUserScrolling] = useState(false)
   const bankContainerRef = useRef<HTMLDivElement>(null)
   const { count: visibleCount, widthPx: bankWidthPx } = useVisibleSliderCount(bankContainerRef)
-  const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
 
   // Fractional visible count for smooth curtain effect
   const fractionalVisibleCount = bankWidthPx / SLOT_WIDTH_PX
@@ -362,20 +359,9 @@ export default function App() {
   // Keep maqam's octave (or default C3 octave) centered during resize (smooth curtain effect)
   // Math.floor in centerMaqamOctave ensures tonic is flush at minimum width
   useEffect(() => {
-    if (isUserScrolling) return // Don't override user's manual scroll position
     const tonicMidi = maqamTonicMidi >= 0 ? maqamTonicMidi : 48
     setStartMidi(centerMaqamOctave(tonicMidi, fractionalVisibleCount))
-  }, [fractionalVisibleCount, maqamTonicMidi, isUserScrolling])
-
-  const handleBankWheel = useCallback((e: React.WheelEvent) => {
-    setIsUserScrolling(true)
-    // Clear any existing timeout and set a new one
-    if (userScrollTimeoutRef.current) clearTimeout(userScrollTimeoutRef.current)
-    userScrollTimeoutRef.current = setTimeout(() => setIsUserScrolling(false), 2000)
-
-    const delta = e.deltaY / SLOT_WIDTH_PX
-    setStartMidi(prev => Math.max(0, Math.min(128 - fractionalVisibleCount, prev + delta)))
-  }, [fractionalVisibleCount])
+  }, [fractionalVisibleCount, maqamTonicMidi])
 
   // ── MIDI activity (note on / note off tracking) ─────────────────────────
   // Stored in a ref — NOT React state — so MIDI events never trigger re-renders.
@@ -539,8 +525,7 @@ export default function App() {
     setModifiedSlots(new Set())
     setMaqamDegreePaoNames(new Map())
     maqamListRequested.current = false
-    // Reset user scroll flag and center on C3 (no maqam selected)
-    setIsUserScrolling(false)
+    // Center on C3 (no maqam selected)
     setStartMidi(centerMaqamOctave(48, fractionalVisibleCount))
     await bridge.selectTuningSystem(systemId, startingNote)
   }
@@ -739,7 +724,6 @@ export default function App() {
         if (tonic) {
           setMaqamTonicIndex(tonic.chromaticIndex)
           setMaqamTonicMidi(tonic.midi)
-          setIsUserScrolling(false)
           setStartMidi(centerMaqamOctave(tonic.midi, fractionalVisibleCount))
         }
       }
@@ -862,7 +846,6 @@ export default function App() {
         if (tonic) {
           setMaqamTonicIndex(tonic.chromaticIndex)
           setMaqamTonicMidi(tonic.midi)
-          setIsUserScrolling(false)
           setStartMidi(centerMaqamOctave(tonic.midi, fractionalVisibleCount))
         }
       }
@@ -904,7 +887,6 @@ export default function App() {
         if (tonic) {
           setMaqamTonicIndex(tonic.chromaticIndex)
           setMaqamTonicMidi(tonic.midi)
-          setIsUserScrolling(false)
           setStartMidi(centerMaqamOctave(tonic.midi, fractionalVisibleCount))
         }
       }
@@ -1044,7 +1026,7 @@ export default function App() {
 
       <RangeScroller startMidi={startMidi} visibleCount={visibleCount} maqamTonicMidi={maqamTonicMidi} onChange={setStartMidi} />
 
-      <div className="slider-bank-container" ref={bankContainerRef} onWheel={handleBankWheel}>
+      <div className="slider-bank-container" ref={bankContainerRef}>
         <NoteSliderBank
           slots={tuningState.slots}
           startMidi={startMidi}

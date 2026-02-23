@@ -470,8 +470,10 @@ void MidiDragButton::prepareMidiFile()
     auto midiData = MidiFileGenerator::generate (info);
     auto filename = MidiFileGenerator::buildFilename (info);
 
-    auto tempDir = juce::File::getSpecialLocation (juce::File::tempDirectory);
-    tempDir.createDirectory(); // Ensure temp directory exists
+    // Use ~/Library/Caches/Tanghim/ — accessible to Finder for drag-to-filesystem
+    auto tempDir = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+                       .getChildFile ("Tanghim").getChildFile ("midi-export");
+    tempDir.createDirectory();
 
     tempMidiFile = tempDir.getChildFile (filename);
     bool writeSuccess = tempMidiFile.replaceWithData (midiData.data(), midiData.size());

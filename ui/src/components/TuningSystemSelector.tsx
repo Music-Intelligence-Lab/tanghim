@@ -11,17 +11,19 @@ interface Props {
 }
 
 export default function TuningSystemSelector({ systems, currentSystemId, currentStartingNote, onSelect }: Props) {
+  // Systems arrive pre-sorted chronologically by year from C++
+  const current = systems.find(s => s.id === currentSystemId)
+
   const sorted = useMemo(() =>
-    [...systems].sort((a, b) => (a.shortName || a.displayName).localeCompare(b.shortName || b.displayName)),
+    [...systems].sort((a, b) => a.year !== b.year ? a.year - b.year : a.displayName.localeCompare(b.displayName)),
     [systems]
   )
-  const current = sorted.find(s => s.id === currentSystemId)
 
   const systemOptions = useMemo(() =>
-    systems.length === 0
+    sorted.length === 0
       ? [{ value: '', label: 'Loading…' }]
-      : sorted.map(s => ({ value: s.id, label: s.shortName || s.displayName })),
-    [systems, sorted]
+      : sorted.map(s => ({ value: s.id, label: s.displayName })),
+    [sorted]
   )
 
   const noteOptions = useMemo(() =>
@@ -30,7 +32,7 @@ export default function TuningSystemSelector({ systems, currentSystemId, current
   )
 
   const handleSystemChange = (value: string) => {
-    const sys = sorted.find(s => s.id === value)
+    const sys = systems.find(s => s.id === value)
     if (!sys) return
     const note = sys.startingNotes[0]?.id ?? ''
     onSelect(sys.id, note)

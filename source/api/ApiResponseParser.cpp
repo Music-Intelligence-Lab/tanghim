@@ -305,8 +305,8 @@ TuningSystem ApiResponseParser::parseSingleTuningSystem (const juce::var& obj)
         ts.displayName = tsGet ("displayName").toString();
         ts.version     = tsGet ("version").toString();
 
-        juce::String yearStr = tsGet ("year").toString();
-        ts.year = yearStr.getIntValue();
+        ts.yearStr = tsGet ("year").toString();
+        ts.year    = ts.yearStr.getIntValue();
 
         ts.pitchClassesPerOctave = (int) tsGet ("numberOfPitchClassesSingleOctave");
     }
@@ -317,7 +317,8 @@ TuningSystem ApiResponseParser::parseSingleTuningSystem (const juce::var& obj)
         if (ts.id.isEmpty()) ts.id = get ("id").toString();
         ts.displayName = get ("displayName").toString();
         ts.version     = get ("version").toString();
-        ts.year        = get ("year").toString().getIntValue();
+        ts.yearStr     = get ("year").toString();
+        ts.year        = ts.yearStr.getIntValue();
         ts.pitchClassesPerOctave = (int) get ("pitchClassesPerOctave");
     }
 

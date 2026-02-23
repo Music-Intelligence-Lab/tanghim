@@ -561,6 +561,7 @@ juce::var NativeBridge::buildTuningSystemsJson() const
         obj->setProperty ("displayName", ts.displayName);
         obj->setProperty ("shortName",   ts.shortName);
         obj->setProperty ("year",        ts.year);
+        obj->setProperty ("yearStr",     ts.yearStr);
 
         juce::Array<juce::var> notes;
         for (int i = 0; i < ts.startingNoteIds.size(); ++i)

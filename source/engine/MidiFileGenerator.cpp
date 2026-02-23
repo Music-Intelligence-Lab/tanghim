@@ -1,6 +1,66 @@
 #include "MidiFileGenerator.h"
 #include <algorithm>
 
+// ── ASCII transliteration for MIDI text meta events ──────────────────────────
+// MIDI spec uses ASCII for text events. DAWs like Ableton interpret raw bytes
+// as Mac Roman, garbling UTF-8 diacritics (e.g. ā → ƒÅ). This maps Arabic
+// transliteration diacritics to their ASCII base letters.
+
+static juce::String toAscii (const juce::String& input)
+{
+    juce::String result;
+    for (auto cp = input.getCharPointer(); ! cp.isEmpty();)
+    {
+        auto c = cp.getAndAdvance();
+        switch (c)
+        {
+            // Lowercase: macron vowels + dotted consonants
+            case 0x0101: result += 'a'; break; // ā
+            case 0x012B: result += 'i'; break; // ī
+            case 0x016B: result += 'u'; break; // ū
+            case 0x1E25: result += 'h'; break; // ḥ
+            case 0x1E63: result += 's'; break; // ṣ
+            case 0x1E0D: result += 'd'; break; // ḍ
+            case 0x1E6D: result += 't'; break; // ṭ
+            case 0x1E93: result += 'z'; break; // ẓ
+            case 0x0121: result += 'g'; break; // ġ
+            // Uppercase equivalents
+            case 0x0100: result += 'A'; break; // Ā
+            case 0x012A: result += 'I'; break; // Ī
+            case 0x016A: result += 'U'; break; // Ū
+            case 0x1E24: result += 'H'; break; // Ḥ
+            case 0x1E62: result += 'S'; break; // Ṣ
+            case 0x1E0C: result += 'D'; break; // Ḍ
+            case 0x1E6C: result += 'T'; break; // Ṭ
+            case 0x1E92: result += 'Z'; break; // Ẓ
+            case 0x0120: result += 'G'; break; // Ġ
+            default:
+                if (c >= 32 && c < 128)
+                    result += static_cast<char> (c);
+                else
+                    result += '-';  // Replace unknown non-ASCII with dash
+                break;
+        }
+    }
+    return result;
+}
+
+// Replace filesystem-unsafe characters (/ : \) with dash.
+// Keeps UTF-8 diacritics intact.
+static juce::String sanitizeForFilename (const juce::String& input)
+{
+    juce::String result;
+    for (auto cp = input.getCharPointer(); ! cp.isEmpty();)
+    {
+        auto c = cp.getAndAdvance();
+        if (c == '/' || c == ':' || c == '\\')
+            result += '-';
+        else if (c >= 32)
+            result += juce::String::charToString (c);
+    }
+    return result;
+}
+
 // ── Variable-length quantity (VLQ) encoding ───────────────────────────────────
 
 void MidiFileGenerator::writeVLQ (std::vector<uint8_t>& buffer, uint32_t value)
@@ -38,22 +98,40 @@ void MidiFileGenerator::write32BE (std::vector<uint8_t>& buffer, uint32_t value)
     buffer.push_back (static_cast<uint8_t> (value & 0xFF));
 }
 
+// ── Name building helpers ────────────────────────────────────────────────────
+// Format: maqamname_(PAOname-IPN-solfege)
+// e.g. "maqam rast_(rast-C3-Do3)" or "maqam_rast_(rast-C3-Do3).mid"
+
+static juce::String buildNameBase (const juce::String& maqamDisplay,
+                                   const juce::String& tonicPao,
+                                   const juce::String& tonicIpn,
+                                   const juce::String& tonicSolfege)
+{
+    return maqamDisplay.replace (" ", "_")
+         + "_(" + tonicPao
+         + "-" + tonicIpn
+         + "-" + tonicSolfege.replace (" ", "")
+         + ")";
+}
+
 // ── MIDI file generation ──────────────────────────────────────────────────────
 
 std::vector<uint8_t> MidiFileGenerator::generate (const MaqamInfo& info)
 {
     std::vector<uint8_t> file;
 
-    // ── Build track name ──────────────────────────────────────────────────────
-    // Format: maqām_rāst_al-rāst_C3_Do3
-    juce::String trackName = info.maqamDisplay.replace (" ", "_")
-                           + "_al-" + info.tonicPaoDisplay
-                           + "_" + info.tonicIpn
-                           + "_" + info.tonicSolfege.replace (" ", "");
-    auto trackNameUtf8 = trackName.toRawUTF8();
-    size_t trackNameLen = std::strlen (trackNameUtf8);
+    // ── Build track name (ASCII) ─────────────────────────────────────────────
+    // MIDI text meta events use ASCII. Ableton interprets raw bytes as Mac Roman,
+    // so UTF-8 diacritics get garbled. Use ASCII transliteration for the track name;
+    // the UTF-8 filename carries the diacritics for filesystem display.
+    juce::String trackName = toAscii (buildNameBase (info.maqamDisplay,
+                                                     info.tonicPaoDisplay,
+                                                     info.tonicIpn,
+                                                     info.tonicSolfege));
+    auto trackNameBytes = trackName.toRawUTF8();  // pure ASCII at this point
+    size_t trackNameLen = std::strlen (trackNameBytes);
 
-    // ── Build track data ──────────────────────────────────────────────────────
+    // ── Build track data ─────────────────────────────────────────────────────
     std::vector<uint8_t> track;
 
     // Track name meta event: FF 03 len <name>
@@ -62,7 +140,7 @@ std::vector<uint8_t> MidiFileGenerator::generate (const MaqamInfo& info)
     track.push_back (0x03);
     writeVLQ (track, static_cast<uint32_t> (trackNameLen));
     for (size_t i = 0; i < trackNameLen; ++i)
-        track.push_back (static_cast<uint8_t> (trackNameUtf8[i]));
+        track.push_back (static_cast<uint8_t> (trackNameBytes[i]));
 
     // Time signature meta event: FF 58 04 nn dd cc bb
     // 4/4 time, 24 MIDI clocks per metronome click, 8 32nd notes per beat
@@ -127,10 +205,10 @@ std::vector<uint8_t> MidiFileGenerator::generate (const MaqamInfo& info)
 
 juce::String MidiFileGenerator::buildFilename (const MaqamInfo& info)
 {
-    // Format: maqām_rāst_al-rāst_C3_Do3.mid
-    return info.maqamDisplay.replace (" ", "_")
-         + "_al-" + info.tonicPaoDisplay
-         + "_" + info.tonicIpn
-         + "_" + info.tonicSolfege.replace (" ", "")
+    // Format: maqām_rāst_(rāst-C3-Do3).mid (UTF-8 for filesystem)
+    return sanitizeForFilename (buildNameBase (info.maqamDisplay,
+                                              info.tonicPaoDisplay,
+                                              info.tonicIpn,
+                                              info.tonicSolfege))
          + ".mid";
 }

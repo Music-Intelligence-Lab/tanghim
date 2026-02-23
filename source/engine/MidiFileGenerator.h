@@ -5,7 +5,8 @@
 /**
  * Generates a Standard MIDI File (SMF) Type 0 containing the notes of a maqam scale.
  *
- * The output follows the format: maqām_rāst_al-rāst_C3_Do3.mid
+ * Filename format: maqām_rāst_(rāst-C3-Do3).mid (UTF-8)
+ * Track name: ASCII transliteration (MIDI spec = ASCII; Ableton reads bytes as Mac Roman)
  * - All scale degree notes are played simultaneously as a chord
  * - Single track, 96 ticks per quarter note
  * - Notes held for 1 quarter note then released

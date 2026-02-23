@@ -139,18 +139,21 @@ public:
         if (tempMidiFile.existsAsFile())
             tempMidiFile.deleteFile();
 
+        dragStarted = false;
+
         // Prepare MIDI file on mouse down for responsive drag
         prepareMidiFile();
     }
 
     void mouseDrag (const juce::MouseEvent& e) override
     {
-        if (tempMidiFile.existsAsFile() && e.getDistanceFromDragStart() > 4)
+        if (! dragStarted && tempMidiFile.existsAsFile() && e.getDistanceFromDragStart() > 4)
         {
+            dragStarted = true;
             // Don't delete on completion - DAW may still be reading the file
             // File will be cleaned up on next mouseDown or app exit
             juce::DragAndDropContainer::performExternalDragDropOfFiles (
-                { tempMidiFile.getFullPathName() }, false, this, nullptr);
+                { tempMidiFile.getFullPathName() }, true, this, nullptr);
         }
     }
 
@@ -159,6 +162,7 @@ private:
 
     ArabicMaqamTunerProcessor& processor;
     juce::File tempMidiFile;
+    bool dragStarted = false;
 };
 
 /**
