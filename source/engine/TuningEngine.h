@@ -38,6 +38,13 @@ public:
                        double referenceCentsOffset = 0.0,
                        const juce::String& scaleName = {});
 
+    /**
+     * Fast path: reapply only the reference frequency offset to the cached
+     * base frequency table. Avoids rebuilding the entire table when only
+     * the concert pitch knob changed.
+     */
+    void updateReferenceOffset (double referenceCentsOffset);
+
     // ── MTS-ESP broadcast (without modifying internal tables) ────────────────
     /** Broadcast a frequency table to MTS-ESP without updating internal state. */
     void broadcastMtsTable (const std::array<double, 128>& freqs);
@@ -51,10 +58,14 @@ public:
     const std::array<double, 128>& getFrequencyTable()    const;
     const std::array<double, 128>& getCentsDeviationTable() const;
 
+    /** Copy frequency table in one lock acquisition (audio-thread friendly). */
+    void snapshotFrequencyTable (std::array<double, 128>& dest) const;
+
 private:
     // Tuning tables — written on message thread, read on audio thread
     mutable juce::CriticalSection tuningLock;
     std::array<double, 128> freqTable;
+    std::array<double, 128> baseFreqTable;  // before reference offset — for fast ref-only updates
     std::array<double, 128> centsTable;
 
     std::unique_ptr<MtsEspTransmitter> mtsEsp;

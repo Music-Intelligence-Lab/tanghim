@@ -6,8 +6,10 @@ TuningEngine::TuningEngine()
     // Initialise tables to 12-EDO
     for (int i = 0; i < 128; ++i)
     {
-        freqTable [(size_t)i] = 440.0 * std::pow (2.0, (i - 69) / 12.0);
-        centsTable[(size_t)i] = 0.0;
+        const double freq = 440.0 * std::pow (2.0, (i - 69) / 12.0);
+        freqTable    [(size_t)i] = freq;
+        baseFreqTable[(size_t)i] = freq;
+        centsTable   [(size_t)i] = 0.0;
     }
 
     mtsEsp = std::make_unique<MtsEspTransmitter>();
@@ -29,6 +31,9 @@ void TuningEngine::updateTuning (const ActiveTuningState& state,
     auto newFreqs  = state.buildFrequencyTable();
     const auto newCents  = state.buildCentsDeviationTable();
 
+    // Cache the base table (before reference offset) for fast ref-only updates
+    auto baseFreqs = newFreqs;
+
     // Apply global reference frequency offset (concert pitch shift)
     if (referenceCentsOffset != 0.0)
     {
@@ -39,6 +44,7 @@ void TuningEngine::updateTuning (const ActiveTuningState& state,
 
     {
         juce::ScopedLock sl (tuningLock);
+        baseFreqTable = baseFreqs;
         freqTable  = newFreqs;
         centsTable = newCents;
     }
@@ -50,6 +56,32 @@ void TuningEngine::updateTuning (const ActiveTuningState& state,
         if (scaleName.isNotEmpty())
             mtsEsp->setScaleName (scaleName);
     }
+}
+
+void TuningEngine::updateReferenceOffset (double referenceCentsOffset)
+{
+    std::array<double, 128> newFreqs;
+
+    {
+        juce::ScopedLock sl (tuningLock);
+        newFreqs = baseFreqTable;
+    }
+
+    if (referenceCentsOffset != 0.0)
+    {
+        const double ratio = std::pow (2.0, referenceCentsOffset / 1200.0);
+        for (auto& f : newFreqs)
+            f *= ratio;
+    }
+
+    {
+        juce::ScopedLock sl (tuningLock);
+        freqTable = newFreqs;
+        // centsTable unchanged — reference offset doesn't affect cents display
+    }
+
+    if (mtsEsp && mtsEsp->isTransmitter())
+        mtsEsp->setTuningTable (newFreqs);
 }
 
 // ── MTS-ESP broadcast helpers ─────────────────────────────────────────────────
@@ -90,4 +122,10 @@ const std::array<double, 128>& TuningEngine::getFrequencyTable() const
 const std::array<double, 128>& TuningEngine::getCentsDeviationTable() const
 {
     return centsTable;
+}
+
+void TuningEngine::snapshotFrequencyTable (std::array<double, 128>& dest) const
+{
+    juce::ScopedLock sl (tuningLock);
+    dest = freqTable;
 }

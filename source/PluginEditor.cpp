@@ -94,6 +94,12 @@ ArabicMaqamTunerEditor::ArabicMaqamTunerEditor (ArabicMaqamTunerProcessor& p)
     // Setup MIDI preset trigger controls
     setupMidiPresetControls();
 
+    // Listen for MIDI device connect/disconnect events (cross-platform: CoreMIDI/WinMM/ALSA)
+    midiDeviceListConnection = juce::MidiDeviceListConnection::make ([this]
+    {
+        midiDevicesChanged.store (true, std::memory_order_relaxed);
+    });
+
     // Set processor change callbacks
     processor.onTuningStateChanged   = [this] { emitTuningStateChanged(); };
     processor.onTuningSystemsLoaded  = [this] { emitTuningSystemsLoaded(); };
@@ -115,6 +121,7 @@ ArabicMaqamTunerEditor::ArabicMaqamTunerEditor (ArabicMaqamTunerProcessor& p)
 ArabicMaqamTunerEditor::~ArabicMaqamTunerEditor()
 {
     stopTimer();
+    midiDeviceListConnection.reset();
     // Reset LookAndFeel before components are destroyed
     midiDeviceSelector.setLookAndFeel (nullptr);
     midiChannelSelector.setLookAndFeel (nullptr);
@@ -234,8 +241,7 @@ void ArabicMaqamTunerEditor::timerCallback()
         }
     }
 
-    // ── MIDI drag button visibility (~2Hz) ─────────────────────────────────
-    // ── MTS-ESP status polling (~2Hz) ─────────────────────────────────────
+    // ── MIDI drag button visibility + MTS-ESP status polling (~2Hz) ──────────
     if (++mtsStatusFrameCounter >= 15)
     {
         mtsStatusFrameCounter = 0;
@@ -248,52 +254,59 @@ void ArabicMaqamTunerEditor::timerCallback()
             midiDragButton.setVisible (maqamId.isNotEmpty());
         }
 
+        // MTS-ESP client count is a cheap shared-memory read — keep at 2Hz
         const int  totalReceivers   = processor.mtsNumReceivers();
         const bool isMtsTransmitter = processor.isMtsTransmitter();
-        const auto receiverCounts   = processor.getReceiverCounts();
+        bool       mtsStatusDirty   = (totalReceivers != lastMtsTotal
+                                        || isMtsTransmitter != lastIsMtsTransmitter);
 
-        if (totalReceivers != lastMtsTotal
-            || isMtsTransmitter != lastIsMtsTransmitter
-            || receiverCounts != lastReceiverCounts)
+        // ── Event-driven MIDI device list refresh ─────────────────────
+        if (midiDevicesChanged.exchange (false, std::memory_order_relaxed))
         {
-            lastMtsTotal          = totalReceivers;
-            lastIsMtsTransmitter  = isMtsTransmitter;
-            lastReceiverCounts    = receiverCounts;
+            populateMidiDeviceList();
 
-            const int tanghimTotal = receiverCounts.mpeReceivers + receiverCounts.monoPbReceivers;
+            // Retry opening device if configured but not yet connected
+            const auto deviceName = processor.getMidiPresetDevice();
+            if (deviceName.isNotEmpty() && ! processor.isMidiPresetDeviceOpen())
+                processor.setMidiPresetDevice (deviceName);
+        }
+
+        // ── Slow poll: filesystem I/O (~every 5 seconds) ────────────
+        if (++slowPollCounter >= 10)
+        {
+            slowPollCounter = 0;
+
+            // ReceiverRegistry::scan() — directory iteration + mtime checks
+            const auto receiverCounts = processor.getReceiverCounts();
+            if (receiverCounts != lastReceiverCounts)
+            {
+                lastReceiverCounts = receiverCounts;
+                mtsStatusDirty = true;
+            }
+
+            // Periodic stale file cleanup (~every 60 seconds)
+            if (++staleCleanupCounter >= 12)
+            {
+                staleCleanupCounter = 0;
+                ReceiverRegistry::cleanStale (10.0);
+            }
+        }
+
+        // Emit MTS status if changed
+        if (mtsStatusDirty)
+        {
+            lastMtsTotal         = totalReceivers;
+            lastIsMtsTransmitter = isMtsTransmitter;
+
+            const int tanghimTotal = lastReceiverCounts.mpeReceivers + lastReceiverCounts.monoPbReceivers;
             const int mtsNative    = std::max (0, totalReceivers - tanghimTotal);
 
             auto* obj = new juce::DynamicObject();
             obj->setProperty ("isMtsTransmitter", isMtsTransmitter);
             obj->setProperty ("mtsNativeCount",   mtsNative);
-            obj->setProperty ("mpeCount",         receiverCounts.mpeReceivers);
-            obj->setProperty ("monoPbCount",      receiverCounts.monoPbReceivers);
+            obj->setProperty ("mpeCount",         lastReceiverCounts.mpeReceivers);
+            obj->setProperty ("monoPbCount",      lastReceiverCounts.monoPbReceivers);
             browser->emitEventIfBrowserIsVisible ("mtsStatusChanged", juce::var (obj));
-        }
-
-        // Periodic stale file cleanup (~every 30 seconds)
-        if (++staleCleanupCounter >= 60)
-        {
-            staleCleanupCounter = 0;
-            ReceiverRegistry::cleanStale (10.0);
-        }
-
-        // ── MIDI device list refresh (~2Hz) ────────────────────────────────
-        {
-            const auto currentDevices = processor.getAvailableMidiDevices();
-            if (currentDevices != lastKnownMidiDevices)
-            {
-                lastKnownMidiDevices = currentDevices;
-                populateMidiDeviceList();
-            }
-
-            // Retry opening device if configured but not yet open
-            // (e.g. device wasn't available at plugin construction)
-            const auto deviceName = processor.getMidiPresetDevice();
-            if (deviceName.isNotEmpty() && ! processor.isMidiPresetDeviceOpen())
-            {
-                processor.setMidiPresetDevice (deviceName);
-            }
         }
     }
 }
@@ -508,7 +521,6 @@ void ArabicMaqamTunerEditor::setupMidiPresetControls()
     midiDeviceSelector.setColour (juce::ComboBox::arrowColourId, textColor);
     midiDeviceSelector.onChange = [this] { onMidiDeviceChanged(); };
     populateMidiDeviceList();
-    lastKnownMidiDevices = processor.getAvailableMidiDevices();
 
     // MIDI channel selector dropdown
     addAndMakeVisible (midiChannelSelector);

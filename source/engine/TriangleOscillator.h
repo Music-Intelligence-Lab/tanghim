@@ -139,6 +139,36 @@ struct TriangleOscillator
         return sum;
     }
 
+    /** Block-based render: iterate each active voice over the full block.
+     *  Skips inactive voices entirely. Output is additive (caller must clear). */
+    void renderBlock (float* output, int numSamples, float gain)
+    {
+        for (auto& v : voices)
+        {
+            if (! v.active) continue;
+            for (int s = 0; s < numSamples; ++s)
+                output[s] += static_cast<float> (v.nextSample()) * gain;
+        }
+    }
+
+    void renderBlock (double* output, int numSamples, double gain)
+    {
+        for (auto& v : voices)
+        {
+            if (! v.active) continue;
+            for (int s = 0; s < numSamples; ++s)
+                output[s] += v.nextSample() * gain;
+        }
+    }
+
+    bool hasActiveVoices() const
+    {
+        for (const auto& v : voices)
+            if (v.active)
+                return true;
+        return false;
+    }
+
     void allNotesOff()
     {
         for (auto& v : voices)

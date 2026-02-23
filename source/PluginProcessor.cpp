@@ -154,9 +154,15 @@ void ArabicMaqamTunerProcessor::releaseResources() {}
 void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<float>& audio,
                                                juce::MidiBuffer& midi)
 {
+    juce::ScopedNoDenormals noDenormals;
     audio.clear();
 
-    const bool oscOn  = oscillatorEnabled.load (std::memory_order_relaxed);
+    const bool oscOn = oscillatorEnabled.load (std::memory_order_relaxed);
+
+    // ── Fast idle path: no MIDI and no oscillator work → return immediately ──
+    if (midi.isEmpty() && (! oscOn || ! oscillator.hasActiveVoices()))
+        return;
+
     const bool heptOn = heptEnabled.load (std::memory_order_relaxed);
     const int presetCh = midiPresetChannel.load (std::memory_order_relaxed);
 
@@ -166,6 +172,7 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<float>& audio,
     // because MTS-ESP synths receive tuning via the frequency table — raw PB
     // at their own PB range (often 48st for MPE-capable synths) causes wild
     // pitch jumps. PB for downstream synths is handled by Tanghim Receivers.
+    if (! midi.isEmpty())
     {
         juce::MidiBuffer processed;
         for (const auto metadata : midi)
@@ -237,39 +244,49 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<float>& audio,
         }
     }
 
-    // Generate reference oscillator audio if enabled
-    if (oscOn)
+    // Generate reference oscillator audio if enabled and voices active
+    if (oscOn && oscillator.hasActiveVoices())
     {
-        // Update active voice frequencies (live slider drag + pitch bend)
+        // Snapshot frequency table under one lock (instead of per-voice lock)
+        std::array<double, 128> freqSnapshot;
+        tuningEngine.snapshotFrequencyTable (freqSnapshot);
+
         for (auto& v : oscillator.voices)
         {
             if (v.active && v.midiNote >= 0)
-                v.updateFrequency (
-                    tuningEngine.getFrequencyForMidiNote (v.midiNote) * pbMultiplier,
-                    oscillator.sampleRate);
+                v.updateFrequency (freqSnapshot[(size_t) v.midiNote] * pbMultiplier,
+                                   oscillator.sampleRate);
         }
 
+        // Block render into channel 0 via direct pointer (no addSample overhead)
         const int numSamples  = audio.getNumSamples();
+        float* ch0 = audio.getWritePointer (0);
+        oscillator.renderBlock (ch0, numSamples, 0.125f);
+
+        // Copy channel 0 to remaining channels
         const int numChannels = audio.getNumChannels();
-        for (int s = 0; s < numSamples; ++s)
-        {
-            const auto sample = static_cast<float> (oscillator.processSample() * 0.125);
-            for (int ch = 0; ch < numChannels; ++ch)
-                audio.addSample (ch, s, sample);
-        }
+        for (int ch = 1; ch < numChannels; ++ch)
+            juce::FloatVectorOperations::copy (audio.getWritePointer (ch), ch0, numSamples);
     }
 }
 
 void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<double>& audio,
                                                juce::MidiBuffer& midi)
 {
+    juce::ScopedNoDenormals noDenormals;
     audio.clear();
 
-    const bool oscOn  = oscillatorEnabled.load (std::memory_order_relaxed);
+    const bool oscOn = oscillatorEnabled.load (std::memory_order_relaxed);
+
+    // ── Fast idle path: no MIDI and no oscillator work → return immediately ──
+    if (midi.isEmpty() && (! oscOn || ! oscillator.hasActiveVoices()))
+        return;
+
     const bool heptOn = heptEnabled.load (std::memory_order_relaxed);
     const int presetCh = midiPresetChannel.load (std::memory_order_relaxed);
 
     // ── MIDI processing: heptatonic remapping + pitch bend tracking ──────────
+    if (! midi.isEmpty())
     {
         juce::MidiBuffer processed;
         for (const auto metadata : midi)
@@ -337,24 +354,25 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<double>& audio,
         }
     }
 
-    if (oscOn)
+    if (oscOn && oscillator.hasActiveVoices())
     {
+        std::array<double, 128> freqSnapshot;
+        tuningEngine.snapshotFrequencyTable (freqSnapshot);
+
         for (auto& v : oscillator.voices)
         {
             if (v.active && v.midiNote >= 0)
-                v.updateFrequency (
-                    tuningEngine.getFrequencyForMidiNote (v.midiNote) * pbMultiplier,
-                    oscillator.sampleRate);
+                v.updateFrequency (freqSnapshot[(size_t) v.midiNote] * pbMultiplier,
+                                   oscillator.sampleRate);
         }
 
         const int numSamples  = audio.getNumSamples();
+        double* ch0 = audio.getWritePointer (0);
+        oscillator.renderBlock (ch0, numSamples, 0.125);
+
         const int numChannels = audio.getNumChannels();
-        for (int s = 0; s < numSamples; ++s)
-        {
-            const double sample = oscillator.processSample() * 0.125;
-            for (int ch = 0; ch < numChannels; ++ch)
-                audio.addSample (ch, s, sample);
-        }
+        for (int ch = 1; ch < numChannels; ++ch)
+            juce::FloatVectorOperations::copy (audio.getWritePointer (ch), ch0, numSamples);
     }
 }
 
@@ -1278,7 +1296,13 @@ void ArabicMaqamTunerProcessor::setReferenceCentsOffset (double cents)
         updatingParamsFromCode = false;
     }
 
-    updateTuningAndBroadcast();
+    // Fast path: only reapply the reference offset multiplier to the cached
+    // base table. Avoids rebuilding the full 128-note table + cents table +
+    // scale name on every drag tick.
+    tuningEngine.updateReferenceOffset (referenceCentsOffset);
+
+    if (heptEnabled.load (std::memory_order_relaxed))
+        rebroadcastHeptMts();
 }
 
 void ArabicMaqamTunerProcessor::finalizeReferenceCentsOffset (double cents)

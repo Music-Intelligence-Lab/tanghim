@@ -209,6 +209,9 @@ private:
     ReceiverCounts lastReceiverCounts;
     int            staleCleanupCounter = 0;
 
+    // Slow polling counter for expensive I/O ops (~0.2Hz: every 5s at 2Hz ticks)
+    int            slowPollCounter = 0;
+
     // Native status bar components
     MidiDragButton     midiDragButton;
     juce::String       lastMaqamId;
@@ -220,12 +223,15 @@ private:
     juce::Label        midiPresetLabel { {}, "Preset MIDI Map Config:" };
     juce::ComboBox     midiDeviceSelector;    // Direct MIDI device for preset triggering
     juce::ComboBox     midiChannelSelector;   // Channel selector (All, 1-16)
-    juce::StringArray  lastKnownMidiDevices;  // For detecting device list changes
     void setupMidiPresetControls();
     void populateMidiDeviceList();
     void populateMidiChannelList();
     void onMidiDeviceChanged();
     void onMidiChannelChanged();
+
+    // Event-driven MIDI device list updates (CoreMIDI notifications, no polling)
+    juce::MidiDeviceListConnection midiDeviceListConnection;
+    std::atomic<bool>              midiDevicesChanged { true };  // true on init to populate list
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ArabicMaqamTunerEditor)
 };
