@@ -88,6 +88,7 @@ ArabicMaqamTunerProcessor::ArabicMaqamTunerProcessor()
         {
             if (! isAlive (weak)) return;
             const auto device = midiPresetDeviceName;
+            const auto deviceId = midiPresetDeviceId;
             if (device.isEmpty()) return;
 
             // Close any stale connection from constructor-time init
@@ -97,6 +98,7 @@ ArabicMaqamTunerProcessor::ArabicMaqamTunerProcessor()
                 midiPresetInput.reset();
             }
             midiPresetDeviceName.clear();
+            midiPresetDeviceId = deviceId;  // Preserve identifier for setMidiPresetDevice
             setMidiPresetDevice (device);
         });
     }
@@ -2047,24 +2049,48 @@ bool ArabicMaqamTunerProcessor::isMidiPresetDeviceOpen() const
 
 void ArabicMaqamTunerProcessor::setMidiPresetDevice (const juce::String& deviceName)
 {
-    // Already open with the same device — nothing to do
-    if (deviceName == midiPresetDeviceName && midiPresetInput != nullptr)
-        return;
+    DBG ("setMidiPresetDevice: requested=\"" + deviceName
+         + "\" current=\"" + midiPresetDeviceName
+         + "\" open=" + juce::String (midiPresetInput != nullptr ? "yes" : "no"));
 
     // Close existing input if any
     if (midiPresetInput)
     {
         midiPresetInput->stop();
         midiPresetInput.reset();
+        DBG ("  closed previous device");
     }
 
     midiPresetDeviceName = deviceName;
+    midiPresetDeviceId.clear();
 
     if (deviceName.isEmpty() || deviceName == "None")
         return;
 
-    // Find and open the device
-    for (const auto& info : juce::MidiInput::getAvailableDevices())
+    // Try matching by saved identifier first (more reliable than name)
+    const auto availableDevices = juce::MidiInput::getAvailableDevices();
+
+    // Try identifier match first (handles reconnection of same physical device)
+    if (midiPresetDeviceId.isNotEmpty())
+    {
+        for (const auto& info : availableDevices)
+        {
+            if (info.identifier == midiPresetDeviceId)
+            {
+                midiPresetInput = juce::MidiInput::openDevice (info.identifier, this);
+                if (midiPresetInput)
+                {
+                    midiPresetInput->start();
+                    midiPresetDeviceName = info.name;  // Update name in case it changed
+                    DBG ("  opened by identifier: " + info.name + " [" + info.identifier + "]");
+                    return;
+                }
+            }
+        }
+    }
+
+    // Fall back to name match
+    for (const auto& info : availableDevices)
     {
         if (info.name == deviceName)
         {
@@ -2072,14 +2098,43 @@ void ArabicMaqamTunerProcessor::setMidiPresetDevice (const juce::String& deviceN
             if (midiPresetInput)
             {
                 midiPresetInput->start();
-                DBG ("Opened MIDI device for preset triggering: " + deviceName);
+                midiPresetDeviceId = info.identifier;
+                DBG ("  opened by name: " + deviceName + " [" + info.identifier + "]");
             }
             else
             {
-                DBG ("Failed to open MIDI device: " + deviceName);
+                DBG ("  FAILED to open: " + deviceName + " [" + info.identifier + "]");
             }
+            return;
+        }
+    }
+
+    DBG ("  device not found in available list (" + juce::String (availableDevices.size()) + " devices)");
+}
+
+void ArabicMaqamTunerProcessor::recheckMidiPresetDevice()
+{
+    // Nothing to check if no device is configured or no connection exists
+    if (midiPresetDeviceName.isEmpty() || midiPresetInput == nullptr)
+        return;
+
+    // Verify the device identifier is still in the available list
+    bool found = false;
+    for (const auto& info : juce::MidiInput::getAvailableDevices())
+    {
+        if (info.identifier == midiPresetDeviceId || info.name == midiPresetDeviceName)
+        {
+            found = true;
             break;
         }
+    }
+
+    if (! found)
+    {
+        DBG ("recheckMidiPresetDevice: device \"" + midiPresetDeviceName + "\" gone — closing stale connection");
+        midiPresetInput->stop();
+        midiPresetInput.reset();
+        // Keep midiPresetDeviceName so reconnection can happen via timer
     }
 }
 
@@ -2092,6 +2147,11 @@ void ArabicMaqamTunerProcessor::handleIncomingMidiMessage (juce::MidiInput* /*so
     const int channel  = midiPresetChannel.load (std::memory_order_relaxed);
     const int note     = message.getNoteNumber();
     const int midiCh   = message.getChannel();  // 1-16
+
+    DBG ("handleIncomingMidiMessage: note=" + juce::String (note)
+         + " ch=" + juce::String (midiCh)
+         + " filter=" + juce::String (channel)
+         + " learn=" + juce::String (midiLearnTargetPreset.load()));
 
     // Check channel filter first
     if (channel != 0 && midiCh != channel)
@@ -2148,6 +2208,7 @@ void ArabicMaqamTunerProcessor::saveSettingsToDisk() const
     obj->setProperty ("midiPresetNotes", midiNotesArr);
     obj->setProperty ("midiPresetChannel", midiPresetChannel.load (std::memory_order_relaxed));
     obj->setProperty ("midiPresetDevice", midiPresetDeviceName);
+    obj->setProperty ("midiPresetDeviceId", midiPresetDeviceId);
     obj->setProperty ("oscillatorEnabled", oscillatorEnabled.load (std::memory_order_relaxed));
     obj->setProperty ("heptEnabled", heptEnabled.load (std::memory_order_relaxed));
 
@@ -2240,6 +2301,10 @@ void ArabicMaqamTunerProcessor::loadSettingsFromDisk()
         auto channelProp = obj->getProperty ("midiPresetChannel");
         if (! channelProp.isVoid())
             midiPresetChannel.store (static_cast<int> (channelProp), std::memory_order_relaxed);
+
+        auto deviceIdProp = obj->getProperty ("midiPresetDeviceId");
+        if (! deviceIdProp.isVoid())
+            midiPresetDeviceId = deviceIdProp.toString();
 
         auto deviceProp = obj->getProperty ("midiPresetDevice");
         if (! deviceProp.isVoid())

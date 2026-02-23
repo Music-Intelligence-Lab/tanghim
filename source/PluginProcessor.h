@@ -185,6 +185,8 @@ public:
     juce::String      getMidiPresetDevice() const;
     void              setMidiPresetDevice (const juce::String& deviceName);
     bool              isMidiPresetDeviceOpen() const;
+    /** Check if the current MIDI device is still available; close stale connection if not. */
+    void              recheckMidiPresetDevice();
 
     // MidiInputCallback override
     void handleIncomingMidiMessage (juce::MidiInput* source,
@@ -247,6 +249,7 @@ private:
     // ── Direct MIDI device input for preset triggering ──────────────────────
     std::unique_ptr<juce::MidiInput> midiPresetInput;
     juce::String                     midiPresetDeviceName;  // Empty = disabled
+    juce::String                     midiPresetDeviceId;    // OS-unique identifier for reliable matching
 
     // ── Lifetime guard (must be declared before apiClient so it outlives it) ─
     std::shared_ptr<std::atomic<bool>> alive = std::make_shared<std::atomic<bool>> (true);

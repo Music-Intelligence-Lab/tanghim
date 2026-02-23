@@ -99,6 +99,7 @@ target_link_libraries(ArabicMaqamTuner
     PRIVATE
         juce::juce_audio_utils
         juce::juce_audio_processors
+        juce::juce_audio_devices    # MidiInput for direct MIDI preset triggering
         juce::juce_gui_extra        # WebBrowserComponent lives here
         juce::juce_core
     PUBLIC

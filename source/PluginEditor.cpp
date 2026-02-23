@@ -263,6 +263,9 @@ void ArabicMaqamTunerEditor::timerCallback()
         // ── Event-driven MIDI device list refresh ─────────────────────
         if (midiDevicesChanged.exchange (false, std::memory_order_relaxed))
         {
+            // Detect stale connections (device unplugged while input was open)
+            processor.recheckMidiPresetDevice();
+
             populateMidiDeviceList();
 
             // Retry opening device if configured but not yet connected
