@@ -46,8 +46,8 @@
   cursor: pointer;
   transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
 }
-/* Inactive hover — bright text, no fill */
-.mts-badge-osc.mts-badge-inactive:hover { opacity: 1; }
+/* Inactive hover — brighter but not full */
+.mts-badge-osc.mts-badge-inactive:hover { opacity: 0.75; }
 /* Active — full brightness, no fill */
 .mts-badge-osc:not(.mts-badge-inactive) {
   opacity: 1;
@@ -61,7 +61,7 @@
   transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
 }
 /* Inactive hover — bright text, no fill */
-.mts-badge-hept.mts-badge-inactive:hover { opacity: 1; }
+.mts-badge-hept.mts-badge-inactive:hover { opacity: 0.75; }
 /* Active — full brightness, no fill */
 .mts-badge-hept:not(.mts-badge-inactive) {
   opacity: 1;

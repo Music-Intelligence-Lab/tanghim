@@ -39,6 +39,14 @@ public:
     void setPitchBendRange (int semitones) { pbRange = semitones; }
     int  getPitchBendRange() const         { return pbRange; }
 
+    /** Returns true if any MPE member channel has an active note. */
+    bool hasActiveNotes() const
+    {
+        for (const auto& ch : channels)
+            if (ch.active) return true;
+        return false;
+    }
+
 private:
     int pbRange;
 

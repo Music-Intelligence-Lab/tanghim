@@ -29,6 +29,9 @@ public:
     void setPitchBendRange (int semitones) { pbRange = semitones; }
     int  getPitchBendRange() const         { return pbRange; }
 
+    /** Returns true if a note is currently sounding. */
+    bool hasActiveNotes() const { return activeNote >= 0; }
+
 private:
     int pbRange;
     int activeNote = -1;    ///< Currently sounding MIDI note (-1 = none)

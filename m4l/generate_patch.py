@@ -310,8 +310,7 @@ prepend_mono_bend = p.add("prepend set_mono_bend_range",
     numinlets=1, numoutlets=1, outlettype=[""],
     patching_rect=[260, 340, 160, 22])
 
-# Mode tab → prepend → js inlet 0 (for MIDI processing mode)
-p.add_line(mode_tab, prepend_mode, outlet=0, inlet=0)
+# Mode: prepend → js (mode_tab routes through pattr below, not direct)
 p.add_line(prepend_mode, js)
 
 # Mode tab → pattr (store mode, saved with patch) → pak → vst~
@@ -335,22 +334,47 @@ p.add_line(mode_pattr, set_mode_pak, outlet=0, inlet=1)
 p.add_line(set_mode_pak, vst)
 p.add_line(mode_pattr, prepend_mode, outlet=0, inlet=0)  # also update JS
 
-# Session reload: after VST loads (300ms), re-send current mode (500ms)
-# Bang the pattr to output its saved value, which then goes to pak → vst~
-delay_mode_resend = p.add("delay 500",
+# MPE PB: live.dial → pattr (store+output) → prepend → js
+mpe_pb_pattr = p.add_box(Box(
+    id=p.get_id(), maxclass="newobj", numinlets=1, numoutlets=3,
+    outlettype=["", "", ""],
+    patching_rect=[180, 370, 145, 22],
+    text="pattr mpe_pb_value @default 48",
+))
+p.add_line(mpe_bend_dial, mpe_pb_pattr, outlet=0, inlet=0)
+p.add_line(mpe_pb_pattr, prepend_mpe_bend, outlet=0, inlet=0)
+p.add_line(prepend_mpe_bend, js)
+
+# Mono PB: live.dial → pattr (store+output) → prepend → js
+mono_pb_pattr = p.add_box(Box(
+    id=p.get_id(), maxclass="newobj", numinlets=1, numoutlets=3,
+    outlettype=["", "", ""],
+    patching_rect=[340, 370, 150, 22],
+    text="pattr mono_pb_value @default 2",
+))
+p.add_line(mono_bend_dial, mono_pb_pattr, outlet=0, inlet=0)
+p.add_line(mono_pb_pattr, prepend_mono_bend, outlet=0, inlet=0)
+p.add_line(prepend_mono_bend, js)
+
+# State persistence: pattrstorage ensures all pattr values survive session reload in M4L
+# Without this, pattr resets to @default on reload (no file-based persistence in M4L)
+pattrstorage = p.add_box(Box(
+    id=p.get_id(), maxclass="newobj", numinlets=1, numoutlets=1,
+    outlettype=[""],
+    patching_rect=[450, 430, 180, 22],
+    text="pattrstorage tanghim_state @greedy 1",
+))
+
+# Session reload: after VST loads (300ms), re-send all pattr values (500ms)
+# Bang each pattr to output its saved value → JS gets mode + PB ranges
+delay_resend = p.add("delay 500",
     numinlets=2, numoutlets=1, outlettype=["bang"],
     patching_rect=[100, 115, 72, 22])
 
-p.add_line(trig, delay_mode_resend, outlet=0, inlet=0)
-p.add_line(delay_mode_resend, mode_pattr, outlet=0, inlet=0)
-
-# MPE bend dial → prepend → js inlet 0
-p.add_line(mpe_bend_dial, prepend_mpe_bend, outlet=0, inlet=0)
-p.add_line(prepend_mpe_bend, js)
-
-# Mono PB bend dial → prepend → js inlet 0
-p.add_line(mono_bend_dial, prepend_mono_bend, outlet=0, inlet=0)
-p.add_line(prepend_mono_bend, js)
+p.add_line(trig, delay_resend, outlet=0, inlet=0)
+p.add_line(delay_resend, mode_pattr, outlet=0, inlet=0)
+p.add_line(delay_resend, mpe_pb_pattr, outlet=0, inlet=0)
+p.add_line(delay_resend, mono_pb_pattr, outlet=0, inlet=0)
 
 # ═══════════════════════════════════════════════════════════════════════
 # Save and post-process for M4L-specific patcher properties

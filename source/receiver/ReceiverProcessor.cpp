@@ -101,6 +101,48 @@ void ReceiverProcessor::processBlock (juce::AudioBuffer<float>& audio,
     mpeProcessor.setPitchBendRange (mpePbRangeParam->get());
     monoProcessor.setPitchBendRange (monoPbRangeParam->get());
 
+    const bool isMpe = (modeParam->getIndex() == 0);
+
+    // Mode switch: flush active notes from the OLD processor
+    if (isMpe != lastWasMpe)
+    {
+        juce::MidiBuffer modeSwitchOutput;
+        if (lastWasMpe)
+            mpeProcessor.allNotesOff (modeSwitchOutput);
+        else
+            monoProcessor.allNotesOff (modeSwitchOutput);
+        lastWasMpe = isMpe;
+        midi.swapWith (modeSwitchOutput);
+        return;
+    }
+
+    // Skip heavy work when no MIDI is present and no notes are sounding
+    const bool hasActiveMpeNotes  = mpeProcessor.hasActiveNotes();
+    const bool hasActiveMonoNotes = monoProcessor.hasActiveNotes();
+    if (midi.isEmpty() && ! hasActiveMpeNotes && ! hasActiveMonoNotes)
+    {
+        // Still update cents params periodically for M4L bridge
+        if (++paramUpdateCounter >= 50) // ~once per second at 48kHz/512
+        {
+            paramUpdateCounter = 0;
+            for (int i = 0; i < 128; ++i)
+            {
+                double semitones = MTS_RetuningInSemitones (mtsClient, static_cast<char> (i), -1);
+                if (std::isnan (semitones) || std::isinf (semitones))
+                    semitones = 0.0;
+                const float cents = static_cast<float> (semitones * 100.0);
+                if (std::abs (cents - lastCentsValues[(size_t) i]) > 0.01f)
+                {
+                    lastCentsValues[(size_t) i] = cents;
+                    if (centsParams[(size_t) i] != nullptr)
+                        centsParams[(size_t) i]->setValueNotifyingHost (
+                            centsParams[(size_t) i]->convertTo0to1 (cents));
+                }
+            }
+        }
+        return;
+    }
+
     // Build cents deviation table from MTS-ESP transmitter
     std::array<double, 128> centsTable {};
     for (int i = 0; i < 128; ++i)
@@ -141,20 +183,7 @@ void ReceiverProcessor::processBlock (juce::AudioBuffer<float>& audio,
         filtered.addEvent (msg, meta.samplePosition);
     }
 
-    // Apply pitch bend based on selected mode
-    const bool isMpe = (modeParam->getIndex() == 0);
-
     juce::MidiBuffer output;
-
-    // Mode switch: flush active notes from the OLD processor
-    if (isMpe != lastWasMpe)
-    {
-        if (lastWasMpe)
-            mpeProcessor.allNotesOff (output);
-        else
-            monoProcessor.allNotesOff (output);
-        lastWasMpe = isMpe;
-    }
 
     if (isMpe)
     {
