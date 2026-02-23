@@ -1,6 +1,7 @@
 #pragma once
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <array>
+#include <vector>
 
 /**
  * Inserts a 14-bit monophonic pitch bend message immediately before each
@@ -34,6 +35,7 @@ private:
     int activeChannel = 1;  ///< Channel of the active note
     int userPitchBend = 8192;        ///< Incoming PB wheel value (center = 8192)
     double activeCentsDeviation = 0.0; ///< Cents deviation of the active/last note
+    std::vector<int> noteStack;      ///< Held notes in press order (last = sounding)
 
     static int bendValue (double centsDeviation, int rangeSemitones);
 };

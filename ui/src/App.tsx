@@ -901,6 +901,26 @@ export default function App() {
   }
 
   const handlePresetClick = async (presetIndex: number) => {
+    // -1 = deactivate current preset (clear maqam, revert to system-only state)
+    if (presetIndex === -1) {
+      setSelectedMaqamId('')
+      selectedMaqamIdRef.current = ''
+      setSelectedTransIdx(-1)
+      setActivePresetIndex(-1)
+      setMaqamDegreeIndices(EMPTY_SET)
+      maqamDegreeIndicesRef.current = EMPTY_SET
+      setMaqamTonicIndex(-1)
+      setMaqamTonicMidi(-1)
+      setIsMaqamModified(false)
+      isMaqamModifiedRef.current = false
+      setModifiedSlots(new Set())
+      setMaqamDegreePaoNames(new Map())
+      setStartMidi(centerMaqamOctave(48, fractionalVisibleCount))
+      // Re-select the current tuning system to reset C++ sliders to base values
+      await bridge.selectTuningSystem(tuningState.systemId, tuningState.startingNote)
+      return
+    }
+
     const preset = tuningState.presets[presetIndex]
     if (!preset?.isAssigned) return
 
@@ -979,11 +999,25 @@ export default function App() {
     <div className="app">
       <div className="top-bar">
         <div className="top-bar-left">
+          <div className="menu-bar">
+            <span className="menu-bar-item">Load</span>
+            <span className="menu-bar-item">Save</span>
+            <span className="menu-bar-item">Settings</span>
+          </div>
           <TuningSystemSelector
             systems={tuningSystems}
             currentSystemId={tuningState.systemId}
             currentStartingNote={tuningState.startingNote}
             onSelect={handleSystemSelect}
+          />
+          <MaqamSelector
+            maqamList={maqamList}
+            selectedMaqamId={selectedMaqamId}
+            selectedTranspositionIndex={selectedTransIdx}
+            paoOrder={tuningState.paoOrder}
+            paoNameInfo={tuningState.paoNameInfo}
+            isModified={isMaqamModified}
+            onSelect={handleMaqamSelect}
           />
         </div>
         <div className="top-bar-right">
@@ -1009,16 +1043,6 @@ export default function App() {
           />
         </div>
       </div>
-
-      <MaqamSelector
-        maqamList={maqamList}
-        selectedMaqamId={selectedMaqamId}
-        selectedTranspositionIndex={selectedTransIdx}
-        paoOrder={tuningState.paoOrder}
-        paoNameInfo={tuningState.paoNameInfo}
-        isModified={isMaqamModified}
-        onSelect={handleMaqamSelect}
-      />
 
       <MaqamPresetBar
         presets={tuningState.presets}

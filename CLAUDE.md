@@ -60,7 +60,7 @@ source/
     TuningEngine.h/.cpp      Builds 128-note tables, broadcasts via MTS-ESP
     MtsEspTransmitter.h/.cpp MTS-ESP transmitter wrapper (libMTSMaster.h)
     MpePitchBendProcessor.h/.cpp   MPE channel allocation + per-note pitch bend (shared with Receiver)
-    MonoPitchBendProcessor.h/.cpp  14-bit mono pitch bend (shared with Receiver)
+    MonoPitchBendProcessor.h/.cpp  14-bit mono pitch bend with note stack (shared with Receiver)
     MidiFileGenerator.h/.cpp SMF Type 0 generator for maqam scale export
     TriangleOscillator.h     Header-only polyphonic triangle wave reference oscillator
   receiver/
@@ -235,8 +235,15 @@ The status bar is rendered natively in JUCE (not WebView) to support drag-and-dr
 - Filesystem-unsafe chars (`/`, `:`, `\`) replaced with `-` in both track name and filename
 - Temp file location: `~/Library/Tanghim/midi-export/`
 
+### UI Color Scheme Convention
+- **Red (accent)** = tuning system related: tuning system/starting note selector text, dropdown highlights, snap markers
+- **Gold (#d4a843)** = maqam related: active preset border/background, active preset label, maqam degree slider highlights
+- **Off-white (#b8b8c8)** = selector trigger text (tuning system, starting note, maqam, transposition dropdowns)
+- **Text selection disabled** globally (`-webkit-user-select: none` on `*`), inputs exempt. Cursor forced to `default` except on interactive elements
+- **Menu bar placeholder** above tuning system selector (inside `top-bar-left`) — will house Load, Save, Settings
+
 ### Maqam Selector & Preset System
-- Two-dropdown selector: base maqam (searchable) + variant/transposition
+- Two-dropdown selector: base maqam (searchable) + variant/transposition — lives inside `top-bar-left` alongside tuning system selectors
 - `CustomSelect` component: searchable with keyboard nav (ArrowUp/Down/Enter/Escape), highlighted option auto-scrolls
 - Transposition dropdown labels: `"segāh / E-b3 / Mi -b3 (qarār)"` — PAO display name + IPN (englishName) + solfège, with "(qarār)" suffix for the base tonic
 - Transposition sort order: ascending by tuning system pitch order using compound key `(octave, pitchClassIndex)` from pitch class data
@@ -249,6 +256,8 @@ The status bar is rendered natively in JUCE (not WebView) to support drag-and-dr
 - Modified presets include ` *` suffix in display name to indicate custom tuning
 - **Tuning system persistence**: Modified presets store `tuningSystemId` and `startingNote`. When loaded in a different system, the plugin switches to the correct system first. Unmodified presets are portable (load in any system using that system's interpretation of the maqam)
 - **Async system switch pattern**: When loading a modified preset requiring a system switch, the callback is stored in `afterSystemSwitchRef` and executed when `onTuningStateChanged` fires after the system loads
+- **Preset deactivation**: Clicking an active preset clears the maqam selection entirely and re-selects the current tuning system (resetting sliders to base values, clearing degree highlights, centering viewport on C3)
+- **UI shows 8 presets** (4×2 grid) — C++ still has 16 slots, UI renders first 8 via `presets.slice(0, 8)`
 
 ### Maqam List Caching
 - `ApiDataCache` caches maqam list per tuning system
@@ -337,7 +346,7 @@ MTS-ESP only provides `MTS_GetNumClients()` — a single integer count with no c
 - **Receiver side**: announce on construct, 1Hz heartbeat (mtime touch), switchMode on APVTS change, deannounce on destruct
 - **Transmitter side**: 2Hz scan in editor timer, stale files (>5s mtime) ignored, periodic cleanup (>10s) every ~30 seconds
 - **Count computation**: MTS-ESP native = `MTS_GetNumClients()` - (MPE count + Mono PB count)
-- **UI**: 3 conditional badge chips with color coding (MTS-ESP=accent, MPE=blue, Mono PB=green), plus Osc (coral) and Hept (lavender) toggle badges
+- **UI**: Two-row layout in OutputModeSelector — top row: Osc (orange #f09040) + Hept (purple #ab47bc) toggle badges; bottom row: MTS-ESP (red/accent) + MPE (blue) + Mono PB (green) status badges. All badges flex-width within their row
 - **Crash recovery**: Heartbeat stops → file becomes stale → ignored by scanner → deleted by cleanup
 
 ### MTS-ESP Status Polling
@@ -439,6 +448,13 @@ The M4L wrapper is needed because Ableton doesn't support VST3 MIDI effects nati
 ### Note Off Pitch Bend
 - **Never reset pitch bend on Note Off** — causes audible snap during synth release tail
 - Next Note On always sets PB before sounding, so no stale value issue
+
+### Mono PB Note Stack (Last-Note Priority)
+Both C++ Receiver and M4L js implement a note stack for mono PB mode:
+- **Note On**: turns off sounding note, pushes new note onto stack, sounds it with correct PB
+- **Note Off**: removes from stack. If it was the sounding note and others are still held, recalls the previous note from the stack (re-triggers with velocity 100 and correct PB)
+- **All Notes Off / mode switch**: clears the stack
+- This allows legato-style playing: hold A, press B, release B → A continues sounding
 
 ### Pitch Bend Wheel Combining
 Both C++ Receiver (`MonoPitchBendProcessor`) and M4L js combine user PB wheel with microtuning offset:

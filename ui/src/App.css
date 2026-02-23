@@ -14,6 +14,24 @@
   overflow: hidden;
 }
 
+/* ── Menu bar (placeholder for Save, Settings, etc.) ─────────────────────── */
+.menu-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.menu-bar-item {
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.menu-bar-item:hover {
+  color: var(--text);
+}
+
 /* ── Top bar (flex row: left column + right column) ──────────────────────── */
 .top-bar {
   display: flex;
@@ -36,4 +54,8 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.top-bar-right > * {
+  flex: 1;
 }

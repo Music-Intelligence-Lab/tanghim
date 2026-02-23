@@ -25,8 +25,9 @@ var channelInUse = new Array(15);  // index 0-14 → channels 2-16
 for (var i = 0; i < 15; i++) channelInUse[i] = false;
 var nextCh = 0;
 
-// Mono PB active note tracking (monophonic)
-var monoActiveNote = -1;
+// Mono PB note stack (last-note priority with recall)
+var monoNoteStack = [];   // held notes in press order, last = sounding
+var monoActiveNote = -1;  // currently sounding note
 
 // User pitch bend wheel tracking (for combining with microtuning in Mono PB)
 var userPitchBend = 8192;  // center (no user bend)
@@ -101,6 +102,7 @@ function set_mode(m) {
     noteToChannel = {};
     for (var i = 0; i < 15; i++) channelInUse[i] = false;
     nextCh = 0;
+    monoNoteStack = [];
     userPitchBend = 8192;
 
     if (m === 0) {
@@ -156,20 +158,41 @@ function sendCombinedMonoBend(cents) {
 
 function processMonoPB(pitch, vel) {
     if (vel > 0) {
-        // Force monophony: turn off the previous note if one is held
+        // Force monophony: turn off the sounding note
         if (monoActiveNote >= 0 && monoActiveNote !== pitch)
             outlet(0, 0x80, monoActiveNote, 64);
+
+        // Add to stack (remove first if re-triggered)
+        for (var i = monoNoteStack.length - 1; i >= 0; i--) {
+            if (monoNoteStack[i] === pitch) { monoNoteStack.splice(i, 1); break; }
+        }
+        monoNoteStack.push(pitch);
 
         var cents = (pitch >= 0 && pitch < 128) ? table[pitch] : 0;
         sendCombinedMonoBend(cents);         // Combined microtuning + user PB
         outlet(0, 0x90, pitch, vel);         // Note On ch1
         monoActiveNote = pitch;
     } else {
+        // Remove from stack
+        for (var i = monoNoteStack.length - 1; i >= 0; i--) {
+            if (monoNoteStack[i] === pitch) { monoNoteStack.splice(i, 1); break; }
+        }
+
         if (pitch === monoActiveNote) {
             outlet(0, 0x80, pitch, 64);      // Note Off ch1
-            monoActiveNote = -1;
+
+            if (monoNoteStack.length > 0) {
+                // Recall previously held note
+                var prev = monoNoteStack[monoNoteStack.length - 1];
+                var cents = (prev >= 0 && prev < 128) ? table[prev] : 0;
+                sendCombinedMonoBend(cents);
+                outlet(0, 0x90, prev, 100);  // Re-trigger with default velocity
+                monoActiveNote = prev;
+            } else {
+                monoActiveNote = -1;
+            }
         }
-        // Swallow Note Off for notes we already cut
+        // Swallow Note Off for notes already cut from stack
     }
 }
 

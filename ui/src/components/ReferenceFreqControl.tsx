@@ -104,7 +104,7 @@ export default function ReferenceFreqControl({
     const handleMouseMove = (ev: MouseEvent) => {
       isShift.current = ev.shiftKey
       const dy = dragStartY.current - ev.clientY
-      const sensitivity = isShift.current ? 0.1 : 0.5  // cents per pixel
+      const sensitivity = isShift.current ? 0.3 : 2.0  // cents per pixel
       const newCents = Math.max(MIN_CENTS, Math.min(MAX_CENTS,
         dragStartCents.current + dy * sensitivity))
 
@@ -176,15 +176,15 @@ export default function ReferenceFreqControl({
       >
         <svg width="36" height="36" viewBox="0 0 36 36">
           {/* Background arc */}
-          <path d={bgArc} fill="none" stroke="var(--border)" strokeWidth="3" strokeLinecap="round" />
+          <path d={bgArc} fill="none" stroke="var(--text-muted)" strokeWidth="3" strokeLinecap="round" opacity="0.35" />
           {/* Value arc */}
           {valueArc && (
-            <path d={valueArc} fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" />
+            <path d={valueArc} fill="none" stroke="var(--accent)" strokeWidth="3.5" strokeLinecap="round" />
           )}
           {/* Center dot */}
-          <circle cx={cx} cy={cy} r="3" fill="var(--surface)" stroke="var(--border)" strokeWidth="1" />
+          <circle cx={cx} cy={cy} r="3" fill="var(--surface2)" stroke="var(--text-muted)" strokeWidth="0.75" opacity="0.6" />
           {/* Indicator dot */}
-          <circle cx={dotX} cy={dotY} r="2.5" fill="var(--accent)" />
+          <circle cx={dotX} cy={dotY} r="3" fill="var(--accent)" />
         </svg>
       </div>
 

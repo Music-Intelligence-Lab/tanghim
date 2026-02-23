@@ -41,7 +41,7 @@ export default function MaqamPresetBar({
 
   return (
     <div className="preset-bar">
-      {presets.map((preset, i) => (
+      {presets.slice(0, 8).map((preset, i) => (
         <MaqamPresetButton
           key={i}
           preset={preset}

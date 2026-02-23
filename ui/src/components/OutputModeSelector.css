@@ -1,13 +1,24 @@
 .mts-esp-status {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
   padding: 4px 10px;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 4px;
   font-size: 12px;
   white-space: nowrap;
+}
+
+.mts-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mts-row > .mts-badge {
+  flex: 1;
+  justify-content: center;
 }
 
 /* ── Badge chips ─────────────────────────────────────────────────────── */
@@ -28,19 +39,33 @@
   opacity: 0.8;
 }
 
+/* ── Osc toggle ──────────────────────────────────────────────────────── */
 .mts-badge-osc {
-  color: #ffab91;
-  border-color: rgba(255, 171, 145, 0.4);
+  color: #f09040;
+  border-color: rgba(240, 144, 64, 0.4);
   cursor: pointer;
+  transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
 }
-.mts-badge-osc:hover { opacity: 0.8; }
+/* Inactive hover — bright text, no fill */
+.mts-badge-osc.mts-badge-inactive:hover { opacity: 1; }
+/* Active — full brightness, no fill */
+.mts-badge-osc:not(.mts-badge-inactive) {
+  opacity: 1;
+}
 
+/* ── Hept toggle ─────────────────────────────────────────────────────── */
 .mts-badge-hept {
-  color: #ce93d8;
-  border-color: rgba(206, 147, 216, 0.4);
+  color: #ab47bc;
+  border-color: rgba(171, 71, 188, 0.4);
   cursor: pointer;
+  transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
 }
-.mts-badge-hept:hover { opacity: 0.8; }
+/* Inactive hover — bright text, no fill */
+.mts-badge-hept.mts-badge-inactive:hover { opacity: 1; }
+/* Active — full brightness, no fill */
+.mts-badge-hept:not(.mts-badge-inactive) {
+  opacity: 1;
+}
 
 .mts-badge-native {
   color: var(--accent);

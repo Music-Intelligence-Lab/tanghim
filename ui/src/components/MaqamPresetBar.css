@@ -1,6 +1,6 @@
 .preset-bar {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 4px 6px;
   padding: 6px 16px;
   background: var(--surface);

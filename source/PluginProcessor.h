@@ -259,8 +259,12 @@ private:
     TriangleOscillator oscillator;
 
     // ── Heptatonic mapping state (audio thread reads, message thread writes) ──
-    std::array<std::atomic<int>, 12>  heptMap;             // input chromatic → output chromatic
+    std::array<std::atomic<int>, 12>  heptMap;             // input chromatic → signed semitone delta
     std::array<std::atomic<int>, 128> activeHeptNotes;     // inputNote → remappedNote for held notes (-1 = inactive)
+
+    // ── Pitch bend wheel tracking (audio thread only) ───────────────────────
+    int currentPitchBend = 8192;                           // 14-bit, center = 8192
+    static constexpr double kPitchBendRangeSt = 2.0;      // ±2 semitones
 
     // ── Internal helpers ──────────────────────────────────────────────────────
     void rebuildTuningStateFromCache();

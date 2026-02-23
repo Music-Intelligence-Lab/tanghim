@@ -1,4 +1,4 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-user-select: none; user-select: none; cursor: default; }
 
 :root {
   --bg:          #0f0f1a;
@@ -24,6 +24,11 @@ html, body, #root {
 
 /* Arabic text helper */
 .arabic { font-family: 'Scheherazade New', 'Noto Naskh Arabic', serif; }
+
+/* Allow text selection in inputs */
+input, textarea { -webkit-user-select: text; user-select: text; cursor: text; }
+button, select, [role="button"] { cursor: pointer; }
+a { cursor: pointer; }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }

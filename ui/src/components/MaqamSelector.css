@@ -1,11 +1,39 @@
 .maqam-selector {
   display: flex;
   gap: 8px;
-  padding: 6px 16px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
 }
 
 .select-maqam         { flex: 1; }
 .select-transposition { flex: 1; min-width: 180px; }
+
+/* Match tuning system selector styling */
+.select-maqam .cs-trigger,
+.select-transposition .cs-trigger {
+  font-size: 12px;
+  color: #b8b8c8;
+}
+
+.select-maqam .cs-option,
+.select-transposition .cs-option {
+  font-size: 12px;
+  color: #b8b8c8;
+}
+
+.select-maqam .cs-option:hover,
+.select-maqam .cs-option.highlighted,
+.select-transposition .cs-option:hover,
+.select-transposition .cs-option.highlighted {
+  color: var(--text);
+  background: rgba(233, 69, 96, 0.15);
+}
+
+.select-maqam .cs-option.active,
+.select-transposition .cs-option.active {
+  color: var(--accent);
+  background: rgba(233, 69, 96, 0.1);
+}
+
+.select-maqam .cs-option.active.highlighted,
+.select-transposition .cs-option.active.highlighted {
+  background: rgba(233, 69, 96, 0.22);
+}

@@ -42,7 +42,8 @@ export default function MaqamPresetButton({
     }
 
     if (isDisabled) return
-    if (preset.isAssigned) onApply(index)
+    if (isActive) onApply(-1)
+    else if (preset.isAssigned) onApply(index)
     else onSave(index)
   }
 
