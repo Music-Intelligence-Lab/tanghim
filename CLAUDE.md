@@ -277,7 +277,7 @@ MIDI notes mapped to presets for live maqam switching. Uses **dedicated MIDI inp
 - **Device persistence**: `setMidiPresetDevice()` always close+reopen (no idempotency check — stale pointers blocked reconnection). Stores both `midiPresetDeviceName` (for UI) and `midiPresetDeviceId` (OS-unique identifier for reliable matching). `setStateInformation()` only overrides device if non-empty (protects settings.json from empty session values)
 - **Stale connection detection**: `recheckMidiPresetDevice()` called on `midiDevicesChanged` — verifies device identifier/name still in available list, closes stale `MidiInput` if device disappeared. Timer then retries via `setMidiPresetDevice()` (tries identifier match first, falls back to name)
 - **Persistence**: `~/Library/Tanghim/settings.json` — not APVTS (user preference, not automatable)
-- → [diary 2026-02-22](diary/2026-02-22.md) (sessions 29, 31), [diary 2026-02-25](diary/2026-02-25.md) (device selector fix)
+- → [diary 2026-02-22](diary/2026-02-22.md) (sessions 29, 31), [diary 2026-02-23c](diary/2026-02-23c.md) (device selector fix)
 
 ## Plugin Naming
 
