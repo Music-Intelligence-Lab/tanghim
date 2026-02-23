@@ -63,6 +63,12 @@ ArabicMaqamTunerProcessor::ArabicMaqamTunerProcessor()
     for (int i = 0; i < 16; ++i)
         midiPresetNotes[i].store (-1, std::memory_order_relaxed);
 
+    // Initialize heptatonic map to identity (delta 0 = no remapping)
+    for (int i = 0; i < 12; ++i)
+        heptMap[i].store (0, std::memory_order_relaxed);
+    for (int i = 0; i < 128; ++i)
+        activeHeptNotes[i].store (-1, std::memory_order_relaxed);
+
     // Register as listener for all params
     for (int i = 0; i < kNumSlotParams; ++i)
         apvts.addParameterListener ("slot_" + juce::String (i), this);
@@ -127,14 +133,50 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<float>& audio,
 {
     audio.clear();
 
-    const bool oscOn = oscillatorEnabled.load (std::memory_order_relaxed);
+    const bool oscOn  = oscillatorEnabled.load (std::memory_order_relaxed);
+    const bool heptOn = heptEnabled.load (std::memory_order_relaxed);
 
     // Filter out MIDI on the preset trigger channel (avoids oscillator / activity
     // feedback for notes intended only for preset switching)
     const int presetCh = midiPresetChannel.load (std::memory_order_relaxed);
 
-    // Track Note On / Note Off activity for UI feedback (lock-free, per-note)
-    // Preset triggering is handled via direct MIDI device input (handleIncomingMidiMessage)
+    // Rewrite MIDI note numbers if heptatonic mode is active.
+    // heptMap stores signed semitone deltas (not chromatic indices), so the formula
+    // rawNote + delta naturally handles octave wrapping for non-C tonics.
+    // This modifies the buffer so downstream receivers (MTS-ESP synths,
+    // Tanghim Receiver, M4L wrapper) see the correct remapped note numbers.
+    if (heptOn)
+    {
+        juce::MidiBuffer remapped;
+        for (const auto metadata : midi)
+        {
+            auto msg = metadata.getMessage();
+            if (msg.isNoteOn())
+            {
+                const int rawNote = msg.getNoteNumber();
+                const int note = juce::jlimit (0, 127,
+                    rawNote + heptMap[rawNote % 12].load (std::memory_order_relaxed));
+                activeHeptNotes[rawNote].store (note, std::memory_order_relaxed);
+                msg.setNoteNumber (note);
+            }
+            else if (msg.isNoteOff())
+            {
+                const int rawNote = msg.getNoteNumber();
+                const int stored = activeHeptNotes[rawNote].load (std::memory_order_relaxed);
+                if (stored >= 0)
+                {
+                    msg.setNoteNumber (stored);
+                    activeHeptNotes[rawNote].store (-1, std::memory_order_relaxed);
+                }
+            }
+            remapped.addEvent (msg, metadata.samplePosition);
+        }
+        midi.swapWith (remapped);
+    }
+
+    // Track Note On / Note Off activity for UI feedback (lock-free, per-note).
+    // Notes are already remapped at this point — bitmask and oscillator use final note numbers.
+    // Preset triggering is handled via direct MIDI device input (handleIncomingMidiMessage).
     for (const auto metadata : midi)
     {
         const auto msg  = metadata.getMessage();
@@ -144,7 +186,7 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<float>& audio,
             continue;
 
         const auto note = msg.getNoteNumber();
-        const auto word = note >> 5;                        // 0-3
+        const auto word = note >> 5;
         const auto bit  = uint32_t (1u << (note & 31));
         if (msg.isNoteOn())
         {
@@ -190,8 +232,39 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<double>& audio,
 {
     audio.clear();
 
-    const bool oscOn = oscillatorEnabled.load (std::memory_order_relaxed);
+    const bool oscOn  = oscillatorEnabled.load (std::memory_order_relaxed);
+    const bool heptOn = heptEnabled.load (std::memory_order_relaxed);
     const int presetCh = midiPresetChannel.load (std::memory_order_relaxed);
+
+    // Rewrite MIDI note numbers if heptatonic mode is active
+    if (heptOn)
+    {
+        juce::MidiBuffer remapped;
+        for (const auto metadata : midi)
+        {
+            auto msg = metadata.getMessage();
+            if (msg.isNoteOn())
+            {
+                const int rawNote = msg.getNoteNumber();
+                const int note = juce::jlimit (0, 127,
+                    rawNote + heptMap[rawNote % 12].load (std::memory_order_relaxed));
+                activeHeptNotes[rawNote].store (note, std::memory_order_relaxed);
+                msg.setNoteNumber (note);
+            }
+            else if (msg.isNoteOff())
+            {
+                const int rawNote = msg.getNoteNumber();
+                const int stored = activeHeptNotes[rawNote].load (std::memory_order_relaxed);
+                if (stored >= 0)
+                {
+                    msg.setNoteNumber (stored);
+                    activeHeptNotes[rawNote].store (-1, std::memory_order_relaxed);
+                }
+            }
+            remapped.addEvent (msg, metadata.samplePosition);
+        }
+        midi.swapWith (remapped);
+    }
 
     for (const auto metadata : midi)
     {
@@ -350,6 +423,9 @@ void ArabicMaqamTunerProcessor::getStateInformation (juce::MemoryBlock& dest)
     // Internal reference oscillator
     state.setProperty ("oscillatorEnabled", oscillatorEnabled.load (std::memory_order_relaxed), nullptr);
 
+    // Heptatonic keyboard mode
+    state.setProperty ("heptEnabled", heptEnabled.load (std::memory_order_relaxed), nullptr);
+
     // Include APVTS state as a child
     state.addChild (apvts.copyState(), -1, nullptr);
 
@@ -475,6 +551,11 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
     if (! oscEnabledProp.isVoid())
         oscillatorEnabled.store ((bool) oscEnabledProp, std::memory_order_relaxed);
 
+    // Restore heptatonic mode
+    auto heptEnabledProp = state.getProperty ("heptEnabled", juce::var());
+    if (! heptEnabledProp.isVoid())
+        heptEnabled.store ((bool) heptEnabledProp, std::memory_order_relaxed);
+
     auto slidersNode = state.getChildWithName ("SliderPositions");
     std::array<int, 12> savedPositions;
     std::array<double, 12> savedCentsOffsets;
@@ -542,7 +623,7 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
             syncAllSlotParamsFromState();
             syncPresetParamFromState();
 
-            tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
+            updateTuningAndBroadcast();
             notifyTuningChanged();
         });
     }
@@ -574,6 +655,9 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
     currentDegreeIpnRefs.fill ({});
     currentDegreeSolfegeRefs.fill ({});
     currentTranspositionIdMap.clear();
+
+    // Reset heptatonic map to identity (no maqam = no remapping)
+    rebuildHeptMap();
 
     // Reset reference frequency offset (starting note change = new reference point)
     referenceCentsOffset = 0.0;
@@ -661,7 +745,7 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
         syncAllSlotParamsFromState();
         syncPresetParamFromState();
 
-        tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
+        updateTuningAndBroadcast();
         if (onStatusMessage) onStatusMessage (buildScaleName());
         notifyTuningChanged();
         if (onComplete) onComplete();
@@ -747,7 +831,7 @@ void ArabicMaqamTunerProcessor::setSliderVariant (int chromaticIndex, int varian
     syncSlotParamFromState (chromaticIndex);
     syncPresetParamFromState();
 
-    tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
+    updateTuningAndBroadcast();
     notifyTuningChanged();
 }
 
@@ -777,7 +861,7 @@ void ArabicMaqamTunerProcessor::setSlotCents (int chromaticIndex, double centsVa
     syncSlotParamFromState (chromaticIndex);
 
     // Update MTS-ESP immediately (live pitch change) — no WebView push
-    tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
+    updateTuningAndBroadcast();
 }
 
 void ArabicMaqamTunerProcessor::finalizeSlotCents (int chromaticIndex, double centsValue)
@@ -803,7 +887,7 @@ void ArabicMaqamTunerProcessor::setNoteVariant (int midiNote, int variantIndex)
     // Sync preset param only (per-note overrides don't affect slot params)
     syncPresetParamFromState();
 
-    tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
+    updateTuningAndBroadcast();
     notifyTuningChanged();
 }
 
@@ -866,7 +950,7 @@ void ArabicMaqamTunerProcessor::applyPreset (int idx)
     syncAllSlotParamsFromState();
     syncPresetParamFromState();
 
-    tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
+    updateTuningAndBroadcast();
     notifyTuningChanged();
 }
 
@@ -1143,7 +1227,7 @@ void ArabicMaqamTunerProcessor::setReferenceCentsOffset (double cents)
         updatingParamsFromCode = false;
     }
 
-    tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
+    updateTuningAndBroadcast();
 }
 
 void ArabicMaqamTunerProcessor::finalizeReferenceCentsOffset (double cents)
@@ -1171,6 +1255,166 @@ void ArabicMaqamTunerProcessor::setOscillatorEnabled (bool enabled)
     const bool wasEnabled = oscillatorEnabled.exchange (enabled, std::memory_order_relaxed);
     if (wasEnabled && ! enabled)
         oscillator.allNotesOff();
+}
+
+void ArabicMaqamTunerProcessor::setHeptEnabled (bool enabled)
+{
+    const bool wasEnabled = heptEnabled.exchange (enabled, std::memory_order_relaxed);
+    if (wasEnabled && ! enabled)
+    {
+        // Notes were remapped — clean release needed
+        oscillator.allNotesOff();
+        for (int i = 0; i < 128; ++i)
+            activeHeptNotes[i].store (-1, std::memory_order_relaxed);
+
+        // Rebroadcast normal (non-remapped) table to MTS-ESP
+        tuningEngine.rebroadcastCurrentTuning();
+    }
+    else if (! wasEnabled && enabled)
+    {
+        // Broadcast remapped table to MTS-ESP
+        rebroadcastHeptMts();
+    }
+    saveSettingsToDisk();
+}
+
+void ArabicMaqamTunerProcessor::rebuildHeptMap()
+{
+    // Use currentDegreeNames + pitch class data to extract degree chromatic indices.
+    // If fewer than 7 unique degrees available, reset to identity (no remapping).
+    std::vector<int> degreeChroms;  // in degree order: tonic, 2nd, 3rd, 4th, 5th, 6th, 7th
+
+    if (! currentDegreeNames.empty() && ! currentSystemId.isEmpty()
+        && ! currentStartingNote.isEmpty()
+        && dataCache.hasData (currentSystemId, currentStartingNote))
+    {
+        const auto& data = dataCache.getData (currentSystemId, currentStartingNote);
+
+        // Build PAO name → chromatic index lookup (same pattern as applyMaqamDegrees)
+        std::map<juce::String, int> nameToChrom;
+        for (const auto& pc : data.pitchClasses)
+        {
+            if (pc.noteName.isEmpty()) continue;
+            const int ci = chromaticIndexForIpnRef (pc.ipnReference);
+            if (ci >= 0 && nameToChrom.count (pc.noteName) == 0)
+                nameToChrom[pc.noteName] = ci;
+        }
+
+        // Collect unique chromatic indices for up to 7 degrees (in degree order)
+        std::set<int> seen;
+        for (const auto& name : currentDegreeNames)
+        {
+            auto it = nameToChrom.find (name);
+            if (it != nameToChrom.end() && seen.insert (it->second).second)
+            {
+                degreeChroms.push_back (it->second);
+                if (degreeChroms.size() >= 7) break;
+            }
+        }
+    }
+
+    if (degreeChroms.size() < 7)
+    {
+        // Identity map — delta 0 = no remapping
+        for (int i = 0; i < 12; ++i)
+            heptMap[i].store (0, std::memory_order_relaxed);
+
+        if (heptEnabled.load (std::memory_order_relaxed))
+            rebroadcastHeptMts();
+        return;
+    }
+
+    // ── Find the tonic's position in the white key array ─────────────────────
+    // The tonic key stays as-is: G maqamat start on G, C on C, D on D, etc.
+    // White keys are rotated from the tonic's position, so degrees map to
+    // ascending white keys starting from the tonic's natural key.
+    static constexpr int whiteKeys[] = { 0, 2, 4, 5, 7, 9, 11 };
+    const int tonicChrom = degreeChroms[0];
+
+    // Exact match first (most common — C, D, E, F, G, A, B are typical tonics)
+    int tonicWhiteIdx = -1;
+    for (int i = 0; i < 7; ++i)
+    {
+        if (whiteKeys[i] == tonicChrom)
+        {
+            tonicWhiteIdx = i;
+            break;
+        }
+    }
+
+    if (tonicWhiteIdx < 0)
+    {
+        // Tonic on a black key — find nearest white key (prefer lower on tie)
+        int minDist = 12;
+        for (int i = 0; i < 7; ++i)
+        {
+            int d = std::abs (whiteKeys[i] - tonicChrom);
+            if (d > 6) d = 12 - d;  // circular distance
+            if (d < minDist || (d == minDist && whiteKeys[i] < tonicChrom))
+            {
+                minDist = d;
+                tonicWhiteIdx = i;
+            }
+        }
+    }
+
+    // ── Compute deltas ───────────────────────────────────────────────────────
+    // Initialize all to 0 (black keys stay as-is — chromatic passing tones).
+    // White keys get small deltas (typically ±1-2 semitones) to reach their
+    // assigned degree. This keeps the mapping intuitive and compatible with
+    // Mono PB receivers (2st default range).
+    //
+    // Example: Hijaz on D → degrees [D, Eb, F#, G, A, Bb, C]
+    //   D(2)→D(2) Δ0, E(4)→Eb(3) Δ-1, F(5)→F#(6) Δ+1,
+    //   G(7)→G(7) Δ0, A(9)→A(9) Δ0, B(11)→Bb(10) Δ-1, C(0)→C(0) Δ0
+    int deltas[12] = {};
+
+    for (int i = 0; i < 7; ++i)
+    {
+        const int wk = whiteKeys[(tonicWhiteIdx + i) % 7];
+        int delta = degreeChroms[(size_t) i] - wk;
+        // Normalize to [-6, +5] — minimal semitone adjustment
+        while (delta > 6)  delta -= 12;
+        while (delta < -6) delta += 12;
+        deltas[wk] = delta;
+    }
+
+    for (int i = 0; i < 12; ++i)
+        heptMap[i].store (deltas[i], std::memory_order_relaxed);
+
+    // If hept mode is active, re-broadcast remapped MTS-ESP table
+    if (heptEnabled.load (std::memory_order_relaxed))
+        rebroadcastHeptMts();
+}
+
+// ── Heptatonic MTS-ESP broadcast helpers ──────────────────────────────────────
+
+void ArabicMaqamTunerProcessor::updateTuningAndBroadcast()
+{
+    tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
+
+    // If hept mode is active, overwrite the MTS-ESP broadcast with remapped table
+    if (heptEnabled.load (std::memory_order_relaxed))
+        rebroadcastHeptMts();
+}
+
+void ArabicMaqamTunerProcessor::rebroadcastHeptMts()
+{
+    // Build remapped table: for each MIDI note N, MTS-ESP freq[N] = internal freq[N + delta].
+    // This makes MTS-ESP synths receiving the original (un-remapped) MIDI note play the
+    // correct pitch. The internal freqTable is NOT modified — the oscillator already uses
+    // remapped note numbers from the processBlock MIDI rewrite.
+    const auto& internalTable = tuningEngine.getFrequencyTable();
+    std::array<double, 128> remapped;
+
+    for (int n = 0; n < 128; ++n)
+    {
+        const int delta = heptMap[n % 12].load (std::memory_order_relaxed);
+        const int r = juce::jlimit (0, 127, n + delta);
+        remapped[(size_t) n] = internalTable[(size_t) r];
+    }
+
+    tuningEngine.broadcastMtsTable (remapped);
 }
 
 // ── Accessors ─────────────────────────────────────────────────────────────────
@@ -1346,11 +1590,14 @@ void ArabicMaqamTunerProcessor::applyMaqamDegrees (const MaqamDegrees& degrees)
             slot.centsOffset = v->midiCentsDeviation;
     }
 
+    // Rebuild heptatonic map from the new degree set
+    rebuildHeptMap();
+
     // Sync APVTS params
     syncAllSlotParamsFromState();
     syncPresetParamFromState();
 
-    tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
+    updateTuningAndBroadcast();
     notifyTuningChanged();
 }
 
@@ -1460,7 +1707,7 @@ void ArabicMaqamTunerProcessor::parameterChanged (const juce::String& parameterI
         // asynchronously from syncAllSlotParamsFromState, after updatingParamsFromCode
         // is reset, which would incorrectly clear maqam state.
 
-        tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
+        updateTuningAndBroadcast();
 
         // Debug: track automation rate
         static int slotChangeCount = 0;
@@ -1486,7 +1733,7 @@ void ArabicMaqamTunerProcessor::parameterChanged (const juce::String& parameterI
     else if (parameterID == "ref_freq")
     {
         referenceCentsOffset = juce::jlimit (-700.0, 700.0, (double) newValue);
-        tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
+        updateTuningAndBroadcast();
         notifyTuningChanged();
     }
     // Handle preset parameter
@@ -1819,6 +2066,7 @@ void ArabicMaqamTunerProcessor::saveSettingsToDisk() const
     obj->setProperty ("midiPresetChannel", midiPresetChannel.load (std::memory_order_relaxed));
     obj->setProperty ("midiPresetDevice", midiPresetDeviceName);
     obj->setProperty ("oscillatorEnabled", oscillatorEnabled.load (std::memory_order_relaxed));
+    obj->setProperty ("heptEnabled", heptEnabled.load (std::memory_order_relaxed));
 
     const auto dir = getTanghimDir();
     dir.createDirectory();
@@ -1845,6 +2093,7 @@ void ArabicMaqamTunerProcessor::clearCache()
     currentDegreeIpnRefs.fill ({});
     currentDegreeSolfegeRefs.fill ({});
     currentTranspositionIdMap.clear();
+    rebuildHeptMap();
 
     // Reset slider state
     activeTuningState.clearPerNoteOverrides();
@@ -1857,7 +2106,7 @@ void ArabicMaqamTunerProcessor::clearCache()
     }
 
     // Update MTS-ESP tuning table and notify UI
-    tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
+    updateTuningAndBroadcast();
     notifyTuningChanged();
 
     // Re-fetch tuning systems list from API (cache is empty now)
@@ -1919,6 +2168,10 @@ void ArabicMaqamTunerProcessor::loadSettingsFromDisk()
         auto oscEnabledProp = obj->getProperty ("oscillatorEnabled");
         if (! oscEnabledProp.isVoid())
             oscillatorEnabled.store ((bool) oscEnabledProp, std::memory_order_relaxed);
+
+        auto heptEnabledProp = obj->getProperty ("heptEnabled");
+        if (! heptEnabledProp.isVoid())
+            heptEnabled.store ((bool) heptEnabledProp, std::memory_order_relaxed);
     }
 }
 

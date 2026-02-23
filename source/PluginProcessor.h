@@ -63,6 +63,12 @@ public:
     void setOscillatorEnabled (bool enabled);
     bool getOscillatorEnabled() const { return oscillatorEnabled.load (std::memory_order_relaxed); }
 
+    // ── Heptatonic keyboard mode ────────────────────────────────────────────────
+    std::atomic<bool> heptEnabled { false };
+    void setHeptEnabled (bool enabled);
+    bool getHeptEnabled() const { return heptEnabled.load (std::memory_order_relaxed); }
+    void rebuildHeptMap();
+
     // ── Reference frequency control ───────────────────────────────────────────
     void   setReferenceCentsOffset (double cents);
     void   finalizeReferenceCentsOffset (double cents);
@@ -252,6 +258,10 @@ private:
     TuningEngine     tuningEngine;
     TriangleOscillator oscillator;
 
+    // ── Heptatonic mapping state (audio thread reads, message thread writes) ──
+    std::array<std::atomic<int>, 12>  heptMap;             // input chromatic → output chromatic
+    std::array<std::atomic<int>, 128> activeHeptNotes;     // inputNote → remappedNote for held notes (-1 = inactive)
+
     // ── Internal helpers ──────────────────────────────────────────────────────
     void rebuildTuningStateFromCache();
     void fetchMaqamListIfNeeded();
@@ -260,6 +270,12 @@ private:
     void applyMaqamDegrees (const MaqamDegrees& degrees);
     void notifyTuningChanged();
     juce::String buildScaleName() const;
+
+    // ── Heptatonic MTS-ESP broadcast helpers ────────────────────────────────
+    /** Calls updateTuning + hept remap if needed. Use instead of direct updateTuning. */
+    void updateTuningAndBroadcast();
+    /** Build remapped freq table from heptMap deltas and broadcast to MTS-ESP. */
+    void rebroadcastHeptMts();
 
     // ── APVTS sync helpers ───────────────────────────────────────────────────
     // Guard flag to prevent feedback loops when programmatically updating params

@@ -19,6 +19,7 @@ const EMPTY_STATE: TuningState = {
   startingNote: '',
   isMtsTransmitter: false,
   oscillatorEnabled: false,
+  heptEnabled: false,
   mtsReceivers: 0,
   mtsNativeCount: 0,
   mpeCount: 0,
@@ -699,6 +700,12 @@ export default function App() {
     bridge.setOscillatorEnabled(newEnabled)
   }, [bridge, tuningState.oscillatorEnabled])
 
+  const handleHeptToggle = useCallback(() => {
+    const newEnabled = !tuningState.heptEnabled
+    setTuningState(prev => ({ ...prev, heptEnabled: newEnabled }))
+    bridge.setHeptEnabled(newEnabled)
+  }, [bridge, tuningState.heptEnabled])
+
   const handleMaqamSelect = async (maqamId: string, transpositionIndex: number) => {
     setSelectedMaqamId(maqamId)
     setSelectedTransIdx(transpositionIndex)
@@ -992,10 +999,13 @@ export default function App() {
           <OutputModeSelector
             isMtsTransmitter={tuningState.isMtsTransmitter}
             oscillatorEnabled={tuningState.oscillatorEnabled}
+            heptEnabled={tuningState.heptEnabled}
+            hasMaqam={selectedMaqamId !== ''}
             mtsNativeCount={tuningState.mtsNativeCount}
             mpeCount={tuningState.mpeCount}
             monoPbCount={tuningState.monoPbCount}
             onOscillatorToggle={handleOscillatorToggle}
+            onHeptToggle={handleHeptToggle}
           />
         </div>
       </div>

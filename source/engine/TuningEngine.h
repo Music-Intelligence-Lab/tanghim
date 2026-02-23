@@ -38,6 +38,13 @@ public:
                        double referenceCentsOffset = 0.0,
                        const juce::String& scaleName = {});
 
+    // ── MTS-ESP broadcast (without modifying internal tables) ────────────────
+    /** Broadcast a frequency table to MTS-ESP without updating internal state. */
+    void broadcastMtsTable (const std::array<double, 128>& freqs);
+
+    /** Re-broadcast the current internal frequency table to MTS-ESP. */
+    void rebroadcastCurrentTuning();
+
     // ── Current tuning data (for display / serialisation) ────────────────────
     double getFrequencyForMidiNote  (int midiNote) const;
     double getCentsDeviationForMidi (int midiNote) const;

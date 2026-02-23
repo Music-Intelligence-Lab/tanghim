@@ -170,6 +170,35 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - `getTailLengthSeconds()` = 0.15 (100ms release needs DAW to keep processing after note-off)
 - Bridge: `setOscillatorEnabled(bool)` fire-and-forget, `oscillatorEnabled` in tuning state JSON
 
+### Heptatonic Keyboard Mode
+Remaps MIDI keyboard so maqam degrees are playable on white keys, starting from the tonic's natural key. Toggled via "Hept" badge in `OutputModeSelector` (lavender, clickable). Badge shows inactive when no maqam selected.
+
+**Mapping logic:**
+- White keys rotate from the tonic's position: G tonic → G,A,B,C,D,E,F map to degrees 1-7
+- Deltas are small (typically ±1-2 semitones) — degree chromatic vs white key chromatic
+- Black keys: delta 0 (play natural chromatic pitch — passing tones)
+- Example: Hijaz on D → E→Eb (Δ-1), F→F# (Δ+1), B→Bb (Δ-1), others Δ0
+- Black-key tonics: nearest white key below used as starting position (rare in practice)
+
+**MIDI processing (processBlock):**
+- `heptMap[12]` (atomic ints) stores signed semitone deltas per chromatic position
+- `activeHeptNotes[128]` tracks input→remapped note for correct Note Off matching
+- MIDI buffer rewritten via `midi.swapWith(remapped)` — downstream MIDI output contains remapped notes
+- Bitmask + oscillator process already-remapped notes from the rewritten buffer
+
+**MTS-ESP frequency table remapping:**
+- `updateTuningAndBroadcast()` wraps all `tuningEngine.updateTuning()` calls
+- When hept active: builds remapped table `freq[N] = internalFreq[N+delta]`, broadcasts via `broadcastMtsTable()`
+- Internal `freqTable` unchanged — oscillator uses `getFrequencyForMidiNote(remappedNote)` correctly
+- Small deltas (±1-2st) keep Mono PB receivers within their default 2st range
+
+**State management:**
+- `heptEnabled` (`std::atomic<bool>`) — persisted in session state + settings.json
+- `rebuildHeptMap()` called from `applyMaqamDegrees()`, `loadTuningSystem()`, `clearCache()`
+- `setHeptEnabled(false)`: `allNotesOff()` + clear `activeHeptNotes` + rebroadcast normal table
+- `setHeptEnabled(true)`: broadcast remapped table
+- Bridge: `setHeptEnabled(bool)` fire-and-forget, `heptEnabled` in tuning state JSON
+
 ### Per-Note Overrides
 - Per-MIDI-note variant overrides allow different variants for the same pitch class in different octaves
 - Override indicator: blue thumb glow + accent-coloured IPN label
@@ -308,7 +337,7 @@ MTS-ESP only provides `MTS_GetNumClients()` — a single integer count with no c
 - **Receiver side**: announce on construct, 1Hz heartbeat (mtime touch), switchMode on APVTS change, deannounce on destruct
 - **Transmitter side**: 2Hz scan in editor timer, stale files (>5s mtime) ignored, periodic cleanup (>10s) every ~30 seconds
 - **Count computation**: MTS-ESP native = `MTS_GetNumClients()` - (MPE count + Mono PB count)
-- **UI**: 3 conditional badge chips with color coding (MTS-ESP=accent, MPE=blue, Mono PB=green)
+- **UI**: 3 conditional badge chips with color coding (MTS-ESP=accent, MPE=blue, Mono PB=green), plus Osc (coral) and Hept (lavender) toggle badges
 - **Crash recovery**: Heartbeat stops → file becomes stale → ignored by scanner → deleted by cleanup
 
 ### MTS-ESP Status Polling

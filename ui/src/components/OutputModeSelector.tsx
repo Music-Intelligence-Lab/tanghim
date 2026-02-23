@@ -3,13 +3,16 @@ import './OutputModeSelector.css'
 interface Props {
   isMtsTransmitter: boolean
   oscillatorEnabled: boolean
+  heptEnabled: boolean
+  hasMaqam: boolean
   mtsNativeCount: number
   mpeCount: number
   monoPbCount: number
   onOscillatorToggle: () => void
+  onHeptToggle: () => void
 }
 
-export default function MtsEspStatus({ isMtsTransmitter, oscillatorEnabled, mtsNativeCount, mpeCount, monoPbCount, onOscillatorToggle }: Props) {
+export default function MtsEspStatus({ isMtsTransmitter, oscillatorEnabled, heptEnabled, hasMaqam, mtsNativeCount, mpeCount, monoPbCount, onOscillatorToggle, onHeptToggle }: Props) {
   const active = isMtsTransmitter
 
   return (
@@ -18,6 +21,11 @@ export default function MtsEspStatus({ isMtsTransmitter, oscillatorEnabled, mtsN
             onClick={onOscillatorToggle}
             title="Internal reference oscillator">
         Osc
+      </span>
+      <span className={`mts-badge mts-badge-hept${heptEnabled && hasMaqam ? '' : ' mts-badge-inactive'}`}
+            onClick={onHeptToggle}
+            title="Heptatonic keyboard mapping">
+        Hept
       </span>
       <span className={`mts-badge mts-badge-native${active && mtsNativeCount > 0 ? '' : ' mts-badge-inactive'}`}>
         MTS-ESP<span className="mts-badge-count">{active ? mtsNativeCount : 0}</span>

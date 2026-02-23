@@ -277,6 +277,16 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
             complete (juce::var());
         });
 
+    // ── setHeptEnabled(enabled) ─────────────────────────────────────────
+    // Toggle heptatonic keyboard mapping on/off. Fire-and-forget.
+    opts = opts.withNativeFunction ("setHeptEnabled",
+        [this] (const juce::Array<juce::var>& args, Completion complete)
+        {
+            if (args.size() >= 1)
+                processor.setHeptEnabled ((bool) args[0]);
+            complete (juce::var());
+        });
+
     // ── startMidiLearn(presetIndex) ─────────────────────────────────────────
     // Start MIDI Learn for a preset. Next MIDI note received will be mapped.
     opts = opts.withNativeFunction ("startMidiLearn",
@@ -364,6 +374,7 @@ juce::var NativeBridge::buildTuningStateJson() const
     root->setProperty ("startingNote", processor.getCurrentStartingNote());
     root->setProperty ("isMtsTransmitter", processor.isMtsTransmitter());
     root->setProperty ("oscillatorEnabled", processor.getOscillatorEnabled());
+    root->setProperty ("heptEnabled", processor.getHeptEnabled());
 
     const int totalReceivers = processor.mtsNumReceivers();
     const auto receiverCounts = processor.getReceiverCounts();

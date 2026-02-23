@@ -205,6 +205,11 @@ export function useJuceBridge() {
     await callNative('setOscillatorEnabled', enabled)
   }, [])
 
+  /** Toggle heptatonic keyboard mapping on/off. Fire-and-forget. */
+  const setHeptEnabled = useCallback(async (enabled: boolean): Promise<void> => {
+    await callNative('setHeptEnabled', enabled)
+  }, [])
+
   // ── Reference frequency control ──────────────────────────────────────────
 
   /** Fire-and-forget: update reference freq offset (live MTS-ESP update). */
@@ -299,6 +304,7 @@ export function useJuceBridge() {
     setSlotCents,
     setSlotCentsFinalize,
     setOscillatorEnabled,
+    setHeptEnabled,
     setReferenceFreqCents,
     setReferenceFreqCentsFinalize,
     beginRefFreqGesture,
@@ -326,7 +332,7 @@ export function useJuceBridge() {
     setMidiPresetChannel,
     getMidiPresetChannel,
   }), [getTuningSystems, selectTuningSystem, setSliderVariant, setNoteVariant,
-       setSlotCents, setSlotCentsFinalize, setOscillatorEnabled,
+       setSlotCents, setSlotCentsFinalize, setOscillatorEnabled, setHeptEnabled,
        setReferenceFreqCents, setReferenceFreqCentsFinalize, beginRefFreqGesture, endRefFreqGesture,
        applyPreset, assignPreset, clearPreset,
        getMaqamList, applyMaqam, checkForUpdates, getCurrentState, setStartMidi, getMaqamMidiDragData, saveMaqamMidiFile,

@@ -52,6 +52,20 @@ void TuningEngine::updateTuning (const ActiveTuningState& state,
     }
 }
 
+// ── MTS-ESP broadcast helpers ─────────────────────────────────────────────────
+
+void TuningEngine::broadcastMtsTable (const std::array<double, 128>& freqs)
+{
+    if (mtsEsp && mtsEsp->isTransmitter())
+        mtsEsp->setTuningTable (freqs);
+}
+
+void TuningEngine::rebroadcastCurrentTuning()
+{
+    juce::ScopedLock sl (tuningLock);
+    broadcastMtsTable (freqTable);
+}
+
 // ── Accessors ─────────────────────────────────────────────────────────────────
 
 double TuningEngine::getFrequencyForMidiNote (int midi) const

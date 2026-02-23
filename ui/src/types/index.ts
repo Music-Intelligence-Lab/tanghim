@@ -56,6 +56,7 @@ export interface TuningState {
   startingNote: string;
   isMtsTransmitter: boolean;
   oscillatorEnabled: boolean;
+  heptEnabled: boolean;
   mtsReceivers: number;
   mtsNativeCount: number;
   mpeCount: number;
