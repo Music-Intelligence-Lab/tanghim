@@ -507,7 +507,7 @@ void ArabicMaqamTunerEditor::setupMidiPresetControls()
     // Consistent dark theme colors
     const auto bgColor      = juce::Colour (0xff1a1a2e);  // --surface
     const auto borderColor  = juce::Colour (0xff2d2d4a);  // --border
-    const auto textColor    = juce::Colour (0xffe8b339);  // --accent
+    const auto textColor    = juce::Colour (0xffe94560);  // red accent (matches inactive presets)
     const auto mutedColor   = juce::Colour (0xff808099);  // --text-muted
 
     // Static prefix label

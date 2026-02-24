@@ -5,6 +5,8 @@ interface Props {
   cents: number
   hz: number
   defaultHz: number
+  tonicChromaticIndex: number   // -1 = no maqam
+  ipnNames: string[]            // 12-element array: degreeIpnMap preferred, slot ipnRef fallback
   onDrag: (cents: number) => void
   onDragEnd: (cents: number) => void
   onGestureStart: () => void
@@ -13,6 +15,31 @@ interface Props {
 
 const MIN_CENTS = -700
 const MAX_CENTS = 700
+
+/** Compute transposition label from cents offset relative to tonic.
+ *  Always shows "X → Y" style, with +/− suffix for non-clean semitone offsets. */
+function computeTransposition(
+  cents: number,
+  tonicIndex: number,
+  ipnNames: string[]
+): string | null {
+  if (tonicIndex < 0) return null
+
+  const fromIpn = ipnNames[tonicIndex] || ''
+  const absCents = Math.abs(cents)
+  const semitones = Math.sign(cents) * Math.round(absCents / 100)
+  const toIndex = ((tonicIndex + semitones) % 12 + 12) % 12
+  const toIpn = ipnNames[toIndex] || ''
+
+  const remainder = cents - semitones * 100
+  let suffix = ''
+  if (remainder > 0.5) suffix = '+'
+  else if (remainder < -0.5) suffix = '\u2212'  // minus sign
+
+  if (semitones === 0) return `${fromIpn} \u2192 ${fromIpn}`
+  const arrow = semitones > 0 ? '\u2197' : '\u2198'  // ↗ ↘
+  return `${fromIpn} ${arrow} ${toIpn}${suffix}`
+}
 
 /** Map cents value to SVG arc angle (0 cents = 12 o'clock). */
 function centsToAngle(cents: number): number {
@@ -34,7 +61,7 @@ function describeArc(cx: number, cy: number, r: number, startAngle: number, endA
 }
 
 export default function ReferenceFreqControl({
-  cents, hz, defaultHz,
+  cents, hz, defaultHz, tonicChromaticIndex, ipnNames,
   onDrag, onDragEnd, onGestureStart, onGestureEnd,
 }: Props) {
   const isDragging = useRef(false)
@@ -79,8 +106,21 @@ export default function ReferenceFreqControl({
       ;(e.target as HTMLInputElement).blur()
     } else if (e.key === 'Escape') {
       setIsEditingHz(false)
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault()
+      const delta = e.key === 'ArrowUp' ? 1 : -1
+      const currentHz = parseFloat(hzInputValue) || hz
+      const newHz = Math.max(0.01, currentHz + delta)
+      setHzInputValue(newHz.toFixed(2))
+      if (defaultHz > 0) {
+        const newCents = 1200 * Math.log2(newHz / defaultHz)
+        const clamped = Math.max(MIN_CENTS, Math.min(MAX_CENTS, newCents))
+        onGestureStart()
+        onDragEnd(clamped)
+        onGestureEnd()
+      }
     }
-  }, [])
+  }, [hzInputValue, hz, defaultHz, onDragEnd, onGestureStart, onGestureEnd])
 
   // ── Semitone shift buttons ────────────────────────────────────────────────
 
@@ -164,6 +204,8 @@ export default function ReferenceFreqControl({
     ? `+${cents.toFixed(2)} ¢`
     : `${cents.toFixed(2)} ¢`
 
+  const transposition = computeTransposition(cents, tonicChromaticIndex, ipnNames)
+
   return (
     <div className="ref-freq-control">
       <div className="ref-freq-label">Ref Freq</div>
@@ -204,7 +246,10 @@ export default function ReferenceFreqControl({
         onClick={() => handleSemitoneShift(-1)}
         title="-100 cents (one semitone down)"
       >-</button>
-      <span className="ref-freq-cents">{centsDisplay}</span>
+      <div className="ref-freq-cents-column">
+        <span className="ref-freq-cents">{centsDisplay}</span>
+        <span className="ref-freq-transposition">{transposition ?? '\u00A0'}</span>
+      </div>
       <button
         className="ref-freq-semitone-btn"
         onClick={() => handleSemitoneShift(+1)}

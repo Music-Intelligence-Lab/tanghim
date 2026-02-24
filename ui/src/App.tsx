@@ -144,6 +144,7 @@ export default function App() {
   const [maqamDegreePaoNames, setMaqamDegreePaoNames] = useState<Map<number, string>>(new Map())  // chromatic index → expected PAO name
   const maqamListRequested = useRef(false)
   const afterSystemSwitchRef = useRef<(() => void) | null>(null)  // callback to run after tuning system loads
+  const presetIndexOverrideRef = useRef<number | null>(null)  // guards preset index from async event overwrite
 
   // Refs for modification tracking — ensures callbacks always have latest values
   // without stale closures. Updated both during render AND immediately in handlers.
@@ -171,10 +172,15 @@ export default function App() {
     // C++ clears currentMaqamId when sliders are manually adjusted, but we want to keep
     // showing the modified maqam with an asterisk. Also, async APVTS callbacks can send
     // stale events after handleMaqamSelect has already set the state.
+    // If handleMaqamSelect set a preset override (maqam matches existing preset),
+    // consume it instead of using C++'s -1 (C++ doesn't know about the match).
+    const presetOverride = presetIndexOverrideRef.current
+    if (presetOverride !== null) presetIndexOverrideRef.current = null
+
     if (!state.selectedMaqamId && (isMaqamModifiedRef.current || selectedMaqamIdRef.current)) {
       // Don't overwrite maqam selection — keep the current state
       // Only sync preset index (it might have changed)
-      setActivePresetIndex(state.activePresetIndex ?? -1)
+      setActivePresetIndex(presetOverride ?? state.activePresetIndex ?? -1)
       return
     }
 
@@ -182,7 +188,7 @@ export default function App() {
     setSelectedMaqamId(newMaqamId)
     selectedMaqamIdRef.current = newMaqamId  // Update ref immediately
     setSelectedTransIdx(state.transpositionIndex ?? -1)
-    setActivePresetIndex(state.activePresetIndex ?? -1)
+    setActivePresetIndex(presetOverride ?? state.activePresetIndex ?? -1)
 
     if (state.degreeNames && state.degreeNames.length > 0) {
       const degreeIndices = computeMaqamDegreeIndices(state.degreeNames, state.paoNameMap)
@@ -709,12 +715,20 @@ export default function App() {
   const handleMaqamSelect = async (maqamId: string, transpositionIndex: number) => {
     setSelectedMaqamId(maqamId)
     setSelectedTransIdx(transpositionIndex)
-    setActivePresetIndex(-1)
     setIsMaqamModified(false)  // Reset modification flag when selecting a new maqam
     isMaqamModifiedRef.current = false  // Update ref immediately
     setModifiedSlots(new Set())
     // Update ref immediately so modification tracking works even before React re-renders
     selectedMaqamIdRef.current = maqamId
+
+    // Auto-activate matching unmodified preset (exact maqam + tonic, not modified)
+    const matchingPreset = tuningState.presets.findIndex(p =>
+      p.isAssigned && p.maqamId === maqamId && p.setIndex === transpositionIndex && !p.tuningSystemId
+    )
+    setActivePresetIndex(matchingPreset)
+    // Guard against async tuningStateChanged event overwriting this value
+    presetIndexOverrideRef.current = matchingPreset >= 0 ? matchingPreset : null
+
     const newState = await bridge.applyMaqam(maqamId, transpositionIndex)
     if (newState) {
       setTuningState(newState)
@@ -735,6 +749,8 @@ export default function App() {
         }
       }
     }
+    // Re-assert preset match after state processing (in case async event arrived during await)
+    if (matchingPreset >= 0) setActivePresetIndex(matchingPreset)
   }
 
   const handleSaveToPreset = async (presetIndex: number) => {
@@ -1025,6 +1041,12 @@ export default function App() {
             cents={tuningState.referenceFreqCents}
             hz={tuningState.referenceFreqHz}
             defaultHz={tuningState.referenceDefaultHz}
+            tonicChromaticIndex={maqamTonicIndex >= 0
+              ? maqamTonicIndex
+              : (findTonicMidi(tuningState.referenceNoteName, tuningState.noteNames)?.chromaticIndex ?? -1)}
+            ipnNames={tuningState.slots.map((slot, i) =>
+              tuningState.degreeIpnMap[String(i)] || slot.ipnRef
+            )}
             onDrag={handleRefFreqDrag}
             onDragEnd={handleRefFreqDragEnd}
             onGestureStart={handleRefFreqGestureStart}
@@ -1073,6 +1095,7 @@ export default function App() {
           maqamTonicIndex={maqamTonicIndex}
           maqamTonicMidi={maqamTonicMidi}
           modifiedSlots={modifiedSlots}
+          heptEnabled={tuningState.heptEnabled && maqamDegreeIndices.size > 0}
           onVariantSelect={handleVariantSelect}
           onCentsDrag={handleCentsDrag}
           onCentsDragEnd={handleCentsDragEnd}

@@ -224,3 +224,36 @@
   color: var(--text-muted);
   margin-left: 0;
 }
+
+/* ── Piano key indicator bar ─────────────────────────────────────────── */
+.key-bar {
+  width: 80%;
+  height: 3px;
+  border-radius: 1.5px;
+  margin-bottom: 3px;
+}
+
+.key-bar.white-key {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.key-bar.black-key {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.key-bar.muted-key {
+  background: transparent;
+}
+
+/* ── Heptatonic muted slider (unreachable position) ──────────────────── */
+.note-slider.hept-muted {
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+/* ── Hept source key arrow in IPN label ──────────────────────────────── */
+.hept-arrow {
+  font-size: 9px;
+  opacity: 0.6;
+  margin: 0 1px;
+}

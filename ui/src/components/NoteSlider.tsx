@@ -13,6 +13,9 @@ interface Props {
   isMaqamTonic: boolean
   isMaqamTonicEquiv: boolean
   isModified: boolean
+  isWhiteKey: boolean
+  isHeptMuted: boolean
+  heptSourceKey?: string    // white key letter that plays this degree (e.g. "E" for Eb)
   ipnLabel: string       // e.g. "C3", "A4"
   solfege: string        // e.g. "Mi -b3", "Do 2"
   paoName: string        // e.g. "rāst", "—"
@@ -23,7 +26,7 @@ interface Props {
   onGestureEnd?: (chromaticIndex: number) => void
 }
 
-const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, isModified, ipnLabel, solfege, paoName, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
+const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, isModified, isWhiteKey, isHeptMuted, heptSourceKey, ipnLabel, solfege, paoName, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
   const trackRef = useRef<HTMLDivElement>(null)
   const thumbRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
@@ -104,7 +107,7 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
   const thumbPct = devToPct(centsOffset)
 
   return (
-    <div data-midi={midiNote} className={`note-slider ${isLocked ? 'locked' : ''} ${hasOverride ? 'has-override' : ''} ${isMaqamDegree ? 'maqam-degree' : ''} ${isMaqamDegreeEquiv ? 'maqam-degree-equiv' : ''} ${isMaqamTonic ? 'maqam-tonic' : ''} ${isMaqamTonicEquiv ? 'maqam-tonic-equiv' : ''} ${isModified ? 'modified' : ''}`}>
+    <div data-midi={midiNote} className={`note-slider ${isLocked ? 'locked' : ''} ${hasOverride ? 'has-override' : ''} ${isMaqamDegree ? 'maqam-degree' : ''} ${isMaqamDegreeEquiv ? 'maqam-degree-equiv' : ''} ${isMaqamTonic ? 'maqam-tonic' : ''} ${isMaqamTonicEquiv ? 'maqam-tonic-equiv' : ''} ${isModified ? 'modified' : ''} ${isHeptMuted ? 'hept-muted' : ''}`}>
       <div className="track-wrap" ref={trackRef} onMouseDown={handleMouseDown}>
         <div className="track">
           {/* Snap markers on the left — clickable to snap to variant */}
@@ -136,8 +139,15 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
         {centsOffset >= 0 ? '+' : ''}{centsOffset.toFixed(1)}¢
       </div>
 
-      {/* IPN label (e.g. "C3", "E-b3") */}
-      <div className="ipn-label">{ipnLabel}</div>
+      {/* Piano key indicator */}
+      <div className={`key-bar ${isHeptMuted ? 'muted-key' : isWhiteKey ? 'white-key' : 'black-key'}`} />
+
+      {/* IPN label — in hept mode, show source key mapping for remapped degrees */}
+      <div className="ipn-label">
+        {heptSourceKey
+          ? <>{ipnLabel}<span className="hept-arrow">{'\u2192'}</span>{heptSourceKey}</>
+          : ipnLabel}
+      </div>
 
       {/* Solfège (e.g. "Mi -b3", "Do 2") */}
       <div className="solfege">{solfege}</div>

@@ -1,10 +1,46 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import type { ChromaticSlot } from '../types'
 import { SLOT_WIDTH_PX, BANK_LEFT_OFFSET_PX } from '../constants'
 import NoteSlider from './NoteSlider'
 import './NoteSliderBank.css'
 
 const IPN_NAMES = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B']
+const BLACK_KEY_SET = new Set([1, 3, 6, 8, 10])
+
+/** Compute heptatonic mapping: which positions are muted, and which white key plays each degree.
+ *  Mirrors rebuildHeptMap() in C++: IPN first letter → white key assignment. */
+function computeHeptInfo(
+  degreeIndices: Set<number>,
+  degreeIpnMap: Record<string, string>,
+  slots: ChromaticSlot[]
+): { muted: Set<number>; sourceKeyMap: Map<number, string> } {
+  const reachable = new Set<number>()
+  const sourceKeyMap = new Map<number, string>()
+
+  // Black keys always reachable (delta 0)
+  for (const bk of BLACK_KEY_SET) reachable.add(bk)
+
+  // Degrees reachable; IPN first letter = source white key (mirrors C++ letterToWhiteIdx)
+  const WHITE_KEYS: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }
+  for (const ci of degreeIndices) {
+    reachable.add(ci)
+    const ipn = degreeIpnMap[String(ci)] || slots[ci]?.ipnRef || ''
+    if (ipn.length > 0) {
+      const letter = ipn[0]
+      // Only set source key if the white key position differs from the degree position
+      // (i.e., the key is actually remapped, e.g. E key → Eb degree)
+      if (WHITE_KEYS[letter] !== undefined && WHITE_KEYS[letter] !== ci) {
+        sourceKeyMap.set(ci, letter)
+      }
+    }
+  }
+
+  const muted = new Set<number>()
+  for (let i = 0; i < 12; i++) {
+    if (!reachable.has(i)) muted.add(i)
+  }
+  return { muted, sourceKeyMap }
+}
 
 interface Props {
   slots: ChromaticSlot[]
@@ -18,6 +54,7 @@ interface Props {
   maqamTonicIndex: number
   maqamTonicMidi: number
   modifiedSlots: Set<number>
+  heptEnabled: boolean
   onVariantSelect: (chromaticIndex: number, variantIndex: number) => void
   onCentsDrag: (chromaticIndex: number, centsValue: number) => void
   onCentsDragEnd: (chromaticIndex: number, centsValue: number) => void
@@ -25,13 +62,19 @@ interface Props {
   onGestureEnd?: (chromaticIndex: number) => void
 }
 
-const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidthPx, noteNames, perNoteOverrides, degreeIpnMap, degreeSolfegeMap, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, modifiedSlots, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
+const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidthPx, noteNames, perNoteOverrides, degreeIpnMap, degreeSolfegeMap, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, modifiedSlots, heptEnabled, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
   const renderStart = Math.floor(startMidi)
   const pixelOffset = (startMidi - renderStart) * SLOT_WIDTH_PX
 
   // Render enough sliders to cover the actual pixel width plus buffer for smooth scrolling
   const fractionalCount = bankWidthPx / SLOT_WIDTH_PX
   const renderCount = Math.min(Math.ceil(fractionalCount) + 2, 128 - renderStart)
+
+  // Hept mode: compute muted positions and source key mapping
+  const heptInfo = useMemo(() =>
+    heptEnabled ? computeHeptInfo(maqamDegreeIndices, degreeIpnMap, slots) : null,
+    [heptEnabled, maqamDegreeIndices, degreeIpnMap, slots]
+  )
 
   return (
     <div className="note-slider-bank">
@@ -71,6 +114,9 @@ const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidt
               isMaqamTonic={midi === maqamTonicMidi}
               isMaqamTonicEquiv={chromaticIndex === maqamTonicIndex && midi !== maqamTonicMidi}
               isModified={isModified}
+              isWhiteKey={heptEnabled ? isDegree : [0,2,4,5,7,9,11].includes(chromaticIndex)}
+              isHeptMuted={heptInfo?.muted.has(chromaticIndex) ?? false}
+              heptSourceKey={heptInfo?.sourceKeyMap.get(chromaticIndex)}
               ipnLabel={ipnLabel}
               solfege={solfege}
               paoName={paoName}

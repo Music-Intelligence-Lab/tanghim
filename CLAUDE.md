@@ -126,11 +126,12 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - → [diary 2026-02-21](diary/2026-02-21.md) (continuous tuning), [diary 2026-02-23b](diary/2026-02-23b.md) (design overhaul)
 
 ### UI Color Scheme
-- **Red (accent)** = tuning system related: selector text, dropdown highlights, snap markers
-- **Gold (#d4a843)** = maqam related: active preset border/background, degree highlights
+- **Red (accent)** = tuning system related: selector text, dropdown highlights, snap markers, MIDI preset dropdowns
+- **Gold (#d4a843)** = maqam related: active preset border/background, degree highlights, maqam selector dropdown highlights/borders
 - **Off-white (#b8b8c8)** = selector trigger text (all dropdowns)
+- **Badge colors**: MTS-ESP `#26a69a` (teal), Osc `#ffa726` (amber), Hept `#d050e0` (magenta), MPE `#64b5f6` (blue), Mono PB `#66bb6a` (green). Osc/Hept fill background at 0.2 opacity when active
 - Text selection disabled globally (`-webkit-user-select: none` on `*`), inputs exempt
-- Menu bar placeholder above tuning system selector (inside `top-bar-left`)
+- Menu bar buttons styled as boxes (`var(--surface2)` background, `var(--border)` border, 4px radius)
 
 ### Maqam Selector & Presets
 - Two-dropdown: searchable maqam + variant/transposition (in `top-bar-left`)
@@ -138,25 +139,35 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - Presets: 8 displayed (4×2 grid), C++ has 16 slots. Store `degreeNames`, `centsOffsets`, optionally `tuningSystemId`+`startingNote`
 - Modified presets: ` *` suffix, cyan thumbs, store tuning system for reload. Unmodified presets are portable
 - Preset deactivation: click active preset → clears maqam, resets sliders, centers on C3
+- Auto-preset activation: selecting a maqam+tonic from dropdown auto-activates matching unmodified preset (exact `maqamId` + `setIndex`, excludes modified). `presetIndexOverrideRef` guards against async `tuningStateChanged` overwrite
 - Async system switch: `afterSystemSwitchRef` callback executed when `onTuningStateChanged` fires after system loads
-- → [diary 2026-02-21](diary/2026-02-21.md), [diary 2026-02-23b](diary/2026-02-23b.md)
+- → [diary 2026-02-21](diary/2026-02-21.md), [diary 2026-02-23b](diary/2026-02-23b.md), [diary 2026-02-24b](diary/2026-02-24b.md)
 
 ### Reference Frequency Control
 - `referenceCentsOffset` (±700 cents, default 0). Formula: `f *= 2^(cents/1200)` in `TuningEngine::updateTuning()`
 - APVTS: `ref_freq` param. **Resets to 0 on starting note/system change**
-- UI: SVG arc knob + Hz input + cents display + ±100¢ semitone buttons
+- UI: SVG arc knob + Hz input + cents display + ±100¢ semitone buttons + transposition label
+- Transposition indicator: always shows "X → Y" style IPN shift (e.g., "C ↗ C#", "G ↘ F#−"). Uses ↗/↘/→ arrows, +/− suffix for non-clean semitones. Falls back to starting note when no maqam
+- Hz input supports up/down arrow keys for ±1 Hz nudges
 - Bridge: `setReferenceFreqCents` (fire-and-forget), `setReferenceFreqCentsFinalize`, gesture start/end
-- → [diary 2026-02-22](diary/2026-02-22.md)
+- → [diary 2026-02-22](diary/2026-02-22.md), [diary 2026-02-24b](diary/2026-02-24b.md)
+
+### Slider Bank Visual Indicators
+- Piano key indicator bars below cents: white key `rgba(255,255,255,0.6)`, black key `rgba(255,255,255,0.15)`, 3px height
+- In hept mode, key bars reflect remapped layout (degrees = white key, others = standard). Muted positions get transparent bars
+- Hept muted sliders: unreachable positions dimmed to 20% opacity, pointer-events disabled
+- Hept IPN remapping: "Eb3→E" style labels when white key differs from degree position. `computeHeptInfo()` in `NoteSliderBank.tsx` mirrors C++ `rebuildHeptMap()` logic
+- → [diary 2026-02-24b](diary/2026-02-24b.md)
 
 ### Internal Reference Oscillator
 - 16-voice polyphonic triangle wave, header-only (`TriangleOscillator.h`), -18 dBFS, 5ms attack, 100ms release
-- "Osc" badge (coral #f09040). Additive — runs alongside MTS-ESP. No APVTS param (utility toggle)
+- "Osc" badge (amber #ffa726). Additive — runs alongside MTS-ESP. No APVTS param (utility toggle)
 - `oscillatorEnabled` (`std::atomic<bool>`), persisted in session state + `settings.json`. Tail length 0.15s
 - Block-based rendering: `renderBlock()` iterates only active voices, writes via `getWritePointer()` + `FloatVectorOperations::copy()` for multi-channel
 - → [diary 2026-02-22](diary/2026-02-22.md), [diary 2026-02-24](diary/2026-02-24.md) (performance optimization)
 
 ### Heptatonic Keyboard Mode
-White keys play maqam degrees starting from the tonic's natural key. "Hept" badge (lavender #ab47bc). Inactive when no maqam.
+White keys play maqam degrees starting from the tonic's natural key. "Hept" badge (magenta #d050e0). Inactive when no maqam.
 - `heptMap[12]` (atomic ints): signed semitone deltas per chromatic position (typically ±1-2st)
 - `activeHeptNotes[128]`: input→remapped note tracking for correct Note Off
 - MIDI buffer rewritten via `midi.swapWith(remapped)`. MTS-ESP table remapped: `freq[N] = internalFreq[N+delta]`
