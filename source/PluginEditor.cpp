@@ -212,6 +212,10 @@ void ArabicMaqamTunerEditor::timerCallback()
         }
     }
 
+    // ── Ref freq automation dirty flag (~30Hz) ──────────────────────────
+    if (processor.refFreqAutomationDirty.exchange (false, std::memory_order_relaxed))
+        emitTuningStateChanged();
+
     // ── MIDI activity (~30Hz) ─────────────────────────────────────────────
     {
         uint32_t ons[4], offs[4];

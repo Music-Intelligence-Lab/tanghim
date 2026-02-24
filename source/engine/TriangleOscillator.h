@@ -1,6 +1,8 @@
 #pragma once
 #include <cmath>
 #include <array>
+#include <algorithm>
+#include <cassert>
 
 /**
  * Lightweight polyphonic triangle-wave oscillator for reference pitch audition.
@@ -10,29 +12,34 @@
  *   - Naive (non-band-limited) triangle — fine for a reference oscillator
  *   - Linear attack (5 ms) and release (100 ms) envelope to avoid clicks
  *   - Frequency can be updated per-buffer for live slider drag feedback
+ *   - All internal arithmetic in float (halves memory bandwidth vs double,
+ *     enables 4-wide SIMD, eliminates per-sample double→float casts)
+ *   - Segmented block rendering: pre-computes envelope transition points so
+ *     attack/sustain/release are tight loops without per-sample branching
  */
 
 struct OscVoice
 {
-    bool   active      = false;
-    bool   releasing   = false;
-    int    midiNote    = -1;
-    double phase       = 0.0;
-    double phaseInc    = 0.0;
-    double envelope    = 0.0;
-    double attackStep  = 0.0;   // per-sample increment during attack
-    double releaseStep = 0.0;   // per-sample decrement during release
+    bool  active      = false;
+    bool  releasing   = false;
+    int   midiNote    = -1;
+    float phase       = 0.0f;
+    float phaseInc    = 0.0f;
+    float envelope    = 0.0f;
+    float attackStep  = 0.0f;   // per-sample increment during attack
+    float releaseStep = 0.0f;   // per-sample decrement during release
 
-    void noteOn (int note, double freqHz, double sampleRate)
+    void noteOn (int note, double freqHz, double sr)
     {
         midiNote    = note;
         active      = true;
         releasing   = false;
-        phase       = 0.0;
-        envelope    = 0.0;
-        phaseInc    = freqHz / sampleRate;
-        attackStep  = 1.0 / (0.005 * sampleRate);   // 5 ms attack
-        releaseStep = 1.0 / (0.100 * sampleRate);   // 100 ms release
+        phase       = 0.0f;
+        envelope    = 0.0f;
+        phaseInc    = static_cast<float> (freqHz / sr);
+        const float srf = static_cast<float> (sr);
+        attackStep  = 1.0f / (0.005f * srf);   // 5 ms attack
+        releaseStep = 1.0f / (0.100f * srf);   // 100 ms release
     }
 
     void noteOff()
@@ -41,54 +48,91 @@ struct OscVoice
             releasing = true;
     }
 
-    void updateFrequency (double freqHz, double sampleRate)
+    void updateFrequency (double freqHz, double sr)
     {
-        phaseInc = freqHz / sampleRate;
+        phaseInc = static_cast<float> (freqHz / sr);
     }
 
-    double nextSample()
+    /** Render this voice into dest (non-additive write).
+     *  Returns number of samples rendered (may be < numSamples if voice
+     *  deactivates during release). */
+    int renderVoice (float* dest, int numSamples)
     {
-        if (! active) return 0.0;
+        if (! active) return 0;
 
-        // Triangle: ramp from -1 to +1 and back using abs
-        const double tri = 4.0 * std::abs (phase - 0.5) - 1.0;
-
-        // Advance phase
-        phase += phaseInc;
-        if (phase >= 1.0) phase -= 1.0;
-
-        // Envelope
-        if (releasing)
+        if (! releasing)
         {
-            envelope -= releaseStep;
-            if (envelope <= 0.0)
+            if (envelope >= 1.0f)
             {
-                envelope = 0.0;
-                active   = false;
-                midiNote = -1;
-                return 0.0;
+                // ── Sustain: envelope is 1.0, no multiply needed ──
+                for (int s = 0; s < numSamples; ++s)
+                {
+                    dest[s] = 4.0f * std::abs (phase - 0.5f) - 1.0f;
+                    phase += phaseInc;
+                    if (phase >= 1.0f) phase -= 1.0f;
+                }
+                return numSamples;
             }
+
+            // ── Attack: ramp envelope from current value to 1.0 ──
+            const int attackSamples = std::min (numSamples,
+                static_cast<int> (std::ceil ((1.0f - envelope) / attackStep)));
+
+            for (int s = 0; s < attackSamples; ++s)
+            {
+                dest[s] = (4.0f * std::abs (phase - 0.5f) - 1.0f) * envelope;
+                phase += phaseInc;
+                if (phase >= 1.0f) phase -= 1.0f;
+                envelope += attackStep;
+            }
+            envelope = std::min (envelope, 1.0f);
+
+            // Remaining samples at full sustain (no envelope multiply)
+            for (int s = attackSamples; s < numSamples; ++s)
+            {
+                dest[s] = 4.0f * std::abs (phase - 0.5f) - 1.0f;
+                phase += phaseInc;
+                if (phase >= 1.0f) phase -= 1.0f;
+            }
+            return numSamples;
+        }
+
+        // ── Release: ramp envelope from current value to 0.0 ──
+        const int releaseSamples = std::min (numSamples,
+            static_cast<int> (std::ceil (envelope / releaseStep)));
+
+        for (int s = 0; s < releaseSamples; ++s)
+        {
+            dest[s] = (4.0f * std::abs (phase - 0.5f) - 1.0f) * envelope;
+            phase += phaseInc;
+            if (phase >= 1.0f) phase -= 1.0f;
+            envelope -= releaseStep;
+        }
+
+        if (releaseSamples < numSamples)
+        {
+            // Voice finished release within this block
+            envelope = 0.0f;
+            active   = false;
+            midiNote = -1;
         }
         else
         {
-            if (envelope < 1.0)
-            {
-                envelope += attackStep;
-                if (envelope > 1.0) envelope = 1.0;
-            }
+            envelope = std::max (envelope, 0.0f);
         }
 
-        return tri * envelope;
+        return releaseSamples;
     }
 };
 
 struct TriangleOscillator
 {
-    static constexpr int kMaxVoices = 16;
+    static constexpr int kMaxVoices    = 16;
+    static constexpr int kMaxBlockSize = 8192;
 
     void prepare (double newSampleRate)
     {
-        sampleRate = newSampleRate;
+        sampleRate = static_cast<float> (newSampleRate);
     }
 
     void noteOn (int midiNote, double freqHz)
@@ -131,33 +175,35 @@ struct TriangleOscillator
         }
     }
 
-    double processSample()
-    {
-        double sum = 0.0;
-        for (auto& v : voices)
-            sum += v.nextSample();
-        return sum;
-    }
-
-    /** Block-based render: iterate each active voice over the full block.
-     *  Skips inactive voices entirely. Output is additive (caller must clear). */
+    /** Block render: voice output accumulated into output[] with gain.
+     *  Each voice renders into a scratch buffer, then gain is applied in
+     *  a separate loop (trivially auto-vectorizable by the compiler).
+     *  Caller must clear output buffer first. */
     void renderBlock (float* output, int numSamples, float gain)
     {
+        assert (numSamples <= kMaxBlockSize);
+
         for (auto& v : voices)
         {
             if (! v.active) continue;
-            for (int s = 0; s < numSamples; ++s)
-                output[s] += static_cast<float> (v.nextSample()) * gain;
+            const int rendered = v.renderVoice (scratch, numSamples);
+            for (int s = 0; s < rendered; ++s)
+                output[s] += scratch[s] * gain;
         }
     }
 
+    /** Double-precision output variant (renders internally in float). */
     void renderBlock (double* output, int numSamples, double gain)
     {
+        assert (numSamples <= kMaxBlockSize);
+        const float fGain = static_cast<float> (gain);
+
         for (auto& v : voices)
         {
             if (! v.active) continue;
-            for (int s = 0; s < numSamples; ++s)
-                output[s] += v.nextSample() * gain;
+            const int rendered = v.renderVoice (scratch, numSamples);
+            for (int s = 0; s < rendered; ++s)
+                output[s] += static_cast<double> (scratch[s] * fGain);
         }
     }
 
@@ -177,6 +223,9 @@ struct TriangleOscillator
     }
 
     std::array<OscVoice, kMaxVoices> voices {};
-    double sampleRate    = 44100.0;
-    int    nextStealIdx  = 0;
+    float sampleRate    = 44100.0f;
+    int   nextStealIdx  = 0;
+
+private:
+    alignas (16) float scratch[kMaxBlockSize] {};
 };

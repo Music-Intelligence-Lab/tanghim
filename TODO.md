@@ -15,6 +15,10 @@
 
 ## Performance
 
+- ~~ref_freq MIDI CC CPU spike: parameterChanged used full table rebuild + JSON serialize at MIDI CC rate~~ **DONE** (Session 41 — fast path + dirty flag throttle)
+- ~~Oscillator double precision + per-sample branching~~ **DONE** (Session 41 — float + segmented block rendering)
+- slot_N automation still calls `updateTuningAndBroadcast()` (full 128 `std::pow` rebuild) on every MIDI CC tick — could use a fast path similar to ref_freq
+- CriticalSection on tuning tables → consider double-buffered atomic swap (see Session 38 audit notes)
 
 
 ## Paths

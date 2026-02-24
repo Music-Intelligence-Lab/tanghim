@@ -157,6 +157,10 @@ public:
     std::atomic<uint32_t> noteOnBits[4]  = {};
     std::atomic<uint32_t> noteOffBits[4] = {};
 
+    // Set by parameterChanged (DAW automation / MIDI CC) on ref_freq changes.
+    // Editor timer picks this up at 30Hz to throttle UI updates.
+    std::atomic<bool> refFreqAutomationDirty { false };
+
     // ── MIDI note → preset triggering (MIDI Learn) ─────────────────────────────
     // Each preset can be mapped to a specific MIDI note (-1 = unmapped)
     // midiPresetChannel: 0 = any channel, 1-16 = specific channel

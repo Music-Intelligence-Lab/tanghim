@@ -1815,11 +1815,16 @@ void ArabicMaqamTunerProcessor::parameterChanged (const juce::String& parameterI
             notifyTuningChanged();
     }
     // Handle reference frequency parameter
+    // Fast path: reapply reference offset multiplier only (no full table rebuild).
+    // UI update throttled to 30Hz via editor timer dirty flag — avoids calling
+    // buildTuningStateJson() at MIDI CC rate (hundreds/sec) which causes CPU spikes.
     else if (parameterID == "ref_freq")
     {
         referenceCentsOffset = juce::jlimit (-700.0, 700.0, (double) newValue);
-        updateTuningAndBroadcast();
-        notifyTuningChanged();
+        tuningEngine.updateReferenceOffset (referenceCentsOffset);
+        if (heptEnabled.load (std::memory_order_relaxed))
+            rebroadcastHeptMts();
+        refFreqAutomationDirty.store (true, std::memory_order_relaxed);
     }
     // Handle preset parameter
     else if (parameterID == "preset")

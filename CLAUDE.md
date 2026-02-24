@@ -163,8 +163,10 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 - 16-voice polyphonic triangle wave, header-only (`TriangleOscillator.h`), -18 dBFS, 5ms attack, 100ms release
 - "Osc" badge (amber #ffa726). Additive — runs alongside MTS-ESP. No APVTS param (utility toggle)
 - `oscillatorEnabled` (`std::atomic<bool>`), persisted in session state + `settings.json`. Tail length 0.15s
-- Block-based rendering: `renderBlock()` iterates only active voices, writes via `getWritePointer()` + `FloatVectorOperations::copy()` for multi-channel
-- → [diary 2026-02-22](diary/2026-02-22.md), [diary 2026-02-24](diary/2026-02-24.md) (performance optimization)
+- All internal arithmetic in `float` (not double) — 2× cache throughput, 4-wide SIMD, no per-sample casts
+- Segmented block rendering: `renderVoice()` pre-computes envelope transition sample counts, renders tight loops for attack/sustain/release without per-sample branching. Sustain loop has no envelope multiply
+- Scratch buffer (`alignas(16) float[8192]`) — voice renders to scratch, then gain+accumulate in separate auto-vectorizable loop. Writes via `getWritePointer()` + `FloatVectorOperations::copy()` for multi-channel
+- → [diary 2026-02-22](diary/2026-02-22.md), [diary 2026-02-24](diary/2026-02-24.md) (performance optimization), [diary 2026-02-24c](diary/2026-02-24c.md) (float + segmented rendering)
 
 ### Heptatonic Keyboard Mode
 White keys play maqam degrees starting from the tonic's natural key. "Hept" badge (magenta #d050e0). Inactive when no maqam.
@@ -314,6 +316,7 @@ DAW-facing names must be pure ASCII (Ableton garbles UTF-8). No parentheses in P
 - **Frequency table access from audio thread**: Use `snapshotFrequencyTable()` (one lock) instead of per-note `getFrequencyForMidiNote()` (one lock each)
 - **MIDI device enumeration**: Event-driven via `MidiDeviceListConnection::make()` (cross-platform), not polling. Atomic flag checked in editor timer
 - **Filesystem I/O in editor timer**: Rate-limited to ~0.2Hz (ReceiverRegistry::scan, stale cleanup). Cheap shared-memory reads (MTS-ESP) stay at 2Hz
+- **APVTS automation fast paths**: DAW automation / MIDI CC mapping calls `parameterChanged` at hundreds of Hz. Use fast tuning update (e.g. `updateReferenceOffset` for ref_freq) instead of full `updateTuningAndBroadcast()`, and set a dirty flag instead of `notifyTuningChanged()` (which triggers expensive `buildTuningStateJson()` + WebView push). Editor timer picks up dirty flags at 30Hz. → [diary 2026-02-24c](diary/2026-02-24c.md)
 
 ### Ableton Live Debugging
 - Plugin scanner log: `~/Library/Preferences/Ableton/Live 11.3.43/PluginScanner.txt`
