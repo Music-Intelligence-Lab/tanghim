@@ -189,6 +189,16 @@ WKWebView is in a separate window hierarchy — native JUCE components can't ove
 - MIDI file: SMF Type 0, ASCII transliterated track name (DAWs use Mac Roman, not UTF-8), UTF-8 filename: `maqamname_(PAOname-IPN-solfege).mid`. Temp files in `~/Library/Tanghim/midi-export/`
 - → [diary 2026-02-22](diary/2026-02-22.md), [diary 2026-02-23](diary/2026-02-23.md)
 
+### Save/Load State Files (.tanghim)
+User-managed state persistence via human-readable JSON files with `.tanghim` extension. Complements DAW session and disk preferences.
+- `buildStateJson()` / `restoreStateFromJson()` on `PluginProcessor` (mirrors `getStateInformation`/`setStateInformation` minus APVTS automation)
+- Native Save/Load dialogs via async `juce::FileChooser` (stored as `NativeBridge::fileChooser` member — must outlive dialog)
+- Bridge: `saveStateFile` → returns `{ filename }`, `loadStateFile` → returns `{ filename, hasMaqam }`
+- **Two-event problem**: `loadTuningSystem()` fires `notifyTuningChanged()` twice (intermediate cleared state, then final restored state). `afterSystemSwitchRef` callback returns `false` on first event to skip it, consumed on second
+- **Modification detection on load**: callback compares `slot.centsOffset` vs `expectedVariant.midiCentsDeviation` to populate `modifiedSlots` (cyan thumbs + asterisk)
+- **Display info capture**: maqam display strings saved as locals before `loadTuningSystem` (which clears them), restored in completion lambda
+- → [diary 2026-02-25](diary/2026-02-25.md)
+
 ### Maqam List Caching
 - `ApiDataCache`: lazy loading (scan filenames on startup, deserialize on first access), incremental saves to disk
 - Cache directory: `~/Library/Tanghim/cache/`

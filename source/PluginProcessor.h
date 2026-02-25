@@ -214,6 +214,10 @@ public:
     void beginPresetGesture();
     void endPresetGesture();
 
+    // ── File-based state save/load (user-managed .tanghim files) ───────────
+    juce::String buildStateJson() const;
+    void restoreStateFromJson (const juce::String& json);
+
     // ── Disk persistence (public for editor access) ──────────────────────────
     void saveSettingsToDisk() const;
     void clearCache();

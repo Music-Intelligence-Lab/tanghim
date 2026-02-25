@@ -46,6 +46,7 @@ public:
 
 private:
     ArabicMaqamTunerProcessor& processor;
+    mutable std::unique_ptr<juce::FileChooser> fileChooser;  // Must stay alive during async dialog
 
     // ── JSON builders ─────────────────────────────────────────────────────────
     juce::var buildPresetsJson()    const;

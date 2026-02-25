@@ -360,6 +360,76 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
             complete (juce::var (processor.getMidiPresetChannel()));
         });
 
+    // ── saveStateFile() ─────────────────────────────────────────────────────
+    // Opens a native Save dialog and writes the current state as a .tanghim JSON file.
+    opts = opts.withNativeFunction ("saveStateFile",
+        [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
+        {
+            auto json = processor.buildStateJson();
+            fileChooser = std::make_unique<juce::FileChooser> (
+                "Save Tanghim State",
+                juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+                    .getChildFile ("untitled.tanghim"),
+                "*.tanghim");
+            fileChooser->launchAsync (
+                juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles,
+                [complete, json] (const juce::FileChooser& fc)
+                {
+                    auto file = fc.getResult();
+                    if (file != juce::File())
+                    {
+                        // Ensure .tanghim extension
+                        if (! file.hasFileExtension ("tanghim"))
+                            file = file.withFileExtension ("tanghim");
+                        file.replaceWithText (json);
+                        complete (juce::var (file.getFileName()));
+                    }
+                    else
+                    {
+                        complete (juce::var());  // cancelled
+                    }
+                });
+        });
+
+    // ── loadStateFile() ───────────────────────────────────────────────────────
+    // Opens a native Load dialog and restores state from a .tanghim JSON file.
+    opts = opts.withNativeFunction ("loadStateFile",
+        [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
+        {
+            fileChooser = std::make_unique<juce::FileChooser> (
+                "Load Tanghim State",
+                juce::File::getSpecialLocation (juce::File::userDocumentsDirectory),
+                "*.tanghim");
+            fileChooser->launchAsync (
+                juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                [this, complete] (const juce::FileChooser& fc)
+                {
+                    auto file = fc.getResult();
+                    if (file != juce::File() && file.existsAsFile())
+                    {
+                        auto content = file.loadFileAsString();
+
+                        // Check if file contains a maqam before restoring
+                        // (JS needs this to handle the two-event sequence from loadTuningSystem)
+                        auto parsed = juce::JSON::parse (content);
+                        bool hasMaqam = false;
+                        if (auto* root = parsed.getDynamicObject())
+                            hasMaqam = root->getProperty ("maqam").getDynamicObject() != nullptr;
+
+                        processor.restoreStateFromJson (content);
+
+                        auto* result = new juce::DynamicObject();
+                        result->setProperty ("filename", file.getFileName());
+                        result->setProperty ("hasMaqam", hasMaqam);
+                        complete (juce::var (result));
+                    }
+                    else
+                    {
+                        complete (juce::var());  // cancelled
+                    }
+                });
+        });
+
     return opts;
 }
 

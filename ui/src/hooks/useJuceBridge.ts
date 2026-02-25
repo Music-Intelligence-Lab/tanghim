@@ -296,6 +296,16 @@ export function useJuceBridge() {
     return callNative<number>('getMidiPresetChannel')
   }, [])
 
+  /** Save full plugin state to a .tanghim file via native Save dialog. Returns filename or undefined if cancelled. */
+  const saveStateFile = useCallback(async (): Promise<string | undefined> => {
+    return callNative<string>('saveStateFile')
+  }, [])
+
+  /** Load plugin state from a .tanghim file via native Load dialog. Returns {filename, hasMaqam} or undefined if cancelled. */
+  const loadStateFile = useCallback(async (): Promise<{ filename: string; hasMaqam: boolean } | undefined> => {
+    return callNative<{ filename: string; hasMaqam: boolean }>('loadStateFile')
+  }, [])
+
   return useMemo(() => ({
     getTuningSystems,
     selectTuningSystem,
@@ -331,6 +341,8 @@ export function useJuceBridge() {
     clearAllMidiPresetNotes,
     setMidiPresetChannel,
     getMidiPresetChannel,
+    saveStateFile,
+    loadStateFile,
   }), [getTuningSystems, selectTuningSystem, setSliderVariant, setNoteVariant,
        setSlotCents, setSlotCentsFinalize, setOscillatorEnabled, setHeptEnabled,
        setReferenceFreqCents, setReferenceFreqCentsFinalize, beginRefFreqGesture, endRefFreqGesture,
@@ -338,5 +350,5 @@ export function useJuceBridge() {
        getMaqamList, applyMaqam, checkForUpdates, getCurrentState, setStartMidi, getMaqamMidiDragData, saveMaqamMidiFile,
        beginSliderGesture, endSliderGesture, beginPresetGesture, endPresetGesture,
        startMidiLearn, cancelMidiLearn, getMidiLearnTarget, getMidiPresetNote, clearMidiPresetNote, clearAllMidiPresetNotes,
-       setMidiPresetChannel, getMidiPresetChannel])
+       setMidiPresetChannel, getMidiPresetChannel, saveStateFile, loadStateFile])
 }
