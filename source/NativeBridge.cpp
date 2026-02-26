@@ -366,14 +366,15 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
         [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
         {
             auto json = processor.buildStateJson();
+            auto startDir = lastTanghimDirectory.isDirectory()
+                ? lastTanghimDirectory.getChildFile ("untitled.tanghim")
+                : juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+                    .getChildFile ("untitled.tanghim");
             fileChooser = std::make_unique<juce::FileChooser> (
-                "Save Tanghim State",
-                juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
-                    .getChildFile ("untitled.tanghim"),
-                "*.tanghim");
+                "Save Tanghim State", startDir, "*.tanghim");
             fileChooser->launchAsync (
                 juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles,
-                [complete, json] (const juce::FileChooser& fc)
+                [this, complete, json] (const juce::FileChooser& fc)
                 {
                     auto file = fc.getResult();
                     if (file != juce::File())
@@ -381,6 +382,7 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
                         // Ensure .tanghim extension
                         if (! file.hasFileExtension ("tanghim"))
                             file = file.withFileExtension ("tanghim");
+                        lastTanghimDirectory = file.getParentDirectory();
                         file.replaceWithText (json);
                         complete (juce::var (file.getFileName()));
                     }
@@ -396,10 +398,11 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
     opts = opts.withNativeFunction ("loadStateFile",
         [this] (const juce::Array<juce::var>& /*args*/, Completion complete)
         {
+            auto startDir = lastTanghimDirectory.isDirectory()
+                ? lastTanghimDirectory
+                : juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
             fileChooser = std::make_unique<juce::FileChooser> (
-                "Load Tanghim State",
-                juce::File::getSpecialLocation (juce::File::userDocumentsDirectory),
-                "*.tanghim");
+                "Load Tanghim State", startDir, "*.tanghim");
             fileChooser->launchAsync (
                 juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
                 [this, complete] (const juce::FileChooser& fc)
@@ -407,6 +410,7 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
                     auto file = fc.getResult();
                     if (file != juce::File() && file.existsAsFile())
                     {
+                        lastTanghimDirectory = file.getParentDirectory();
                         auto content = file.loadFileAsString();
 
                         // Check if file contains a maqam before restoring

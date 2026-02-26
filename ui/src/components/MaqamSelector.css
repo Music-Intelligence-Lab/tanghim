@@ -13,6 +13,14 @@
   color: #b8b8c8;
 }
 
+/* Gold fill when maqam+tonic selected without a preset */
+.select-maqam.gold-fill .cs-trigger,
+.select-transposition.gold-fill .cs-trigger {
+  border-color: #d4a843;
+  background: rgba(212, 168, 67, 0.1);
+  color: #d4a843;
+}
+
 .select-maqam.open .cs-trigger,
 .select-transposition.open .cs-trigger {
   border-color: #d4a843;

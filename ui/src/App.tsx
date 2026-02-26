@@ -178,7 +178,11 @@ export default function App() {
     // If handleMaqamSelect set a preset override (maqam matches existing preset),
     // consume it instead of using C++'s -1 (C++ doesn't know about the match).
     const presetOverride = presetIndexOverrideRef.current
-    if (presetOverride !== null) presetIndexOverrideRef.current = null
+    // Consume the override only when C++ agrees (i.e. preset was applied successfully).
+    // Async events like fetchAndApplyMaqamDetail send activePresetIndex=-1 because
+    // C++ applyMaqam clears currentActivePresetIdx — keep the override for those.
+    if (presetOverride !== null && (state.activePresetIndex ?? -1) === presetOverride)
+      presetIndexOverrideRef.current = null
 
     if (!state.selectedMaqamId && (isMaqamModifiedRef.current || selectedMaqamIdRef.current)) {
       // Don't overwrite maqam selection — keep the current state
@@ -547,13 +551,35 @@ export default function App() {
   ) => {
     const newState = await bridge.setSliderVariant(chromaticIndex, variantIndex)
     if (newState) setTuningState(newState)
+    presetIndexOverrideRef.current = null
     setActivePresetIndex(-1)
+
+    if (!selectedMaqamId) return
 
     // Check if this variant's PAO name matches the maqam's expected degree for this slot.
     // PAO names are the constant across tuning systems — variant indices can differ.
     const expectedPaoName = maqamDegreePaoNames.get(chromaticIndex)
     if (expectedPaoName === undefined) {
-      // Not a maqam degree slot — don't track modifications for passing tones
+      // Non-degree slot — check if variant is the default (closest to 0 cents)
+      const slot = newState?.slots[chromaticIndex]
+      if (slot) {
+        let defaultIdx = 0
+        let minAbs = Infinity
+        for (let i = 0; i < slot.variants.length; i++) {
+          const abs = Math.abs(slot.variants[i].midiCentsDeviation)
+          if (abs < minAbs) { minAbs = abs; defaultIdx = i }
+        }
+        if (variantIndex === defaultIdx) {
+          // Back to default — remove from modified set
+          setModifiedSlots(prev => {
+            const next = new Set(prev)
+            next.delete(chromaticIndex)
+            return next
+          })
+          return
+        }
+      }
+      setModifiedSlots(prev => new Set(prev).add(chromaticIndex))
       return
     }
     const selectedVariant = newState?.slots[chromaticIndex]?.variants[variantIndex]
@@ -571,7 +597,7 @@ export default function App() {
         }
         return next
       })
-    } else if (selectedMaqamId) {
+    } else {
       // Different PAO name than maqam expects → mark as modified
       setIsMaqamModified(true)
       isMaqamModifiedRef.current = true
@@ -601,27 +627,24 @@ export default function App() {
       return { ...prev, slots }
     })
 
-    // Only track modifications for maqam degree slots (not passing tones)
+    // Track modifications for all slots when a maqam is selected
     // Use refs to always access latest values without stale closures
     const isDegreeSlot = maqamDegreeIndicesRef.current.has(chromaticIndex)
     const currentMaqamId = selectedMaqamIdRef.current
-    if (isDegreeSlot) {
+    if (currentMaqamId) {
       // Mark maqam as modified once per drag gesture (keep degrees highlighted)
-      if (!maqamModifiedRef.current) {
+      if (isDegreeSlot && !maqamModifiedRef.current) {
         maqamModifiedRef.current = true
+        presetIndexOverrideRef.current = null
         setActivePresetIndex(-1)
-        if (currentMaqamId) {
-          setIsMaqamModified(true)
-          isMaqamModifiedRef.current = true  // Update ref immediately
-        }
+        setIsMaqamModified(true)
+        isMaqamModifiedRef.current = true  // Update ref immediately
       }
       // Track this specific slot as modified
-      if (currentMaqamId) {
-        setModifiedSlots(prev => {
-          if (prev.has(chromaticIndex)) return prev
-          return new Set(prev).add(chromaticIndex)
-        })
-      }
+      setModifiedSlots(prev => {
+        if (prev.has(chromaticIndex)) return prev
+        return new Set(prev).add(chromaticIndex)
+      })
     }
 
     // Throttle C++ calls to one per animation frame
@@ -828,9 +851,11 @@ export default function App() {
     // - applies slider positions and centsOffsets from preset
     // - restores maqam state (currentMaqamId, degreeNames, etc.)
     // No need for applyMaqam (which would fail anyway if maqam list isn't loaded yet)
+    setActivePresetIndex(presetIndex)
+    // Guard against async tuningStateChanged (e.g. fetchAndApplyMaqamDetail) overwriting preset
+    presetIndexOverrideRef.current = presetIndex
     const newState = await bridge.applyPreset(presetIndex)
     if (newState) setTuningState(newState)
-    setActivePresetIndex(presetIndex)
 
     // Build PAO name map and track modifications
     const degrees = preset.degreeNames?.length > 0
@@ -884,9 +909,11 @@ export default function App() {
     if (!preset?.isAssigned) return
 
     // Just apply the maqam (use current system's cents, not preset's stored values)
+    setActivePresetIndex(presetIndex)
+    // Guard against async tuningStateChanged (e.g. fetchAndApplyMaqamDetail) overwriting preset
+    presetIndexOverrideRef.current = presetIndex
     const newState = await bridge.applyMaqam(preset.maqamId, preset.setIndex)
     if (newState) setTuningState(newState)
-    setActivePresetIndex(presetIndex)
 
     // No modifications — it's the canonical maqam
     setIsMaqamModified(false)
@@ -922,6 +949,7 @@ export default function App() {
   const handlePresetClick = async (presetIndex: number) => {
     // -1 = deactivate current preset (clear maqam, revert to system-only state)
     if (presetIndex === -1) {
+      presetIndexOverrideRef.current = null
       setSelectedMaqamId('')
       selectedMaqamIdRef.current = ''
       setSelectedTransIdx(-1)
@@ -1043,16 +1071,24 @@ export default function App() {
       // Compare loaded cents values to tuning system defaults to detect modifications
       const modified = new Set<number>()
       for (let i = 0; i < 12; i++) {
-        const expectedPaoName = degreePaoNames.get(i)
-        if (expectedPaoName === undefined) continue
-
         const slot = newState.slots[i]
-        const expectedVariant = slot.variants.find(v => v.noteName === expectedPaoName)
-        if (!expectedVariant) continue
-
-        const systemDefault = expectedVariant.midiCentsDeviation
-        if (Math.abs(slot.centsOffset - systemDefault) > 0.01) {
-          modified.add(i)
+        const expectedPaoName = degreePaoNames.get(i)
+        if (expectedPaoName !== undefined) {
+          // Maqam degree — compare to expected variant
+          const expectedVariant = slot.variants.find(v => v.noteName === expectedPaoName)
+          if (!expectedVariant) continue
+          if (Math.abs(slot.centsOffset - expectedVariant.midiCentsDeviation) > 0.01)
+            modified.add(i)
+        } else {
+          // Non-degree — compare to default variant (closest to 0 cents)
+          let defaultCents = 0
+          let minAbs = Infinity
+          for (const v of slot.variants) {
+            const abs = Math.abs(v.midiCentsDeviation)
+            if (abs < minAbs) { minAbs = abs; defaultCents = v.midiCentsDeviation }
+          }
+          if (Math.abs(slot.centsOffset - defaultCents) > 0.01)
+            modified.add(i)
         }
       }
       setModifiedSlots(modified)
@@ -1126,6 +1162,7 @@ export default function App() {
             paoOrder={tuningState.paoOrder}
             paoNameInfo={tuningState.paoNameInfo}
             isModified={isMaqamModified}
+            activePresetIndex={activePresetIndex}
             onSelect={handleMaqamSelect}
           />
         </div>
@@ -1188,6 +1225,7 @@ export default function App() {
           maqamTonicIndex={maqamTonicIndex}
           maqamTonicMidi={maqamTonicMidi}
           modifiedSlots={modifiedSlots}
+          maqamDegreePaoNames={maqamDegreePaoNames}
           heptEnabled={tuningState.heptEnabled && maqamDegreeIndices.size > 0}
           onVariantSelect={handleVariantSelect}
           onCentsDrag={handleCentsDrag}

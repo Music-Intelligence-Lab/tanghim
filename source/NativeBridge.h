@@ -47,6 +47,7 @@ public:
 private:
     ArabicMaqamTunerProcessor& processor;
     mutable std::unique_ptr<juce::FileChooser> fileChooser;  // Must stay alive during async dialog
+    mutable juce::File lastTanghimDirectory;                  // Remembers last save/load directory
 
     // ── JSON builders ─────────────────────────────────────────────────────────
     juce::var buildPresetsJson()    const;

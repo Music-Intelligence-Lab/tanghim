@@ -13,6 +13,7 @@ interface Props {
   isMaqamTonic: boolean
   isMaqamTonicEquiv: boolean
   isModified: boolean
+  maqamVariantIndex: number  // variant index matching the maqam degree (-1 if none)
   isWhiteKey: boolean
   isHeptMuted: boolean
   heptSourceKey?: string    // white key letter that plays this degree (e.g. "E" for Eb)
@@ -26,7 +27,7 @@ interface Props {
   onGestureEnd?: (chromaticIndex: number) => void
 }
 
-const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, isModified, isWhiteKey, isHeptMuted, heptSourceKey, ipnLabel, solfege, paoName, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
+const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, isModified, maqamVariantIndex, isWhiteKey, isHeptMuted, heptSourceKey, ipnLabel, solfege, paoName, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
   const trackRef = useRef<HTMLDivElement>(null)
   const thumbRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
@@ -118,7 +119,7 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
               return (
                 <div
                   key={i}
-                  className={`snap-marker ${isActive ? 'active' : ''}`}
+                  className={`snap-marker ${isActive ? 'active' : ''} ${i === maqamVariantIndex ? 'maqam-default' : ''}`}
                   style={{ top: `${pct}%` }}
                   onMouseDown={(e) => handleSnapMarkerClick(e, i)}
                 />

@@ -61,6 +61,15 @@
   background: var(--slider-thumb);
 }
 
+/* Maqam degree snap marker: gold when hovered or active */
+.snap-marker.maqam-default:hover {
+  background: #ffc947;
+}
+
+.snap-marker.maqam-default.active {
+  background: #ffc947;
+}
+
 .track {
   position: relative;
   width: 24px;
@@ -176,22 +185,25 @@
   box-shadow: 0 0 0 3px rgba(38, 198, 218, 0.35);
 }
 
+/* Modified non-degree: teal thumb */
+.note-slider.modified .thumb {
+  background: #00b0a0;
+  box-shadow: 0 0 0 3px rgba(0, 176, 160, 0.35);
+}
+
 /* Modified maqam degree: cyan thumb instead of gold */
-.note-slider.maqam-degree.modified .thumb {
+.note-slider.maqam-degree.modified .thumb,
+.note-slider.maqam-degree-equiv.modified .thumb {
   background: #26c6da;
   box-shadow: 0 0 0 3px rgba(38, 198, 218, 0.35);
 }
 
-/* Modified snap marker: cyan to match thumb */
+/* Modified snap marker: dark cyan for non-degree, cyan for degree */
 .note-slider.modified .snap-marker.active {
-  background: #26c6da;
+  background: #00b0a0;
 }
 
-/* Modified maqam degree snap marker: cyan instead of gold */
-.note-slider.maqam-degree.modified .snap-marker.active {
-  background: #26c6da;
-}
-
+.note-slider.maqam-degree.modified .snap-marker.active,
 .note-slider.maqam-degree-equiv.modified .snap-marker.active {
   background: #26c6da;
 }

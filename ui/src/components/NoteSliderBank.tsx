@@ -54,6 +54,7 @@ interface Props {
   maqamTonicIndex: number
   maqamTonicMidi: number
   modifiedSlots: Set<number>
+  maqamDegreePaoNames: Map<number, string>
   heptEnabled: boolean
   onVariantSelect: (chromaticIndex: number, variantIndex: number) => void
   onCentsDrag: (chromaticIndex: number, centsValue: number) => void
@@ -62,7 +63,7 @@ interface Props {
   onGestureEnd?: (chromaticIndex: number) => void
 }
 
-const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidthPx, noteNames, perNoteOverrides, degreeIpnMap, degreeSolfegeMap, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, modifiedSlots, heptEnabled, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
+const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidthPx, noteNames, perNoteOverrides, degreeIpnMap, degreeSolfegeMap, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, modifiedSlots, maqamDegreePaoNames, heptEnabled, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
   const renderStart = Math.floor(startMidi)
   const pixelOffset = (startMidi - renderStart) * SLOT_WIDTH_PX
 
@@ -101,6 +102,12 @@ const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidt
           const inHomeOctave = maqamTonicMidi >= 0 && midi >= maqamTonicMidi && midi < maqamTonicMidi + 12
           const isModified = modifiedSlots.has(chromaticIndex)
 
+          // Find the variant index matching the maqam's expected degree for this slot
+          const expectedPaoName = maqamDegreePaoNames.get(chromaticIndex)
+          const maqamVariantIndex = expectedPaoName !== undefined
+            ? slot.variants.findIndex(v => v.noteName === expectedPaoName)
+            : -1
+
           return (
             <NoteSlider
               key={midi}
@@ -114,6 +121,7 @@ const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidt
               isMaqamTonic={midi === maqamTonicMidi}
               isMaqamTonicEquiv={chromaticIndex === maqamTonicIndex && midi !== maqamTonicMidi}
               isModified={isModified}
+              maqamVariantIndex={maqamVariantIndex}
               isWhiteKey={heptEnabled ? isDegree : [0,2,4,5,7,9,11].includes(chromaticIndex)}
               isHeptMuted={heptInfo?.muted.has(chromaticIndex) ?? false}
               heptSourceKey={heptInfo?.sourceKeyMap.get(chromaticIndex)}
