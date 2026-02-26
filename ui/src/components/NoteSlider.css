@@ -169,13 +169,15 @@
 
 /* Maqam tonic highlight (gold border) */
 .note-slider.maqam-tonic {
-  border: 1px solid #ffc947;
+  outline: 1px solid #ffc947;
+  outline-offset: -1px;
   border-radius: 6px;
 }
 
 /* Dimmed gold border for octave equivalents of the tonic */
 .note-slider.maqam-tonic-equiv {
-  border: 1px solid rgba(255, 201, 71, 0.3);
+  outline: 1px solid rgba(255, 201, 71, 0.3);
+  outline-offset: -1px;
   border-radius: 6px;
 }
 

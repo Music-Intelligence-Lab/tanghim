@@ -370,9 +370,20 @@ export default function App() {
   // Fractional visible count for smooth curtain effect
   const fractionalVisibleCount = bankWidthPx / SLOT_WIDTH_PX
 
+  // Sticky viewport: when 24+ sliders visible and user has manually dragged the RangeScroller,
+  // don't auto-center on maqam selection. Reset when viewport shrinks below 24.
+  const stickyViewportRef = useRef(false)
+
+  const handleRangeScrollerChange = useCallback((midi: number) => {
+    if (fractionalVisibleCount >= 24) stickyViewportRef.current = true
+    setStartMidi(midi)
+  }, [fractionalVisibleCount])
+
   // Keep maqam's octave (or default C3 octave) centered during resize (smooth curtain effect)
   // Math.floor in centerMaqamOctave ensures tonic is flush at minimum width
   useEffect(() => {
+    if (fractionalVisibleCount < 24) stickyViewportRef.current = false
+    if (stickyViewportRef.current) return
     const tonicMidi = maqamTonicMidi >= 0 ? maqamTonicMidi : 48
     setStartMidi(centerMaqamOctave(tonicMidi, fractionalVisibleCount))
   }, [fractionalVisibleCount, maqamTonicMidi])
@@ -539,7 +550,8 @@ export default function App() {
     setModifiedSlots(new Set())
     setMaqamDegreePaoNames(new Map())
     maqamListRequested.current = false
-    // Center on C3 (no maqam selected)
+    // Center on C3 (no maqam selected) and reset sticky viewport
+    stickyViewportRef.current = false
     setStartMidi(centerMaqamOctave(48, fractionalVisibleCount))
     await bridge.selectTuningSystem(systemId, startingNote)
   }
@@ -771,7 +783,8 @@ export default function App() {
         if (tonic) {
           setMaqamTonicIndex(tonic.chromaticIndex)
           setMaqamTonicMidi(tonic.midi)
-          setStartMidi(centerMaqamOctave(tonic.midi, fractionalVisibleCount))
+          if (!stickyViewportRef.current)
+            setStartMidi(centerMaqamOctave(tonic.midi, fractionalVisibleCount))
         }
       }
     }
@@ -897,7 +910,8 @@ export default function App() {
         if (tonic) {
           setMaqamTonicIndex(tonic.chromaticIndex)
           setMaqamTonicMidi(tonic.midi)
-          setStartMidi(centerMaqamOctave(tonic.midi, fractionalVisibleCount))
+          if (!stickyViewportRef.current)
+            setStartMidi(centerMaqamOctave(tonic.midi, fractionalVisibleCount))
         }
       }
     }
@@ -940,7 +954,8 @@ export default function App() {
         if (tonic) {
           setMaqamTonicIndex(tonic.chromaticIndex)
           setMaqamTonicMidi(tonic.midi)
-          setStartMidi(centerMaqamOctave(tonic.midi, fractionalVisibleCount))
+          if (!stickyViewportRef.current)
+            setStartMidi(centerMaqamOctave(tonic.midi, fractionalVisibleCount))
         }
       }
     }
@@ -962,6 +977,8 @@ export default function App() {
       isMaqamModifiedRef.current = false
       setModifiedSlots(new Set())
       setMaqamDegreePaoNames(new Map())
+      // Clearing maqam — reset sticky viewport and center on C3
+      stickyViewportRef.current = false
       setStartMidi(centerMaqamOctave(48, fractionalVisibleCount))
       // Re-select the current tuning system to reset C++ sliders to base values
       await bridge.selectTuningSystem(tuningState.systemId, tuningState.startingNote)
@@ -1210,7 +1227,7 @@ export default function App() {
         onMidiNoteClear={handleMidiNoteClear}
       />
 
-      <RangeScroller startMidi={startMidi} visibleCount={visibleCount} maqamTonicMidi={maqamTonicMidi} onChange={setStartMidi} />
+      <RangeScroller startMidi={startMidi} visibleCount={visibleCount} maqamTonicMidi={maqamTonicMidi} onChange={handleRangeScrollerChange} />
 
       <div className="slider-bank-container" ref={bankContainerRef}>
         <NoteSliderBank
