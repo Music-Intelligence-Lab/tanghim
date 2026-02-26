@@ -1,10 +1,10 @@
 ## Features
 
+## Bugs
+- Preset Midi mapping input device works perfect on first fresh load in a blank DAW session, but if I remove the plugin and reload it, it doesn't work. It's like the device selection needs to be refreshed but not only in UI. I don't know.
+
 - still need to fix the automation not refreshing fast enough in the transmitter VST UI
 
-- M4L receiver Midi notes have timing issues, likely to do with the Metro. 
-- M4L receiver MPE mode active channels monitoring doesn't seem to be working.
-- ~~M4L receiver Mono PB mode: pitch bend wheel override bug + PB range minimum~~ **DONE** (Session 32 — user PB now combines with microtuning offset, PB range min set to 2)
 
 ## Documentation and Code Symbol updates
 
@@ -15,8 +15,6 @@
 
 ## Performance
 
-- ~~ref_freq MIDI CC CPU spike: parameterChanged used full table rebuild + JSON serialize at MIDI CC rate~~ **DONE** (Session 41 — fast path + dirty flag throttle)
-- ~~Oscillator double precision + per-sample branching~~ **DONE** (Session 41 — float + segmented block rendering)
 - slot_N automation still calls `updateTuningAndBroadcast()` (full 128 `std::pow` rebuild) on every MIDI CC tick — could use a fast path similar to ref_freq
 - CriticalSection on tuning tables → consider double-buffered atomic swap (see Session 38 audit notes)
 

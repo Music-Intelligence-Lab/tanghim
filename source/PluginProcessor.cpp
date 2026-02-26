@@ -973,6 +973,9 @@ void ArabicMaqamTunerProcessor::restoreStateFromJson (const juce::String& json)
             currentDegreeNames      = savedDegreeNames;
             currentTonicChromatic   = savedTonicChromatic;
 
+            // Rebuild heptatonic map from restored maqam degrees
+            rebuildHeptMap();
+
             // Restore reference frequency
             referenceCentsOffset = savedRefCents;
             if (refFreqParam != nullptr)
@@ -989,6 +992,10 @@ void ArabicMaqamTunerProcessor::restoreStateFromJson (const juce::String& json)
 
             updateTuningAndBroadcast();
             notifyTuningChanged();
+
+            // Fetch maqam detail for context-aware IPN/solfege labels (async)
+            if (savedMaqamId.isNotEmpty())
+                fetchAndApplyMaqamDetail();
         });
     }
 }
@@ -1181,11 +1188,9 @@ void ArabicMaqamTunerProcessor::setSliderVariant (int chromaticIndex, int varian
     for (int midi = chromaticIndex; midi < 128; midi += 12)
         activeTuningState.perNoteVariantOverrides[(size_t) midi] = -1;
 
-    // Manual slider change breaks maqam association
-    currentMaqamId.clear();
-    currentTranspositionIdx = -1;
+    // Manual slider change deactivates preset (but preserves maqam association
+    // so that degree highlights, hept map, and save/load work correctly)
     currentActivePresetIdx  = -1;
-    currentDegreeNames.clear();
 
     // Sync APVTS params
     syncSlotParamFromState (chromaticIndex);
@@ -1211,11 +1216,9 @@ void ArabicMaqamTunerProcessor::setSlotCents (int chromaticIndex, double centsVa
     }
     slot.selectedIndex = bestIdx;
 
-    // Manual slider change breaks maqam association
-    currentMaqamId.clear();
-    currentTranspositionIdx = -1;
+    // Manual slider change deactivates preset (but preserves maqam association
+    // so that degree highlights, hept map, and save/load work correctly)
     currentActivePresetIdx  = -1;
-    currentDegreeNames.clear();
 
     // Sync APVTS param for DAW automation recording
     syncSlotParamFromState (chromaticIndex);
@@ -1238,11 +1241,9 @@ void ArabicMaqamTunerProcessor::setNoteVariant (int midiNote, int variantIndex)
     activeTuningState.perNoteVariantOverrides[(size_t) midiNote] =
         juce::jlimit (0, std::max (0, slot.variantCount() - 1), variantIndex);
 
-    // Manual per-note override breaks maqam association
-    currentMaqamId.clear();
-    currentTranspositionIdx = -1;
+    // Manual per-note override deactivates preset (but preserves maqam association
+    // so that degree highlights, hept map, and save/load work correctly)
     currentActivePresetIdx  = -1;
-    currentDegreeNames.clear();
 
     // Sync preset param only (per-note overrides don't affect slot params)
     syncPresetParamFromState();

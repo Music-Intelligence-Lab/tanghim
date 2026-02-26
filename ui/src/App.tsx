@@ -89,7 +89,10 @@ function buildDegreePaoNameMap(
   const result = new Map<number, string>()
   for (const name of ascendingNames) {
     const ci = paoNameMap[name]
-    if (ci !== undefined) result.set(ci, name)
+    // Use first occurrence only — ascending degrees start from the base register
+    // (e.g. "rast" at C3), and the octave note (e.g. "kirdan" at C4) comes later
+    // with the same chromatic index. Slot variants only cover MIDI 48-59 (base register).
+    if (ci !== undefined && !result.has(ci)) result.set(ci, name)
   }
   return result
 }
@@ -1018,82 +1021,66 @@ export default function App() {
 
   const handleLoadState = useCallback(async () => {
     // Set up callback to compute modification state after the loaded tuning system arrives.
-    // loadTuningSystem fires notifyTuningChanged() TWICE: first with cleared maqam state
-    // (intermediate), then from the completion lambda with restored state (final).
-    // We always skip the first event and consume the second.
-    let isFirstEvent = true
-
+    // loadTuningSystem fires notifyTuningChanged() multiple times: intermediate events with
+    // cleared maqam state, then the final event from restoreStateFromJson's completion lambda
+    // with restored maqam ID and degree names. Previous pending tuningStateChanged events
+    // (from slider drags, etc.) may also arrive before the load events.
+    //
+    // Strategy: skip ALL events without maqam data, process the first with maqam data.
+    // For files without maqam, we consume the callback after the bridge call returns.
     afterSystemSwitchRef.current = (newState: TuningState): void | false => {
-      // Skip the first (intermediate) event — it has cleared maqam state
-      if (isFirstEvent) {
-        isFirstEvent = false
-        return false  // keep callback for next event
-      }
-
       const degreeNames = newState.degreeNames ?? []
       const maqamId = newState.selectedMaqamId ?? ''
 
-      if (maqamId && degreeNames.length > 0) {
-        const degreePaoNames = buildDegreePaoNameMap(degreeNames, newState.paoNameMap)
-        setMaqamDegreePaoNames(degreePaoNames)
+      // Wait for the event with restored maqam state
+      if (!maqamId || degreeNames.length === 0) {
+        return false  // keep callback — this is an intermediate or stale event
+      }
 
-        // Compare loaded cents values to tuning system defaults to detect modifications
-        const modified = new Set<number>()
-        for (let i = 0; i < 12; i++) {
-          const expectedPaoName = degreePaoNames.get(i)
-          if (expectedPaoName === undefined) continue
+      const degreePaoNames = buildDegreePaoNameMap(degreeNames, newState.paoNameMap)
+      setMaqamDegreePaoNames(degreePaoNames)
 
-          const slot = newState.slots[i]
-          const expectedVariant = slot.variants.find(v => v.noteName === expectedPaoName)
-          if (!expectedVariant) continue
+      // Compare loaded cents values to tuning system defaults to detect modifications
+      const modified = new Set<number>()
+      for (let i = 0; i < 12; i++) {
+        const expectedPaoName = degreePaoNames.get(i)
+        if (expectedPaoName === undefined) continue
 
-          const systemDefault = expectedVariant.midiCentsDeviation
-          if (Math.abs(slot.centsOffset - systemDefault) > 0.01) {
-            modified.add(i)
-          }
+        const slot = newState.slots[i]
+        const expectedVariant = slot.variants.find(v => v.noteName === expectedPaoName)
+        if (!expectedVariant) continue
+
+        const systemDefault = expectedVariant.midiCentsDeviation
+        if (Math.abs(slot.centsOffset - systemDefault) > 0.01) {
+          modified.add(i)
         }
-        setModifiedSlots(modified)
-        setIsMaqamModified(modified.size > 0)
-        isMaqamModifiedRef.current = modified.size > 0
+      }
+      setModifiedSlots(modified)
+      setIsMaqamModified(modified.size > 0)
+      isMaqamModifiedRef.current = modified.size > 0
 
-        // Sync degree indices and tonic
-        const degreeIndices = computeMaqamDegreeIndices(degreeNames, newState.paoNameMap)
-        setMaqamDegreeIndices(degreeIndices)
-        maqamDegreeIndicesRef.current = degreeIndices
-        setSelectedMaqamId(maqamId)
-        selectedMaqamIdRef.current = maqamId
-        setSelectedTransIdx(newState.transpositionIndex ?? -1)
-        setActivePresetIndex(newState.activePresetIndex ?? -1)
+      // Sync degree indices and tonic
+      const degreeIndices = computeMaqamDegreeIndices(degreeNames, newState.paoNameMap)
+      setMaqamDegreeIndices(degreeIndices)
+      maqamDegreeIndicesRef.current = degreeIndices
+      setSelectedMaqamId(maqamId)
+      selectedMaqamIdRef.current = maqamId
+      setSelectedTransIdx(newState.transpositionIndex ?? -1)
+      setActivePresetIndex(newState.activePresetIndex ?? -1)
 
-        const tonicName = degreeNames[0]
-        const tonicCi = newState.paoNameMap[tonicName]
-        if (tonicCi !== undefined) {
-          setMaqamTonicIndex(tonicCi)
-          const tonic = findTonicMidi(
-            Object.entries(newState.noteNames[String(tonicCi)] || {}).find(([, name]) =>
-              newState.paoNameMap[name] === tonicCi
-            )?.[1] || tonicName,
-            newState.noteNames
-          )
-          const tonicMidi = tonic?.midi ?? (tonicCi + 48)
-          setMaqamTonicMidi(tonicMidi)
-          setStartMidi(centerMaqamOctave(tonicMidi, fractionalVisibleCount))
-        }
-      } else {
-        // No maqam in loaded state
-        setIsMaqamModified(false)
-        isMaqamModifiedRef.current = false
-        setModifiedSlots(new Set())
-        setMaqamDegreePaoNames(new Map())
-        setSelectedMaqamId('')
-        selectedMaqamIdRef.current = ''
-        setSelectedTransIdx(-1)
-        setActivePresetIndex(newState.activePresetIndex ?? -1)
-        setMaqamDegreeIndices(EMPTY_SET)
-        maqamDegreeIndicesRef.current = EMPTY_SET
-        setMaqamTonicIndex(-1)
-        setMaqamTonicMidi(-1)
-        if (newState.startMidi !== undefined) setStartMidi(newState.startMidi)
+      const tonicName = degreeNames[0]
+      const tonicCi = newState.paoNameMap[tonicName]
+      if (tonicCi !== undefined) {
+        setMaqamTonicIndex(tonicCi)
+        const tonic = findTonicMidi(
+          Object.entries(newState.noteNames[String(tonicCi)] || {}).find(([, name]) =>
+            newState.paoNameMap[name] === tonicCi
+          )?.[1] || tonicName,
+          newState.noteNames
+        )
+        const tonicMidi = tonic?.midi ?? (tonicCi + 48)
+        setMaqamTonicMidi(tonicMidi)
+        setStartMidi(centerMaqamOctave(tonicMidi, fractionalVisibleCount))
       }
     }
 
@@ -1102,6 +1089,16 @@ export default function App() {
       // Cancelled — clear the callback
       afterSystemSwitchRef.current = null
       return
+    }
+
+    // For files without maqam data, the callback will never see an event with maqam state.
+    // Consume it now and clear modification state.
+    if (!result.hasMaqam && afterSystemSwitchRef.current) {
+      afterSystemSwitchRef.current = null
+      setIsMaqamModified(false)
+      isMaqamModifiedRef.current = false
+      setModifiedSlots(new Set())
+      setMaqamDegreePaoNames(new Map())
     }
 
     showStatus(`Loaded: ${result.filename}`)
