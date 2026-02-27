@@ -507,6 +507,8 @@ juce::var ApiDataCache::pitchClassToJson (const PitchClass& pc)
     obj->setProperty ("noteName",         pc.noteName);
     obj->setProperty ("noteNameDisplay",  pc.noteNameDisplay);
     obj->setProperty ("englishName",      pc.englishName);
+    obj->setProperty ("solfege",          pc.solfege);
+    obj->setProperty ("abjadName",        pc.abjadName);
     obj->setProperty ("fraction",         pc.fraction);
     obj->setProperty ("cents",            pc.cents);
     obj->setProperty ("frequency",        pc.frequency);
@@ -529,6 +531,8 @@ PitchClass ApiDataCache::jsonToPitchClass (const juce::var& v)
     pc.noteName          = get("noteName").toString();
     pc.noteNameDisplay   = get("noteNameDisplay").toString();
     pc.englishName       = get("englishName").toString();
+    pc.solfege           = get("solfege").toString();
+    pc.abjadName         = get("abjadName").toString();
     pc.fraction          = get("fraction").toString();
     pc.cents             = (double) get("cents");
     pc.frequency         = (double) get("frequency");

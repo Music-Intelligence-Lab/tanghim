@@ -84,6 +84,44 @@ void TuningEngine::updateReferenceOffset (double referenceCentsOffset)
         mtsEsp->setTuningTable (newFreqs);
 }
 
+void TuningEngine::updateSlotTuning (int chromaticIndex, double centsOffset,
+                                     double referenceCentsOffset)
+{
+    const double refRatio = (referenceCentsOffset != 0.0)
+        ? std::pow (2.0, referenceCentsOffset / 1200.0)
+        : 1.0;
+
+    std::array<double, 128> newFreqs;
+
+    {
+        juce::ScopedLock sl (tuningLock);
+
+        // Update only the ~11 MIDI notes that share this chromatic position
+        for (int midi = chromaticIndex; midi < 128; midi += 12)
+        {
+            double baseFreq;
+            if (centsOffset != 0.0)
+            {
+                const double centsFromA440 = (midi - 69) * 100.0 + centsOffset;
+                baseFreq = 440.0 * std::pow (2.0, centsFromA440 / 1200.0);
+            }
+            else
+            {
+                baseFreq = 440.0 * std::pow (2.0, (midi - 69) / 12.0);
+            }
+
+            baseFreqTable[(size_t) midi] = baseFreq;
+            freqTable[(size_t) midi]     = baseFreq * refRatio;
+            centsTable[(size_t) midi]    = centsOffset;
+        }
+
+        newFreqs = freqTable;
+    }
+
+    if (mtsEsp && mtsEsp->isTransmitter())
+        mtsEsp->setTuningTable (newFreqs);
+}
+
 // ── MTS-ESP broadcast helpers ─────────────────────────────────────────────────
 
 void TuningEngine::broadcastMtsTable (const std::array<double, 128>& freqs)

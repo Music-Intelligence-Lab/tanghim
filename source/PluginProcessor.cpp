@@ -153,11 +153,45 @@ void ArabicMaqamTunerProcessor::prepareToPlay (double sampleRate, int /*samplesP
 }
 void ArabicMaqamTunerProcessor::releaseResources() {}
 
+// ── Audio-thread slot automation polling ──────────────────────────────────────
+
+void ArabicMaqamTunerProcessor::pollSlotAutomation()
+{
+    uint16_t changedMask = 0;
+
+    for (int s = 0; s < kNumSlotParams; ++s)
+    {
+        const float val = slotParams[s]->get();
+        if (val == lastAudioSlotValues[(size_t) s])
+            continue;
+
+        lastAudioSlotValues[(size_t) s] = val;
+        const int chromaticIdx = slotToChromatic (s);
+        const double cents = juce::jlimit (-150.0, 150.0, (double) val);
+        tuningEngine.updateSlotTuning (chromaticIdx, cents, referenceCentsOffset);
+        changedMask |= uint16_t (1u << chromaticIdx);
+    }
+
+    if (changedMask == 0)
+        return;
+
+    if (heptEnabled.load (std::memory_order_relaxed))
+        rebroadcastHeptMts();
+
+    slotAutomationDirtyMask.fetch_or (changedMask, std::memory_order_relaxed);
+}
+
 void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<float>& audio,
                                                juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
     audio.clear();
+
+    // Poll APVTS slot params at buffer rate — catches automation changes faster
+    // than the message-thread parameterChanged callback (which fires at host UI
+    // refresh rate, typically 30-60Hz). This ensures fast automation sweeps
+    // reach extreme values without lag.
+    pollSlotAutomation();
 
     const bool oscOn = oscillatorEnabled.load (std::memory_order_relaxed);
 
@@ -1006,6 +1040,11 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
                                                     const juce::String& startingNote,
                                                     std::function<void()> onComplete)
 {
+    // Detect same-system reload (e.g. preset deactivation) — skip PAO name
+    // matching so sliders reset to defaults (closest to 0 cents)
+    const bool sameSystem = (systemId == currentSystemId
+                             && startingNote == currentStartingNote);
+
     currentSystemId     = systemId;
     currentStartingNote = startingNote;
     currentMaqamList.clear();
@@ -1035,7 +1074,7 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
         updatingParamsFromCode = false;
     }
 
-    auto doLoad = [this, systemId, startingNote, onComplete] ()
+    auto doLoad = [this, systemId, startingNote, onComplete, sameSystem] ()
     {
         const auto& data = dataCache.getData (systemId, startingNote);
         const auto variants = ApiResponseParser::buildVariantsPerSlot (data.pitchClasses);
@@ -1076,15 +1115,20 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
         // was previously selected (in any slot), select that variant.
         // This preserves musical intent across tuning systems even when
         // a note moves to a different IPN position.
-        for (int i = 0; i < 12; ++i)
+        // Skip when reloading the same system (e.g. preset deactivation)
+        // so sliders reset to defaults (closest to 0 cents).
+        if (! sameSystem)
         {
-            auto& slot = activeTuningState.slots[(size_t) i];
-            for (int v = 0; v < (int) slot.variants.size(); ++v)
+            for (int i = 0; i < 12; ++i)
             {
-                if (prevPaoNames.count (slot.variants[(size_t) v].noteName))
+                auto& slot = activeTuningState.slots[(size_t) i];
+                for (int v = 0; v < (int) slot.variants.size(); ++v)
                 {
-                    slot.selectedIndex = v;
-                    break;
+                    if (prevPaoNames.count (slot.variants[(size_t) v].noteName))
+                    {
+                        slot.selectedIndex = v;
+                        break;
+                    }
                 }
             }
         }
@@ -2093,27 +2137,11 @@ void ArabicMaqamTunerProcessor::parameterChanged (const juce::String& parameterI
         // asynchronously from syncAllSlotParamsFromState, after updatingParamsFromCode
         // is reset, which would incorrectly clear maqam state.
 
-        updateTuningAndBroadcast();
-
-        // Debug: track automation rate
-        static int slotChangeCount = 0;
-        static juce::int64 lastLogTime = 0;
-        ++slotChangeCount;
-        const auto now = juce::Time::currentTimeMillis();
-        if (now - lastLogTime > 1000)
-        {
-            DBG ("Slot automation: " << slotChangeCount << " changes/sec, slot=" << slotIdx
-                 << " chromatic=" << chromaticIdx << " cents=" << centsValue);
-            slotChangeCount = 0;
-            lastLogTime = now;
-        }
-
-        // Use lightweight callback for high-rate automation (avoids full state JSON rebuild)
-        // Note: emit chromatic index (not slot index) for JS to update the correct slot
-        if (onSlotCentsChanged)
-            onSlotCentsChanged (chromaticIdx, centsValue);
-        else
-            notifyTuningChanged();
+        // Tuning update is handled by pollSlotAutomation() in processBlock at audio
+        // buffer rate — much more responsive than this message-thread callback.
+        // Just mark dirty for UI update at 30Hz.
+        slotAutomationDirtyMask.fetch_or (uint16_t (1u << chromaticIdx),
+                                          std::memory_order_relaxed);
     }
     // Handle reference frequency parameter
     // Fast path: reapply reference offset multiplier only (no full table rebuild).
@@ -2544,6 +2572,11 @@ void ArabicMaqamTunerProcessor::clearCache()
     currentDegreeSolfegeRefs.fill ({});
     currentTranspositionIdMap.clear();
     rebuildHeptMap();
+
+    // Reset all presets
+    for (int i = 0; i < 16; ++i)
+        presets[(size_t) i].clear();
+    savePresetsToDisk();
 
     // Reset slider state
     activeTuningState.clearPerNoteOverrides();

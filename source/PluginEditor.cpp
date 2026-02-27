@@ -216,6 +216,21 @@ void ArabicMaqamTunerEditor::timerCallback()
     if (processor.refFreqAutomationDirty.exchange (false, std::memory_order_relaxed))
         emitTuningStateChanged();
 
+    // ── Slot automation dirty flags (~30Hz) ──────────────────────────
+    {
+        const uint16_t dirtyMask = processor.slotAutomationDirtyMask.exchange (
+            0, std::memory_order_relaxed);
+        if (dirtyMask != 0)
+        {
+            const auto& state = processor.getActiveTuningState();
+            for (int i = 0; i < 12; ++i)
+            {
+                if (dirtyMask & (1u << i))
+                    emitSlotCentsChanged (i, state.slots[(size_t) i].centsOffset);
+            }
+        }
+    }
+
     // ── MIDI activity (~30Hz) ─────────────────────────────────────────────
     {
         uint32_t ons[4], offs[4];

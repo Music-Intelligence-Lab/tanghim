@@ -191,9 +191,11 @@ export default function App() {
     // after compatibility is confirmed.
     const pendingSwitch = systemSwitchPendingRef.current
 
-    if (!state.selectedMaqamId && (isMaqamModifiedRef.current || selectedMaqamIdRef.current)) {
+    if (!state.selectedMaqamId && (isMaqamModifiedRef.current || selectedMaqamIdRef.current)
+        && state.systemId) {
       // Don't overwrite maqam selection — keep the current state
       // Only sync preset index (it might have changed)
+      // Exception: if systemId is empty (cache cleared), always reset
       if (!pendingSwitch) setActivePresetIndex(presetOverride ?? state.activePresetIndex ?? -1)
       return
     }
@@ -229,11 +231,12 @@ export default function App() {
         if (centerOnMaqam) {
         }
       }
-    } else if (!isMaqamModifiedRef.current && !selectedMaqamIdRef.current) {
-      // Only clear maqam state if:
-      // 1. User hasn't modified the maqam (isMaqamModifiedRef is false)
-      // 2. We don't already have a maqam selected (selectedMaqamIdRef is empty)
-      // This prevents stale/async events from clearing state that was just set by handleMaqamSelect
+    } else if (!isMaqamModifiedRef.current && !selectedMaqamIdRef.current
+               || !state.systemId) {
+      // Clear maqam state when:
+      // 1. No modification and no maqam selected (prevents stale async events from clearing), OR
+      // 2. System is gone (cache cleared) — always reset
+      if (!state.systemId) isMaqamModifiedRef.current = false
       setMaqamDegreeIndices(EMPTY_SET)
       maqamDegreeIndicesRef.current = EMPTY_SET  // Update ref immediately
       setMaqamDegreePaoNames(new Map())

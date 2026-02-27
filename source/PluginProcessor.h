@@ -162,6 +162,10 @@ public:
     // Editor timer picks this up at 30Hz to throttle UI updates.
     std::atomic<bool> refFreqAutomationDirty { false };
 
+    // Set by parameterChanged on slot_N changes (DAW automation / MIDI CC).
+    // Editor timer picks this up at 30Hz. Bitmask: bit i = chromatic index i dirty.
+    std::atomic<uint16_t> slotAutomationDirtyMask { 0 };
+
     // ── MIDI note → preset triggering (MIDI Learn) ─────────────────────────────
     // Each preset can be mapped to a specific MIDI note (-1 = unmapped)
     // midiPresetChannel: 0 = any channel, 1-16 = specific channel
@@ -277,6 +281,12 @@ private:
     // ── Pitch bend wheel tracking (audio thread only) ───────────────────────
     int currentPitchBend = 8192;                           // 14-bit, center = 8192
     static constexpr double kPitchBendRangeSt = 2.0;      // ±2 semitones
+
+    // ── Audio-thread slot automation polling ────────────────────────────────
+    // Cached APVTS slot values from last processBlock — allows detection of
+    // automation changes at buffer rate (vs message-thread parameterChanged).
+    std::array<float, 12> lastAudioSlotValues {};
+    void pollSlotAutomation();
 
     // ── Internal helpers ──────────────────────────────────────────────────────
     void rebuildTuningStateFromCache();

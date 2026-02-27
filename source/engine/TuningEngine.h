@@ -45,6 +45,14 @@ public:
      */
     void updateReferenceOffset (double referenceCentsOffset);
 
+    /**
+     * Fast path: update only one chromatic slot (and its octave copies)
+     * in the cached base/freq/cents tables. Avoids a full 128-note rebuild
+     * when DAW automation or MIDI CC changes a single slot_N param.
+     */
+    void updateSlotTuning (int chromaticIndex, double centsOffset,
+                           double referenceCentsOffset);
+
     // ── MTS-ESP broadcast (without modifying internal tables) ────────────────
     /** Broadcast a frequency table to MTS-ESP without updating internal state. */
     void broadcastMtsTable (const std::array<double, 128>& freqs);
