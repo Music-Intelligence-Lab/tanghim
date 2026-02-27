@@ -53,7 +53,7 @@ export default function TuningSystemSelector({ systems, currentSystemId, current
         placeholder="Select tanghīm…"
       />
 
-      {current && current.startingNotes.length > 1 && (
+      {current && current.startingNotes.length >= 1 && (
         <CustomSelect
           options={noteOptions}
           value={currentStartingNote}
