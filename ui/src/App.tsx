@@ -242,8 +242,8 @@ export default function App() {
       setMaqamDegreePaoNames(new Map())
       setMaqamTonicIndex(-1)
       setMaqamTonicMidi(-1)
-      // Restore scroll position only when no maqam is selected
-      if (state.startMidi !== undefined) setStartMidi(state.startMidi)
+      // Restore scroll position only when no maqam is selected and viewport isn't sticky
+      if (state.startMidi !== undefined && !stickyViewportRef.current) setStartMidi(state.startMidi)
     }
   }, [])
 
@@ -1027,9 +1027,8 @@ export default function App() {
       isMaqamModifiedRef.current = false
       setModifiedSlots(new Set())
       setMaqamDegreePaoNames(new Map())
-      // Clearing maqam — reset sticky viewport and center on C3
-      stickyViewportRef.current = false
-      setStartMidi(centerMaqamOctave(48, fractionalVisibleCount))
+      // Keep viewport where it is — don't scroll on preset deactivation
+      stickyViewportRef.current = true
       // Re-select the current tuning system to reset C++ sliders to base values
       await bridge.selectTuningSystem(tuningState.systemId, tuningState.startingNote)
       return
