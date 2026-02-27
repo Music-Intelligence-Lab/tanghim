@@ -1066,12 +1066,16 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
     rebuildHeptMap();
 
     // Reset reference frequency offset (starting note change = new reference point)
-    referenceCentsOffset = 0.0;
-    if (refFreqParam != nullptr)
+    // Skip on same-system reload (e.g. preset deactivation) — keep user's ref freq
+    if (! sameSystem)
     {
-        updatingParamsFromCode = true;
-        refFreqParam->setValueNotifyingHost (refFreqParam->convertTo0to1 (0.0f));
-        updatingParamsFromCode = false;
+        referenceCentsOffset = 0.0;
+        if (refFreqParam != nullptr)
+        {
+            updatingParamsFromCode = true;
+            refFreqParam->setValueNotifyingHost (refFreqParam->convertTo0to1 (0.0f));
+            updatingParamsFromCode = false;
+        }
     }
 
     auto doLoad = [this, systemId, startingNote, onComplete, sameSystem] ()
