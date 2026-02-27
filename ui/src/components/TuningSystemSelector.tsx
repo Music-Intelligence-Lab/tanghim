@@ -59,6 +59,7 @@ export default function TuningSystemSelector({ systems, currentSystemId, current
           value={currentStartingNote}
           onChange={note => onSelect(currentSystemId, note)}
           className="select-note"
+          disabled={current.startingNotes.length <= 1}
         />
       )}
     </div>

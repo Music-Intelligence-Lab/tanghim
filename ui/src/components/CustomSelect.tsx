@@ -16,9 +16,10 @@ interface Props {
   placeholder?: string
   searchable?: boolean
   selectedSuffix?: string  // suffix appended to selected label (e.g. "*" for modified state)
+  disabled?: boolean
 }
 
-export default function CustomSelect({ options, value, onChange, className = '', placeholder, searchable, selectedSuffix }: Props) {
+export default function CustomSelect({ options, value, onChange, className = '', placeholder, searchable, selectedSuffix, disabled }: Props) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [highlightIdx, setHighlightIdx] = useState(-1)
@@ -87,8 +88,8 @@ export default function CustomSelect({ options, value, onChange, className = '',
   }, [open, filtered, highlightIdx, onChange])
 
   return (
-    <div className={`custom-select ${className} ${open ? 'open' : ''}`} ref={ref} onKeyDown={handleKeyDown}>
-      <button className="cs-trigger" onClick={() => setOpen(!open)}>
+    <div className={`custom-select ${className} ${open ? 'open' : ''} ${disabled ? 'disabled' : ''}`} ref={ref} onKeyDown={handleKeyDown}>
+      <button className="cs-trigger" onClick={() => !disabled && setOpen(!open)} disabled={disabled}>
         <span className="cs-label">{selected ? selected.label + (selectedSuffix ?? '') : placeholder ?? ''}</span>
         <span className="cs-chevron" />
       </button>

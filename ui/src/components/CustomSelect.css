@@ -21,8 +21,16 @@
   text-align: left;
 }
 
-.cs-trigger:hover {
+.custom-select:not(.disabled) .cs-trigger:hover {
   border-color: var(--text-muted);
+}
+
+.custom-select.disabled .cs-trigger {
+  cursor: default;
+}
+
+.custom-select.disabled .cs-chevron {
+  display: none;
 }
 
 .custom-select.open .cs-trigger {
