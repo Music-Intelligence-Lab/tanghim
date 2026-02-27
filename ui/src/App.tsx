@@ -297,6 +297,18 @@ export default function App() {
     const state = data as TuningState
     setTuningState(state)
 
+    // Mark the loaded system+note as cached in the tuning systems list
+    if (state.systemId && state.startingNote) {
+      setTuningSystems(prev => prev.map(sys =>
+        sys.id !== state.systemId ? sys : {
+          ...sys,
+          startingNotes: sys.startingNotes.map(n =>
+            n.id === state.startingNote ? { ...n, isCached: true } : n
+          )
+        }
+      ))
+    }
+
     // Determine if this is a session recall (don't center) or a live change (center on maqam)
     // Session recall: first time hasRecalledSessionState becomes true, or sessionRecallInProgress
     const isSessionRecall = state.sessionRecallInProgress ||
@@ -505,6 +517,17 @@ export default function App() {
       setMaqamTonicMidi(tonic.midi)
     }
   }, [selectedMaqamId, selectedTransIdx, maqamList, tuningState.noteNames])
+
+  // ── Deactivate preset if it becomes incompatible after system/note switch ──
+  useEffect(() => {
+    if (activePresetIndex < 0 || maqamList.length === 0) return
+    const preset = tuningState.presets[activePresetIndex]
+    if (!preset?.isAssigned) return
+    const entry = maqamList.find(m => m.maqamId === preset.maqamId)
+    if (!entry || (preset.isTransposed && preset.setIndex >= 0 && preset.setIndex >= entry.transpositions.length)) {
+      setActivePresetIndex(-1)
+    }
+  }, [maqamList, activePresetIndex, tuningState.presets])
 
   useJuceEvent('tuningSystemsLoaded', onTuningSystemsLoaded)
   useJuceEvent('tuningStateChanged',  onTuningStateChanged)

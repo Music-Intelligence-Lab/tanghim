@@ -1,9 +1,8 @@
 ## Features
 
+
 ## Bugs
 - Preset Midi mapping input device works perfect on first fresh load in a blank DAW session, but if I remove the plugin and reload it, it doesn't work. It's like the device selection needs to be refreshed but not only in UI. I don't know.
-
-- still need to fix the automation not refreshing fast enough in the transmitter VST UI
 
 
 ## Documentation and Code Symbol updates
@@ -15,7 +14,8 @@
 
 ## Performance
 
-- slot_N automation still calls `updateTuningAndBroadcast()` (full 128 `std::pow` rebuild) on every MIDI CC tick — could use a fast path similar to ref_freq
+- slot/slider thumb value automation not refreshing fast enough in the transmitter VST UI., is thist related to: slot_N automation still calls `updateTuningAndBroadcast()` (full 128 `std::pow` rebuild) on every MIDI CC tick — could use a fast path similar to ref_freq
+
 - CriticalSection on tuning tables → consider double-buffered atomic swap (see Session 38 audit notes)
 
 

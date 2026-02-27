@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import './CustomSelect.css'
 
-interface Option {
+export interface Option {
   value: string
   label: string
+  suffix?: string       // right-aligned indicator in dropdown (e.g. "✓" or "↓")
+  suffixClass?: string  // CSS class for suffix color (e.g. "cached" or "uncached")
 }
 
 interface Props {
@@ -113,7 +115,8 @@ export default function CustomSelect({ options, value, onChange, className = '',
               onClick={() => { onChange(o.value); setOpen(false) }}
               onMouseEnter={() => setHighlightIdx(i)}
             >
-              {o.label}
+              <span className="cs-option-label">{o.label}</span>
+              {o.suffix && <span className={`cs-option-suffix ${o.suffixClass ?? ''}`}>{o.suffix}</span>}
             </button>
           ))}
           {searchable && filtered.length === 0 && (

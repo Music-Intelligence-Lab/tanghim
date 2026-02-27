@@ -197,10 +197,16 @@ void ApiDataCache::loadFromDisk()
     }
 
     // Scan for tuning data files — record keys for lazy loading (no deserialization)
+    // Filename format: systemId_startingNote.json (underscore separator)
+    // Key format: systemId:startingNote (colon separator)
+    // Only the LAST underscore is the separator — system IDs contain underscores too
     for (const auto& f : dir.findChildFiles (juce::File::findFiles, false, "*.json"))
     {
         if (f.getFileName().startsWith ("_")) continue;
-        const juce::String key = f.getFileNameWithoutExtension().replaceCharacter ('_', ':');
+        const auto name = f.getFileNameWithoutExtension();
+        const auto lastUnderscore = name.lastIndexOfChar ('_');
+        if (lastUnderscore <= 0) continue;  // skip malformed filenames
+        const auto key = name.substring (0, lastUnderscore) + ":" + name.substring (lastUnderscore + 1);
         lazyKeys.insert (key);
     }
 

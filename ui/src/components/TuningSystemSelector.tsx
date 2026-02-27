@@ -22,12 +22,17 @@ export default function TuningSystemSelector({ systems, currentSystemId, current
   const systemOptions = useMemo(() =>
     sorted.length === 0
       ? [{ value: '', label: 'Loading…' }]
-      : sorted.map(s => ({ value: s.id, label: s.displayName })),
+      : sorted.map(s => {
+          const cached = s.startingNotes[0]?.isCached ?? false
+          return { value: s.id, label: s.displayName, suffix: cached ? '✓' : '↓', suffixClass: cached ? 'cached' : 'uncached' }
+        }),
     [sorted]
   )
 
   const noteOptions = useMemo(() =>
-    current?.startingNotes.map(n => ({ value: n.id, label: n.displayName })) ?? [],
+    current?.startingNotes.map(n => ({
+      value: n.id, label: n.displayName, suffix: n.isCached ? '✓' : '↓', suffixClass: n.isCached ? 'cached' : 'uncached'
+    })) ?? [],
     [current]
   )
 

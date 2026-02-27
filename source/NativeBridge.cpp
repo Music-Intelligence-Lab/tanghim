@@ -654,6 +654,7 @@ juce::var NativeBridge::buildTuningSystemsJson() const
             auto* n = new juce::DynamicObject();
             n->setProperty ("id",          ts.startingNoteIds[i]);
             n->setProperty ("displayName", ts.startingNoteDisplayNames[i]);
+            n->setProperty ("isCached",    processor.hasCachedTuningData (ts.id, ts.startingNoteIds[i]));
             notes.add (juce::var (n));
         }
         obj->setProperty ("startingNotes", notes);

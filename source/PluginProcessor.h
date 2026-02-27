@@ -111,6 +111,7 @@ public:
 
     // ── State accessors ───────────────────────────────────────────────────────
     const std::vector<TuningSystem>&         getTuningSystems()        const;
+    bool                                     hasCachedTuningData (const juce::String& systemId, const juce::String& startingNote) const;
     const std::vector<MaqamListEntry>&       getMaqamList()            const;
     const ActiveTuningState&                 getActiveTuningState()    const;
     const std::array<MaqamPreset, 16>&       getPresets()              const;

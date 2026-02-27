@@ -1114,13 +1114,15 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
 
         updateTuningAndBroadcast();
         if (onStatusMessage) onStatusMessage (buildScaleName());
+
+        // Fetch maqam list BEFORE notifying UI, so preset compatibility
+        // checks have the list available on the first render
+        fetchMaqamListIfNeeded();
+
         notifyTuningChanged();
         if (onComplete) onComplete();
 
         saveSettingsToDisk();
-
-        // Fetch maqam list after sliders are visible (not on the critical path)
-        fetchMaqamListIfNeeded();
     };
 
     if (dataCache.hasData (systemId, startingNote))
@@ -1800,6 +1802,12 @@ void ArabicMaqamTunerProcessor::rebroadcastHeptMts()
 const std::vector<TuningSystem>& ArabicMaqamTunerProcessor::getTuningSystems() const
 {
     return dataCache.getTuningSystemsList();
+}
+
+bool ArabicMaqamTunerProcessor::hasCachedTuningData (const juce::String& systemId,
+                                                      const juce::String& startingNote) const
+{
+    return dataCache.hasData (systemId, startingNote);
 }
 
 const std::vector<MaqamListEntry>& ArabicMaqamTunerProcessor::getMaqamList() const

@@ -93,7 +93,9 @@
 
 /* ── Options ─────────────────────────────────────────────────────────── */
 .cs-option {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   width: 100%;
   flex-shrink: 0;
   background: none;
@@ -108,7 +110,28 @@
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
+}
+
+.cs-option-label {
+  flex: 1;
+  overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.cs-option-suffix {
+  flex-shrink: 0;
+  font-size: 11px;
+  opacity: 0.5;
+}
+
+.cs-option-suffix.cached {
+  color: #66bb6a;
+  opacity: 0.8;
+}
+
+.cs-option-suffix.uncached {
+  color: #888;
+  opacity: 0.4;
 }
 
 .cs-option:hover,

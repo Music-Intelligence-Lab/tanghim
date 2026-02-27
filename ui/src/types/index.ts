@@ -120,6 +120,7 @@ export interface TuningState {
 export interface StartingNote {
   id: string;
   displayName: string;
+  isCached?: boolean;
 }
 
 export interface TuningSystem {
