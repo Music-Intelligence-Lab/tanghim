@@ -148,6 +148,7 @@ export default function App() {
   const maqamListRequested = useRef(false)
   const afterSystemSwitchRef = useRef<((state: TuningState) => void | false) | null>(null)  // callback to run after tuning system loads; return false to keep for next event
   const presetIndexOverrideRef = useRef<number | null>(null)  // guards preset index from async event overwrite
+  const preSystemSwitchPresetRef = useRef(-1)  // captures active preset before system/note switch for re-apply check
 
   // Refs for modification tracking — ensures callbacks always have latest values
   // without stale closures. Updated both during render AND immediately in handlers.
@@ -518,16 +519,26 @@ export default function App() {
     }
   }, [selectedMaqamId, selectedTransIdx, maqamList, tuningState.noteNames])
 
-  // ── Deactivate preset if it becomes incompatible after system/note switch ──
+  // ── Re-apply or deactivate preset after system/note switch ──────────────
+  // When maqam list changes (new system/note loaded), check if the pre-switch
+  // preset is still valid. Uses ref because activePresetIndex may already be
+  // cleared to -1 by handleSystemSelect before this effect runs.
   useEffect(() => {
-    if (activePresetIndex < 0 || maqamList.length === 0) return
-    const preset = tuningState.presets[activePresetIndex]
+    const presetToCheck = preSystemSwitchPresetRef.current
+    if (presetToCheck < 0 || maqamList.length === 0) return
+    preSystemSwitchPresetRef.current = -1  // consume
+    const preset = tuningState.presets[presetToCheck]
     if (!preset?.isAssigned) return
     const entry = maqamList.find(m => m.maqamId === preset.maqamId)
-    if (!entry || (preset.isTransposed && preset.setIndex >= 0 && preset.setIndex >= entry.transpositions.length)) {
+    const isCompatible = entry && !(preset.isTransposed && preset.setIndex >= 0 && preset.setIndex >= entry.transpositions.length)
+    if (!isCompatible) {
       setActivePresetIndex(-1)
+    } else {
+      // Preset still valid in new system/note — re-apply so sliders update
+      handlePresetClick(presetToCheck)
     }
-  }, [maqamList, activePresetIndex, tuningState.presets])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maqamList])
 
   useJuceEvent('tuningSystemsLoaded', onTuningSystemsLoaded)
   useJuceEvent('tuningStateChanged',  onTuningStateChanged)
@@ -560,6 +571,9 @@ export default function App() {
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleSystemSelect = async (systemId: string, startingNote: string) => {
     showStatus('Loading ' + systemId + '…', 10000)
+    // Capture active preset before clearing — used by maqam list useEffect to
+    // re-apply or deactivate the preset after the new maqam list arrives
+    preSystemSwitchPresetRef.current = activePresetIndex
     // Clear maqam state when switching systems
     setMaqamList([])
     setSelectedMaqamId('')

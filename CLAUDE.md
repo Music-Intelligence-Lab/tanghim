@@ -202,7 +202,8 @@ User-managed state persistence via human-readable JSON files with `.tanghim` ext
 ### Maqam List Caching
 - `ApiDataCache`: lazy loading (scan filenames on startup, deserialize on first access), incremental saves to disk
 - Cache directory: `~/Library/Tanghim/cache/`
-- `fetchMaqamListIfNeeded()` runs after pitch classes loaded (pitch classes are critical path for slider display)
+- `fetchMaqamListIfNeeded()` runs before `notifyTuningChanged()` in `doLoad()` so preset compatibility checks have data on first render
+- **Cache key ↔ filename mapping**: Keys use `:` separator (`systemId:startingNote`), filenames use `_` (`systemId_startingNote.json`). NEVER use `replaceCharacter('_', ':')` or vice versa to convert — system IDs and maqam IDs contain underscores. Use `lastIndexOfChar('_')` for 2-part keys, or match against known starting note IDs for 3-part keys (maqam detail: `systemId:startingNote:maqamId`). → [diary 2026-02-27](diary/2026-02-27.md)
 
 ## JUCE 8 WebView Bridge
 

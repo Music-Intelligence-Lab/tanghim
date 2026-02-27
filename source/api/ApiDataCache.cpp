@@ -211,13 +211,33 @@ void ApiDataCache::loadFromDisk()
     }
 
     // Scan maqam detail directory for lazy loading
+    // Filename format: systemId_startingNote_maqamId.json (underscore separator)
+    // Key format: systemId:startingNote:maqamId (colon separator)
+    // Both systemId and maqamId contain underscores — starting notes never do.
+    // Match against known starting notes (from tuning systems list loaded above)
+    // to find the correct split point.
     const auto detailDir = getMaqamDetailDirectory();
     if (detailDir.isDirectory())
     {
+        std::set<juce::String> knownNotes;
+        for (const auto& ts : tuningSystemsList)
+            for (const auto& sn : ts.startingNoteIds)
+                knownNotes.insert (sn);
+
         for (const auto& f : detailDir.findChildFiles (juce::File::findFiles, false, "*.json"))
         {
-            const juce::String key = f.getFileNameWithoutExtension().replaceCharacter ('_', ':');
-            maqamDetailLazyKeys.insert (key);
+            const auto name = f.getFileNameWithoutExtension();
+            for (const auto& sn : knownNotes)
+            {
+                const auto marker = "_" + sn + "_";
+                const auto pos = name.indexOf (marker);
+                if (pos <= 0) continue;
+                const auto systemId = name.substring (0, pos);
+                const auto maqamId = name.substring (pos + marker.length());
+                if (maqamId.isEmpty()) continue;
+                maqamDetailLazyKeys.insert (systemId + ":" + sn + ":" + maqamId);
+                break;
+            }
         }
     }
 
