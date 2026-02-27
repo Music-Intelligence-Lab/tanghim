@@ -312,6 +312,7 @@ DAW-facing names must be pure ASCII (Ableton garbles UTF-8). No parentheses in P
 
 ## Conventions
 
+- **Tuning system ≡ tuning system + starting note**: Switching the starting note is functionally identical to switching the tuning system — both trigger `loadTuningSystem()`, reload pitch classes, refresh the maqam list, and require the same preset compatibility checks, state clearing, and UI updates. Any behaviour implemented for tuning system switches MUST also work for starting note switches. They share the same code path (`handleSystemSelect` in JS, `loadTuningSystem()` in C++).
 - **Lifetime guard**: `callAsync` lambdas capture `weak_ptr<atomic<bool>>`, check `isAlive(weak)`. `alive` declared BEFORE `apiClient` so it outlives background thread
 - **Background cache preloading**: `apiClient.runOnThread()` for JSON deserialization, `callAsync` back to message thread
 - **MidiBufferIterator**: no `operator->`. Use `(*it).getMessage()` or range-for `meta.getMessage()`

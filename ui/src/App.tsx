@@ -149,6 +149,7 @@ export default function App() {
   const afterSystemSwitchRef = useRef<((state: TuningState) => void | false) | null>(null)  // callback to run after tuning system loads; return false to keep for next event
   const presetIndexOverrideRef = useRef<number | null>(null)  // guards preset index from async event overwrite
   const preSystemSwitchPresetRef = useRef(-1)  // captures active preset before system/note switch for re-apply check
+  const systemSwitchPendingRef = useRef(false)  // true during system/note switch, blocks syncMaqamStateFromCpp from restoring preset
 
   // Refs for modification tracking — ensures callbacks always have latest values
   // without stale closures. Updated both during render AND immediately in handlers.
@@ -185,10 +186,15 @@ export default function App() {
     if (presetOverride !== null && (state.activePresetIndex ?? -1) === presetOverride)
       presetIndexOverrideRef.current = null
 
+    // During a system/note switch, don't restore C++ activePresetIndex —
+    // the maqam list useEffect will handle preset re-apply/deactivation
+    // after compatibility is confirmed.
+    const pendingSwitch = systemSwitchPendingRef.current
+
     if (!state.selectedMaqamId && (isMaqamModifiedRef.current || selectedMaqamIdRef.current)) {
       // Don't overwrite maqam selection — keep the current state
       // Only sync preset index (it might have changed)
-      setActivePresetIndex(presetOverride ?? state.activePresetIndex ?? -1)
+      if (!pendingSwitch) setActivePresetIndex(presetOverride ?? state.activePresetIndex ?? -1)
       return
     }
 
@@ -196,7 +202,7 @@ export default function App() {
     setSelectedMaqamId(newMaqamId)
     selectedMaqamIdRef.current = newMaqamId  // Update ref immediately
     setSelectedTransIdx(state.transpositionIndex ?? -1)
-    setActivePresetIndex(presetOverride ?? state.activePresetIndex ?? -1)
+    if (!pendingSwitch) setActivePresetIndex(presetOverride ?? state.activePresetIndex ?? -1)
 
     if (state.degreeNames && state.degreeNames.length > 0) {
       const degreeIndices = computeMaqamDegreeIndices(state.degreeNames, state.paoNameMap)
@@ -527,6 +533,7 @@ export default function App() {
     const presetToCheck = preSystemSwitchPresetRef.current
     if (presetToCheck < 0 || maqamList.length === 0) return
     preSystemSwitchPresetRef.current = -1  // consume
+    systemSwitchPendingRef.current = false  // allow syncMaqamStateFromCpp to set preset again
     const preset = tuningState.presets[presetToCheck]
     if (!preset?.isAssigned) return
     const entry = maqamList.find(m => m.maqamId === preset.maqamId)
@@ -572,8 +579,11 @@ export default function App() {
   const handleSystemSelect = async (systemId: string, startingNote: string) => {
     showStatus('Loading ' + systemId + '…', 10000)
     // Capture active preset before clearing — used by maqam list useEffect to
-    // re-apply or deactivate the preset after the new maqam list arrives
+    // re-apply or deactivate the preset after the new maqam list arrives.
+    // systemSwitchPendingRef blocks syncMaqamStateFromCpp from restoring the
+    // old C++ preset index before the useEffect can check compatibility.
     preSystemSwitchPresetRef.current = activePresetIndex
+    systemSwitchPendingRef.current = true
     // Clear maqam state when switching systems
     setMaqamList([])
     setSelectedMaqamId('')
