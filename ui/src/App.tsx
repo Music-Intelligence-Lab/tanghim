@@ -242,8 +242,10 @@ export default function App() {
       setMaqamDegreePaoNames(new Map())
       setMaqamTonicIndex(-1)
       setMaqamTonicMidi(-1)
-      // Restore scroll position only when no maqam is selected and viewport isn't sticky
-      if (state.startMidi !== undefined && !stickyViewportRef.current) setStartMidi(state.startMidi)
+      // Restore scroll position from C++ only on session recall — not during system switch
+      // (handleSystemSelect already centered on C3) or preset deactivation (sticky viewport)
+      if (state.startMidi !== undefined && !stickyViewportRef.current && !pendingSwitch)
+        setStartMidi(state.startMidi)
     }
   }, [])
 
