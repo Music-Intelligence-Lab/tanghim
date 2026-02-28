@@ -227,8 +227,9 @@ export default function App() {
         const tonicMidi = tonic?.midi ?? (tonicCi + 48)
         setMaqamTonicMidi(tonicMidi)
 
-        // Center viewport on maqam when requested (e.g., MIDI preset trigger)
-        if (centerOnMaqam) {
+        // Center viewport on maqam when requested (e.g., session recall with maqam)
+        if (centerOnMaqam && !stickyViewportRef.current) {
+          setStartMidi(centerMaqamOctave(tonicMidi, fractionalVisibleCount))
         }
       }
     } else if (!isMaqamModifiedRef.current && !selectedMaqamIdRef.current
@@ -559,6 +560,13 @@ export default function App() {
   useJuceEvent('maqamListLoaded',     onMaqamListLoaded)
   useJuceEvent('mtsStatusChanged',   onMtsStatusChanged)
   useJuceEvent('slotCentsChanged',   onSlotCentsChanged)
+  // MIDI preset trigger → same path as UI click (useJuceEvent uses refs,
+  // so handlePresetClick is always the latest version even though defined later)
+  useJuceEvent('midiPresetTriggered', (data: unknown) => {
+    if (!data || typeof data !== 'object') return
+    const { presetIndex } = data as { presetIndex: number }
+    if (typeof presetIndex === 'number') handlePresetClick(presetIndex)
+  })
 
   // ── Maqam degree + scroll helpers ───────────────────────────────────────
 

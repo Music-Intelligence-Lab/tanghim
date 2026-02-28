@@ -203,12 +203,17 @@ void ArabicMaqamTunerEditor::timerCallback()
     if (! browser) return;
 
     // ── MIDI-triggered preset (~30Hz check) ───────────────────────────────
+    // Emit to JS so it goes through handlePresetClick — same path as UI click.
+    // This ensures viewport centering, modification tracking, system switches
+    // for modified presets, fetchAndApplyMaqamDetail, etc. all work identically.
     {
         const int presetIdx = processor.consumePendingMidiPreset();
         if (presetIdx >= 0 && presetIdx < 16)
         {
-            processor.applyPreset (presetIdx);
-            emitTuningStateChanged();
+            auto* obj = new juce::DynamicObject();
+            obj->setProperty ("presetIndex", presetIdx);
+            browser->emitEventIfBrowserIsVisible ("midiPresetTriggered",
+                                                   juce::var (obj));
         }
     }
 

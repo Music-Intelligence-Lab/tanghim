@@ -6,7 +6,6 @@
 
 
 ## Documentation and Code Symbol updates
-- add a note about the replaceCharacter('_', ':') issue/bug to our claude.md so it doesn't happen again
 
 - I need you to document your research about enabeling "tuning" in Max and M4L devices in our diary. This will be useful for later so we can create a guide for how to do it and save ourselves this work in the future.
 
