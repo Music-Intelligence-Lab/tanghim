@@ -45,7 +45,7 @@ ArabicMaqamTunerEditor::ArabicMaqamTunerEditor (ArabicMaqamTunerProcessor& p)
                 return resource;
             return {};
         },
-        juce::URL (juce::WebBrowserComponent::getResourceProviderRoot())
+        juce::WebBrowserComponent::getResourceProviderRoot()
     );
 #endif
 
@@ -380,10 +380,24 @@ juce::WebBrowserComponent::Resource ArabicMaqamTunerEditor::getResourceForPath (
 {
     auto cleanPath = path.isEmpty() || path == "/" ? juce::String ("index.html") : path.trimCharactersAtStart ("/");
 
-    // Look up in BinaryData
+    // Strip directory prefix (e.g. "assets/index-2ZL2UqSZ.js" → "index-2ZL2UqSZ.js")
+    // JUCE BinaryData removes dashes and directory prefixes from filenames,
+    // so match against originalFilenames[] instead of mangling the name ourselves.
+    auto filenameOnly = cleanPath.fromLastOccurrenceOf ("/", false, false);
+    if (filenameOnly.isEmpty()) filenameOnly = cleanPath;
+
     int size = 0;
-    const char* data = BinaryData::getNamedResource (
-        cleanPath.replaceCharacters ("./- ", "____").toRawUTF8(), size);
+    const char* data = nullptr;
+
+    for (int i = 0; i < BinaryData::namedResourceListSize; ++i)
+    {
+        juce::String orig (BinaryData::originalFilenames[i]);
+        if (orig == filenameOnly)
+        {
+            data = BinaryData::getNamedResource (BinaryData::namedResourceList[i], size);
+            break;
+        }
+    }
 
     if (data == nullptr)
     {

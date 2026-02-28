@@ -340,4 +340,4 @@ DAW-facing names must be pure ASCII (Ableton garbles UTF-8). No parentheses in P
 WKContentView retains first responder after text input blur → timing delays in Ableton's CMK. External MIDI unaffected. Six ObjC swizzling approaches tried, none resolved. Workaround: click outside plugin window. → [diary 2026-02-20](diary/2026-02-20.md)
 
 ### Release Build (BinaryData Resource Provider)
-JUCE BinaryData **removes** dashes from filenames (not replaces with `_`). Match against `BinaryData::originalFilenames[]`, strip directory prefix before lookup. → [diary 2026-02-20](diary/2026-02-20.md)
+JUCE BinaryData **removes** dashes from filenames (not replaces with `_`). Match against `BinaryData::originalFilenames[]`, strip directory prefix before lookup. Never use `replaceCharacters` to mangle paths — iterate `originalFilenames[]` and match. → [diary 2026-02-28](diary/2026-02-28.md)
