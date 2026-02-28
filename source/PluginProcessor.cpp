@@ -1065,18 +1065,8 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
     // Reset heptatonic map to identity (no maqam = no remapping)
     rebuildHeptMap();
 
-    // Reset reference frequency offset (starting note change = new reference point)
-    // Skip on same-system reload (e.g. preset deactivation) — keep user's ref freq
-    if (! sameSystem)
-    {
-        referenceCentsOffset = 0.0;
-        if (refFreqParam != nullptr)
-        {
-            updatingParamsFromCode = true;
-            refFreqParam->setValueNotifyingHost (refFreqParam->convertTo0to1 (0.0f));
-            updatingParamsFromCode = false;
-        }
-    }
+    // Reference frequency offset is preserved across system/note switches —
+    // user's concert pitch choice persists until explicitly changed.
 
     auto doLoad = [this, systemId, startingNote, onComplete, sameSystem] ()
     {

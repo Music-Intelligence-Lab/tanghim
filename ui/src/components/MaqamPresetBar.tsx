@@ -49,7 +49,7 @@ export default function MaqamPresetBar({
           key={i}
           preset={preset}
           index={i}
-          isActive={i === activePresetIndex}
+          isActive={i === activePresetIndex && compatibility[i]}
           isDisabled={!compatibility[i]}
           isMidiLearning={midiLearnTarget === i}
           midiNote={midiPresetNotes[i] ?? -1}

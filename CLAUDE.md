@@ -145,7 +145,7 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 
 ### Reference Frequency Control
 - `referenceCentsOffset` (±700 cents, default 0). Formula: `f *= 2^(cents/1200)` in `TuningEngine::updateTuning()`
-- APVTS: `ref_freq` param. **Resets to 0 on starting note/system change**
+- APVTS: `ref_freq` param. **Persists across system/note switches**
 - UI: SVG arc knob + Hz input + cents display + ±100¢ semitone buttons + transposition label
 - Transposition indicator: always shows "X → Y" style IPN shift (e.g., "C ↗ C#", "G ↘ F#−"). Uses ↗/↘/→ arrows, +/− suffix for non-clean semitones. Falls back to starting note when no maqam
 - Hz input supports up/down arrow keys for ±1 Hz nudges
