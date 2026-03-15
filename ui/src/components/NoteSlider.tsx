@@ -1,5 +1,6 @@
 import { useRef, memo } from 'react'
 import type { ChromaticSlot } from '../types'
+import { useSlotCentsOverride, type SlotCentsStore } from '../hooks/useSlotCentsStore'
 import './NoteSlider.css'
 
 interface Props {
@@ -20,6 +21,7 @@ interface Props {
   ipnLabel: string       // e.g. "C3", "A4"
   solfege: string        // e.g. "Mi -b3", "Do 2"
   paoName: string        // e.g. "rāst", "—"
+  slotCentsStore: SlotCentsStore
   onVariantSelect: (chromaticIndex: number, variantIndex: number) => void
   onCentsDrag: (chromaticIndex: number, centsValue: number) => void
   onCentsDragEnd: (chromaticIndex: number, centsValue: number) => void
@@ -27,7 +29,32 @@ interface Props {
   onGestureEnd?: (chromaticIndex: number) => void
 }
 
-const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, isModified, maqamVariantIndex, isWhiteKey, isHeptMuted, heptSourceKey, ipnLabel, solfege, paoName, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
+function propsAreEqual(prev: Props, next: Props): boolean {
+  return (
+    prev.chromaticIndex === next.chromaticIndex &&
+    prev.midiNote === next.midiNote &&
+    prev.effectiveIndex === next.effectiveIndex &&
+    prev.hasOverride === next.hasOverride &&
+    prev.isMaqamDegree === next.isMaqamDegree &&
+    prev.isMaqamDegreeEquiv === next.isMaqamDegreeEquiv &&
+    prev.isMaqamTonic === next.isMaqamTonic &&
+    prev.isMaqamTonicEquiv === next.isMaqamTonicEquiv &&
+    prev.isModified === next.isModified &&
+    prev.maqamVariantIndex === next.maqamVariantIndex &&
+    prev.isWhiteKey === next.isWhiteKey &&
+    prev.isHeptMuted === next.isHeptMuted &&
+    prev.heptSourceKey === next.heptSourceKey &&
+    prev.ipnLabel === next.ipnLabel &&
+    prev.solfege === next.solfege &&
+    prev.paoName === next.paoName &&
+    // Compare slot by value — centsOffset is handled by slotCentsStore subscription
+    prev.slot.selectedIndex === next.slot.selectedIndex &&
+    prev.slot.isLocked === next.slot.isLocked &&
+    prev.slot.variants === next.slot.variants
+  )
+}
+
+const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, isModified, maqamVariantIndex, isWhiteKey, isHeptMuted, heptSourceKey, ipnLabel, solfege, paoName, slotCentsStore, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
   const trackRef = useRef<HTMLDivElement>(null)
   const thumbRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
@@ -36,8 +63,10 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
   // Only lock if no variants at all (empty data) — with continuous tuning, even single-variant slots are adjustable
   const isLocked     = variantCount === 0
 
-  // Derive centsOffset from selected variant if C++ hasn't sent it yet
-  const centsOffset = slot.centsOffset ?? slot.variants[slot.selectedIndex]?.midiCentsDeviation ?? 0
+  // Per-slot subscription: only this slider re-renders when its override changes
+  const centsOverride = useSlotCentsOverride(slotCentsStore, chromaticIndex)
+  // Derive centsOffset: store override > slot state > variant default
+  const centsOffset = centsOverride ?? slot.centsOffset ?? slot.variants[slot.selectedIndex]?.midiCentsDeviation ?? 0
 
   // ── Deviation-based positioning (±150 cents range) ──────────────────────────
   // 0 cents deviation = 50% (vertical center of track)
@@ -161,6 +190,6 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
       </div>
     </div>
   )
-})
+}, propsAreEqual)
 
 export default NoteSlider

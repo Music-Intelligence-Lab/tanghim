@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react'
 import type { ChromaticSlot } from '../types'
+import type { SlotCentsStore } from '../hooks/useSlotCentsStore'
 import { SLOT_WIDTH_PX, BANK_LEFT_OFFSET_PX } from '../constants'
 import NoteSlider from './NoteSlider'
 import './NoteSliderBank.css'
@@ -56,6 +57,7 @@ interface Props {
   modifiedSlots: Set<number>
   maqamDegreePaoNames: Map<number, string>
   heptEnabled: boolean
+  slotCentsStore: SlotCentsStore
   onVariantSelect: (chromaticIndex: number, variantIndex: number) => void
   onCentsDrag: (chromaticIndex: number, centsValue: number) => void
   onCentsDragEnd: (chromaticIndex: number, centsValue: number) => void
@@ -63,7 +65,7 @@ interface Props {
   onGestureEnd?: (chromaticIndex: number) => void
 }
 
-const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidthPx, noteNames, perNoteOverrides, degreeIpnMap, degreeSolfegeMap, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, modifiedSlots, maqamDegreePaoNames, heptEnabled, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
+const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidthPx, noteNames, perNoteOverrides, degreeIpnMap, degreeSolfegeMap, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, modifiedSlots, maqamDegreePaoNames, heptEnabled, slotCentsStore, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
   const renderStart = Math.floor(startMidi)
   const pixelOffset = (startMidi - renderStart) * SLOT_WIDTH_PX
 
@@ -128,6 +130,7 @@ const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidt
               ipnLabel={ipnLabel}
               solfege={solfege}
               paoName={paoName}
+              slotCentsStore={slotCentsStore}
               onVariantSelect={onVariantSelect}
               onCentsDrag={onCentsDrag}
               onCentsDragEnd={onCentsDragEnd}

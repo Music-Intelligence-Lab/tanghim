@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import type { TuningState, TuningSystem, MaqamListEntry, MtsStatusUpdate } from './types'
 import { useJuceBridge, useJuceEvent } from './hooks/useJuceBridge'
 import { useVisibleSliderCount } from './hooks/useVisibleSliderCount'
+import { createSlotCentsStore } from './hooks/useSlotCentsStore'
 import { SLOT_WIDTH_PX } from './constants'
 import './App.css'
 
@@ -129,6 +130,7 @@ function centerMaqamOctave(tonicMidi: number, visibleCount: number): number {
 }
 
 export default function App() {
+  const slotCentsStore = useMemo(() => createSlotCentsStore(), [])
   const [tuningSystems, setTuningSystems] = useState<TuningSystem[]>([])
   const [tuningState, setTuningState]     = useState<TuningState>(EMPTY_STATE)
   const [status, setStatus]               = useState<string>('')
@@ -308,6 +310,8 @@ export default function App() {
   const onTuningStateChanged = useCallback((data: unknown) => {
     if (!data || typeof data !== 'object') return
     const state = data as TuningState
+    // Full state sync — clear per-slot overrides (state.slots has authoritative values)
+    slotCentsStore.clear()
     setTuningState(state)
 
     // Mark the loaded system+note as cached in the tuning systems list
@@ -341,7 +345,7 @@ export default function App() {
       const result = afterSystemSwitchRef.current(state)
       if (result !== false) afterSystemSwitchRef.current = null
     }
-  }, [syncMaqamStateFromCpp])
+  }, [syncMaqamStateFromCpp, slotCentsStore])
 
   const onStatusMessage = useCallback((data: unknown) => {
     if (typeof data === 'string') showStatus(data)
@@ -363,19 +367,16 @@ export default function App() {
     }))
   }, [])
 
-  // Lightweight slot cents update from DAW automation (avoids full state rebuild)
+  // Lightweight slot cents update from DAW automation — writes to per-slot store
+  // so only the affected NoteSlider re-renders (no React state update at all)
   const onSlotCentsChanged = useCallback((data: unknown) => {
     if (!data || typeof data !== 'object') return
     const { index, cents } = data as { index: number; cents: number }
     if (typeof index !== 'number' || typeof cents !== 'number') return
-    setTuningState(prev => {
-      const slots = [...prev.slots]
-      if (index >= 0 && index < 12) {
-        slots[index] = { ...slots[index], centsOffset: cents }
-      }
-      return { ...prev, slots }
-    })
-  }, [])
+    if (index >= 0 && index < 12) {
+      slotCentsStore.set(index, cents)
+    }
+  }, [slotCentsStore])
 
   // ── Fetch maqam list once after first tuning state arrives ──────────────
   useEffect(() => {
@@ -692,12 +693,8 @@ export default function App() {
     chromaticIndex: number,
     centsValue: number
   ) => {
-    // Optimistic local state update for responsive UI
-    setTuningState(prev => {
-      const slots = [...prev.slots]
-      slots[chromaticIndex] = { ...slots[chromaticIndex], centsOffset: centsValue }
-      return { ...prev, slots }
-    })
+    // Optimistic local update via per-slot store — only the dragged slider re-renders
+    slotCentsStore.set(chromaticIndex, centsValue)
 
     // Track modifications for all slots when a maqam is selected
     // Use refs to always access latest values without stale closures
@@ -730,7 +727,7 @@ export default function App() {
         }
       })
     }
-  }, [bridge])
+  }, [bridge, slotCentsStore])
 
   /** Drag end: finalize + get full state sync from C++. */
   const handleCentsDragEnd = useCallback(async (
@@ -746,8 +743,11 @@ export default function App() {
     maqamModifiedRef.current = false
 
     const newState = await bridge.setSlotCentsFinalize(chromaticIndex, centsValue)
-    if (newState) setTuningState(newState)
-  }, [bridge])
+    if (newState) {
+      slotCentsStore.clear()
+      setTuningState(newState)
+    }
+  }, [bridge, slotCentsStore])
 
   /** Gesture start: notify DAW of parameter change beginning (for automation recording). */
   const handleGestureStart = useCallback((chromaticIndex: number) => {
@@ -1303,6 +1303,7 @@ export default function App() {
           modifiedSlots={modifiedSlots}
           maqamDegreePaoNames={maqamDegreePaoNames}
           heptEnabled={tuningState.heptEnabled && maqamDegreeIndices.size > 0}
+          slotCentsStore={slotCentsStore}
           onVariantSelect={handleVariantSelect}
           onCentsDrag={handleCentsDrag}
           onCentsDragEnd={handleCentsDragEnd}
