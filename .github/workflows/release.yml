@@ -1,0 +1,214 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            name: macOS
+            cmake_flags: '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
+          - os: windows-latest
+            name: Windows
+            cmake_flags: ''
+          - os: ubuntu-latest
+            name: Linux
+            cmake_flags: ''
+
+    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.name }})
+
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # ── Linux dependencies (JUCE requires these) ──────────────────────────
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev \
+            libjack-jackd2-dev \
+            ladspa-sdk \
+            libcurl4-openssl-dev \
+            libfreetype6-dev \
+            libx11-dev \
+            libxcomposite-dev \
+            libxcursor-dev \
+            libxext-dev \
+            libxinerama-dev \
+            libxrandr-dev \
+            libxrender-dev \
+            libwebkit2gtk-4.1-dev \
+            libglu1-mesa-dev \
+            mesa-common-dev
+
+      # ── Build React UI ────────────────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Build UI
+        working-directory: ui
+        run: |
+          npm ci
+          npm run build
+
+      # ── Build C++ plugins ────────────────────────────────────────────────
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_flags }}
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      # ── Run tests ─────────────────────────────────────────────────────────
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure -C Release
+
+      # ── macOS: codesign ───────────────────────────────────────────────────
+      - name: Codesign (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          codesign --force --deep --sign - "build/Tanghim_artefacts/Release/VST3/Tanghim.vst3"
+          codesign --force --deep --sign - "build/Tanghim_artefacts/Release/AU/Tanghim.component"
+          codesign --force --deep --sign - "build/Tanghim_artefacts/Release/CLAP/Tanghim.clap"
+          codesign --force --deep --sign - "build/TanghimReceiver_artefacts/Release/VST3/Tanghim Receiver.vst3"
+          codesign --force --deep --sign - "build/TanghimReceiver_artefacts/Release/AU/Tanghim Receiver.component"
+          codesign --force --deep --sign - "build/TanghimReceiver_artefacts/Release/CLAP/Tanghim Receiver.clap"
+
+      # ── Package artifacts ─────────────────────────────────────────────────
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cd build/Tanghim_artefacts/Release/VST3 && zip -r /tmp/Tanghim-VST3-macOS.zip Tanghim.vst3 && cd -
+          cd build/Tanghim_artefacts/Release/AU && zip -r /tmp/Tanghim-AU-macOS.zip Tanghim.component && cd -
+          cd build/Tanghim_artefacts/Release/CLAP && zip -r /tmp/Tanghim-CLAP-macOS.zip Tanghim.clap && cd -
+          cd "build/TanghimReceiver_artefacts/Release/VST3" && zip -r /tmp/Tanghim-Receiver-VST3-macOS.zip "Tanghim Receiver.vst3" && cd -
+          cd "build/TanghimReceiver_artefacts/Release/AU" && zip -r /tmp/Tanghim-Receiver-AU-macOS.zip "Tanghim Receiver.component" && cd -
+          cd "build/TanghimReceiver_artefacts/Release/CLAP" && zip -r /tmp/Tanghim-Receiver-CLAP-macOS.zip "Tanghim Receiver.clap" && cd -
+          cd m4l && zip -r /tmp/Tanghim-Receiver-M4L.zip "Tanghim Receiver.amxd" "Tanghim Receiver.maxpat" mts_midi_effect.js && cd -
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "build/Tanghim_artefacts/Release/VST3/Tanghim.vst3" -DestinationPath "$env:TEMP/Tanghim-VST3-Windows.zip"
+          Compress-Archive -Path "build/Tanghim_artefacts/Release/CLAP/Tanghim.clap" -DestinationPath "$env:TEMP/Tanghim-CLAP-Windows.zip"
+          Compress-Archive -Path "build/TanghimReceiver_artefacts/Release/VST3/Tanghim Receiver.vst3" -DestinationPath "$env:TEMP/Tanghim-Receiver-VST3-Windows.zip"
+          Compress-Archive -Path "build/TanghimReceiver_artefacts/Release/CLAP/Tanghim Receiver.clap" -DestinationPath "$env:TEMP/Tanghim-Receiver-CLAP-Windows.zip"
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          cd build/Tanghim_artefacts/Release/VST3 && zip -r /tmp/Tanghim-VST3-Linux.zip Tanghim.vst3 && cd -
+          cd build/Tanghim_artefacts/Release/CLAP && zip -r /tmp/Tanghim-CLAP-Linux.zip Tanghim.clap && cd -
+          cd "build/TanghimReceiver_artefacts/Release/VST3" && zip -r /tmp/Tanghim-Receiver-VST3-Linux.zip "Tanghim Receiver.vst3" && cd -
+          cd "build/TanghimReceiver_artefacts/Release/CLAP" && zip -r /tmp/Tanghim-Receiver-CLAP-Linux.zip "Tanghim Receiver.clap" && cd -
+
+      # ── Upload artifacts for release job ──────────────────────────────────
+      - name: Upload artifacts (macOS)
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-macOS
+          path: |
+            /tmp/Tanghim-VST3-macOS.zip
+            /tmp/Tanghim-AU-macOS.zip
+            /tmp/Tanghim-CLAP-macOS.zip
+            /tmp/Tanghim-Receiver-VST3-macOS.zip
+            /tmp/Tanghim-Receiver-AU-macOS.zip
+            /tmp/Tanghim-Receiver-CLAP-macOS.zip
+            /tmp/Tanghim-Receiver-M4L.zip
+
+      - name: Upload artifacts (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-Windows
+          path: |
+            ${{ runner.temp }}/Tanghim-VST3-Windows.zip
+            ${{ runner.temp }}/Tanghim-CLAP-Windows.zip
+            ${{ runner.temp }}/Tanghim-Receiver-VST3-Windows.zip
+            ${{ runner.temp }}/Tanghim-Receiver-CLAP-Windows.zip
+
+      - name: Upload artifacts (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-Linux
+          path: |
+            /tmp/Tanghim-VST3-Linux.zip
+            /tmp/Tanghim-CLAP-Linux.zip
+            /tmp/Tanghim-Receiver-VST3-Linux.zip
+            /tmp/Tanghim-Receiver-CLAP-Linux.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    name: Create Release
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: find artifacts -type f | sort
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Tanghim ${{ github.ref_name }}
+          generate_release_notes: true
+          body: |
+            ## Downloads
+
+            ### Tanghim (Transmitter)
+            | Format | macOS (Universal) | Windows | Linux |
+            |--------|-------------------|---------|-------|
+            | VST3   | [Download](Tanghim-VST3-macOS.zip) | [Download](Tanghim-VST3-Windows.zip) | [Download](Tanghim-VST3-Linux.zip) |
+            | AU     | [Download](Tanghim-AU-macOS.zip) | — | — |
+            | CLAP   | [Download](Tanghim-CLAP-macOS.zip) | [Download](Tanghim-CLAP-Windows.zip) | [Download](Tanghim-CLAP-Linux.zip) |
+
+            ### Tanghim Receiver (MIDI Effect)
+            | Format | macOS (Universal) | Windows | Linux |
+            |--------|-------------------|---------|-------|
+            | VST3   | [Download](Tanghim-Receiver-VST3-macOS.zip) | [Download](Tanghim-Receiver-VST3-Windows.zip) | [Download](Tanghim-Receiver-VST3-Linux.zip) |
+            | AU     | [Download](Tanghim-Receiver-AU-macOS.zip) | — | — |
+            | CLAP   | [Download](Tanghim-Receiver-CLAP-macOS.zip) | [Download](Tanghim-Receiver-CLAP-Windows.zip) | [Download](Tanghim-Receiver-CLAP-Linux.zip) |
+
+            ### Ableton Live (Max for Live)
+            | | |
+            |---|---|
+            | M4L Receiver | [Download](Tanghim-Receiver-M4L.zip) |
+
+            ### Installation paths
+            - **macOS VST3**: `~/Library/Audio/Plug-Ins/VST3/`
+            - **macOS AU**: `~/Library/Audio/Plug-Ins/Components/`
+            - **macOS CLAP**: `~/Library/Audio/Plug-Ins/CLAP/`
+            - **Windows VST3**: `C:\Program Files\Common Files\VST3\`
+            - **Windows CLAP**: `C:\Program Files\Common Files\CLAP\`
+            - **Linux VST3**: `~/.vst3/`
+            - **Linux CLAP**: `~/.clap/`
+            - **M4L**: `~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim/`
+
+            > **Ableton Live users**: Ableton doesn't support VST3 MIDI effects natively. Use the **M4L Receiver** for pitch bend output, or rely on **MTS-ESP** for synths that support it.
+          files: artifacts/*
