@@ -176,6 +176,11 @@ target_link_libraries(TanghimReceiver
         juce::juce_recommended_warning_flags
 )
 
+# ── Linux: link libcurl for TanghimReceiver (juce_core needs it) ─────────────
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(TanghimReceiver PRIVATE ${LIBCURL_LIBRARIES})
+endif()
+
 # ── Embed UI bundle as BinaryData ─────────────────────────────────────────────
 # In release builds the React dist/ is bundled. In debug we hot-reload from Vite.
 # Run `cd ui && npm run build` before the cmake build in release mode.
