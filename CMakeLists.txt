@@ -87,7 +87,8 @@ set_source_files_properties(source/NativeBridge.cpp PROPERTIES OBJECT_DEPENDS ${
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
-    target_include_directories(Tanghim PRIVATE ${GTK3_INCLUDE_DIRS})
+    pkg_check_modules(WEBKIT2GTK REQUIRED webkit2gtk-4.1)
+    target_include_directories(Tanghim PRIVATE ${GTK3_INCLUDE_DIRS} ${WEBKIT2GTK_INCLUDE_DIRS})
 endif()
 
 # ── Compile definitions ───────────────────────────────────────────────────────
