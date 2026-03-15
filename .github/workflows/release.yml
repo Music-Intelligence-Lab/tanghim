@@ -117,10 +117,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Compress-Archive -Path "build/Tanghim_artefacts/Release/VST3/Tanghim.vst3" -DestinationPath "$env:TEMP/Tanghim-VST3-Windows.zip"
-          Compress-Archive -Path "build/Tanghim_artefacts/Release/CLAP/Tanghim.clap" -DestinationPath "$env:TEMP/Tanghim-CLAP-Windows.zip"
-          Compress-Archive -Path "build/TanghimReceiver_artefacts/Release/VST3/Tanghim Receiver.vst3" -DestinationPath "$env:TEMP/Tanghim-Receiver-VST3-Windows.zip"
-          Compress-Archive -Path "build/TanghimReceiver_artefacts/Release/CLAP/Tanghim Receiver.clap" -DestinationPath "$env:TEMP/Tanghim-Receiver-CLAP-Windows.zip"
+          Compress-Archive -Path "build/Tanghim_artefacts/Release/VST3/Tanghim.vst3" -DestinationPath "${{ runner.temp }}/Tanghim-VST3-Windows.zip"
+          Compress-Archive -Path "build/Tanghim_artefacts/Release/CLAP/Tanghim.clap" -DestinationPath "${{ runner.temp }}/Tanghim-CLAP-Windows.zip"
+          Compress-Archive -Path "build/TanghimReceiver_artefacts/Release/VST3/Tanghim Receiver.vst3" -DestinationPath "${{ runner.temp }}/Tanghim-Receiver-VST3-Windows.zip"
+          Compress-Archive -Path "build/TanghimReceiver_artefacts/Release/CLAP/Tanghim Receiver.clap" -DestinationPath "${{ runner.temp }}/Tanghim-Receiver-CLAP-Windows.zip"
 
       - name: Package (Linux)
         if: runner.os == 'Linux'
