@@ -565,7 +565,7 @@ juce::var NativeBridge::buildTuningStateJson() const
     juce::Array<juce::var> paoOrderArr;
     auto* paoNameInfoObj = new juce::DynamicObject();
     {
-        struct PaoEntry { juce::String name; juce::String englishName; juce::String solfege; };
+        struct PaoEntry { juce::String name; juce::String englishName; juce::String solfege; int octave = 0; };
         std::map<std::pair<int, int>, PaoEntry> sortedEntries;
         juce::StringArray seen;
         const auto& allPCs = processor.getCurrentPitchClasses();
@@ -576,7 +576,7 @@ juce::var NativeBridge::buildTuningStateJson() const
             {
                 seen.add (pc.noteName);
                 sortedEntries[{ pc.octave, pc.pitchClassIndex }] =
-                    { pc.noteName, pc.englishName, pc.solfege };
+                    { pc.noteName, pc.englishName, pc.solfege, pc.octave };
             }
         }
         // std::map iterates in ascending key order: (0,0), (0,1), ..., (1,0), (1,1), ...
@@ -587,6 +587,7 @@ juce::var NativeBridge::buildTuningStateJson() const
             auto* info = new juce::DynamicObject();
             info->setProperty ("englishName", entry.englishName);
             info->setProperty ("solfege",     entry.solfege);
+            info->setProperty ("octave",      entry.octave);
             paoNameInfoObj->setProperty (entry.name, juce::var (info));
         }
     }

@@ -8,7 +8,7 @@ interface Props {
   selectedMaqamId: string
   selectedTranspositionIndex: number  // -1 = base (no transposition)
   paoOrder: string[]                  // unique PAO idNames in ascending MIDI note order
-  paoNameInfo: Record<string, { englishName: string; solfege: string }>
+  paoNameInfo: Record<string, { englishName: string; solfege: string; octave: number }>
   isModified?: boolean                // true when slider tuning has been adjusted
   activePresetIndex: number            // -1 = no preset active
   onSelect: (maqamId: string, transpositionIndex: number) => void
@@ -53,7 +53,13 @@ export default function MaqamSelector({
     // Build lookup: PAO idName → position in ascending MIDI order
     const orderMap = new Map(paoOrder.map((name, i) => [name, i]))
 
-    // All options: base + transpositions
+    // Only show transpositions in octaves 1–2 (skip qarār/octave 0 and jawāb/octave 3+)
+    const isInRange = (id: string) => {
+      const oct = paoNameInfo[id]?.octave
+      return oct === 1 || oct === 2
+    }
+
+    // All options: base (always shown) + transpositions (filtered to octaves 1–2)
     const all: { value: string; label: string; order: number }[] = [
       {
         value: '-1',
@@ -63,6 +69,7 @@ export default function MaqamSelector({
     ]
     for (let i = 0; i < entry.transpositions.length; i++) {
       const t = entry.transpositions[i]
+      if (!isInRange(t.tonicId)) continue
       all.push({
         value: String(i),
         label: buildTonicLabel(t.tonicId, t.tonicDisplay, paoNameInfo, false),

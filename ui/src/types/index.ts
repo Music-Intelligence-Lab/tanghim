@@ -85,8 +85,8 @@ export interface TuningState {
   /** Unique PAO idNames in ascending MIDI note order (first occurrence per name).
    *  Used to sort transposition tonics in the tuning system's native pitch order. */
   paoOrder: string[];
-  /** PAO idName → { englishName, solfege } for display in transposition dropdown. */
-  paoNameInfo: Record<string, { englishName: string; solfege: string }>;
+  /** PAO idName → { englishName, solfege, octave } for display in transposition dropdown. */
+  paoNameInfo: Record<string, { englishName: string; solfege: string; octave: number }>;
   /** Degree-aware IPN references from maqam detail API.
    *  Key = chromatic index (0-11) as string, value = IPN letter name (e.g. "Gb", "F#").
    *  Only populated for degree slots when a maqam is selected. */
