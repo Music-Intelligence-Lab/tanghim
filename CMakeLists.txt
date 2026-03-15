@@ -212,6 +212,9 @@ set(TEST_COMMON_SOURCES
 )
 set(TEST_COMMON_INCLUDES source libs/MTS-ESP/Master)
 set(TEST_COMMON_LIBS juce::juce_core juce::juce_audio_basics)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    list(APPEND TEST_COMMON_LIBS ${LIBCURL_LIBRARIES})
+endif()
 set(TEST_COMMON_DEFS JUCE_STANDALONE_APPLICATION=0 JUCE_WEB_BROWSER=0)
 
 foreach(TEST_NAME ApiResponseParserTest TuningEngineTest MidiProcessingTest)

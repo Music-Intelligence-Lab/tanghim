@@ -82,9 +82,9 @@ TanghimEditor::TanghimEditor (TanghimProcessor& p)
         // Visual feedback: flash button text, revert after 1.5s
         clearCacheButton.setButtonText (juce::CharPointer_UTF8 ("\xe2\x9c\x93 Cleared!"));
         clearCacheButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff4caf50));
-        auto* btn = &clearCacheButton;
-        juce::Timer::callAfterDelay (1500, [safeThis = juce::Component::SafePointer<juce::Component> (this), btn] {
-            if (safeThis)
+        juce::Component::SafePointer<juce::TextButton> safeBtn (&clearCacheButton);
+        juce::Timer::callAfterDelay (1500, [safeBtn] {
+            if (auto* btn = safeBtn.getComponent())
             {
                 btn->setButtonText (juce::CharPointer_UTF8 ("\xc3\x97 Clear Cache"));
                 btn->setColour (juce::TextButton::textColourOffId, juce::Colour (0xff808099));
