@@ -17,7 +17,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout TanghimProcessor::createPara
     {
         auto id = juce::ParameterID ("slot_" + juce::String (i), 1);
         params.push_back (std::make_unique<juce::AudioParameterFloat> (
-            id, "Slot " + juce::String (i),
+            id, "Slider " + juce::String (i + 1),
             juce::NormalisableRange<float> (-150.0f, 150.0f, 0.01f),
             0.0f));
     }
@@ -28,10 +28,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout TanghimProcessor::createPara
         juce::NormalisableRange<float> (-700.0f, 700.0f, 0.01f),
         0.0f));
 
-    // Preset param: "None" + presets 1-16
+    // Preset param: "None" + presets 1-8
     juce::StringArray presetChoices;
     presetChoices.add ("None");
-    for (int i = 1; i <= 16; ++i)
+    for (int i = 1; i <= 8; ++i)
         presetChoices.add (juce::String (i));
 
     params.push_back (std::make_unique<juce::AudioParameterChoice> (

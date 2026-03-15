@@ -366,13 +366,13 @@ Tanghīm exposes its key tuning parameters to your DAW's automation system. You 
 
 | Parameter | Range | Description |
 |---|---|---|
-| `Slot 1` – `Slot 12` | ±100 cents | Cents deviation for each of the 12 chromatic pitch classes. Slot 1 = C, Slot 2 = C#, etc. |
-| `Reference Freq` | ±700 cents | Reference frequency offset from the tuning system's default |
-| `Preset` | None, 1–16 | Active preset index. Automate this to switch between saved maqam presets at specific points in your arrangement |
+| `Slider 1` – `Slider 12` | ±150 cents | Cents deviation for each of the 12 chromatic pitch classes. Slider 1 = C, Slider 2 = C#, etc. |
+| `Ref Freq` | ±700 cents | Reference frequency offset from the tuning system's default |
+| `Preset` | None, 1–8 | Active preset index. Automate this to switch between saved maqam presets at specific points in your arrangement |
 
 ### Usage Tips
 
-- **Automating sliders** (`Slot 1`–`Slot 12`) lets you smoothly glide tuning between positions — useful for creative effects or gradual intonation shifts during a performance
+- **Automating sliders** (`Slider 1`–`Slider 12`) lets you smoothly glide tuning between positions — useful for creative effects or gradual intonation shifts during a performance
 - **Automating the preset parameter** is a simple way to switch between maqamat at defined points in a song without MIDI preset mapping
 - **Automating the reference frequency** lets you create pitch drifts or transpose the entire tuning smoothly over time
 - All automation updates are applied at audio-rate for glitch-free transitions
