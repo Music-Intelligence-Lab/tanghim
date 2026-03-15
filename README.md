@@ -241,6 +241,7 @@ Click the note badge on a preset to remove the mapping.
 ### Important Notes
 - MIDI preset mapping uses a **dedicated MIDI input** separate from your DAW's MIDI routing, ensuring reliable triggering regardless of DAW state
 - MIDI notes on the preset mapping channel are filtered from the oscillator to prevent double-triggering
+- **Ableton Live users:** Ableton merges all incoming MIDI to channel 1 between tracks. If your MIDI controller sends preset pads on a different channel (e.g. channel 10), set Ableton's MIDI track input to a specific channel (e.g. channel 1 for keys) rather than "All Channels". This way, pad notes on channel 10 won't be routed to the plugin and won't accidentally trigger the oscillator. The dedicated MIDI input still receives all channels directly, so preset switching works regardless of this setting
 - Device and mapping settings are saved in `~/Library/Tanghim/settings.json`
 
 ---
@@ -438,6 +439,7 @@ This design is necessary because Ableton doesn't allow VST3 plugins to process M
 - **Computer MIDI Keyboard timing**: When the Tanghīm plugin window is focused, Ableton's built-in computer keyboard MIDI input may have slightly delayed timing. This is a known macOS WebView issue. **Workaround**: click outside the plugin window, or use an external MIDI controller (which is unaffected).
 - **Plugin scanning**: On Apple Silicon Macs, Ableton's plugin scanner runs under Rosetta (x86_64). The plugin is built as a universal binary to ensure compatibility.
 - **MIDI routing between tracks**: Ableton normalizes MIDI to channel 1 between tracks. This is why the standalone Receiver VST3 cannot be used in Ableton — you must use the M4L Receiver device for MPE and Mono PB delivery, or use MTS-ESP directly.
+- **MIDI preset mapping with multi-channel controllers**: If your MIDI controller sends keys on one channel and pads on another (e.g. keys on ch1, pads on ch10), set the Ableton track's MIDI input to the keys channel only — not "All Channels". Because Ableton merges all channels to ch1, the plugin's channel filter cannot distinguish pad notes from key notes if both arrive on the same channel. The dedicated MIDI preset input receives directly from the device and preserves channel info, so preset switching works correctly regardless.
 
 ---
 

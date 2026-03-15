@@ -17,8 +17,8 @@
 
 // Number of chromatic slot parameters (slot_0 through slot_11)
 inline constexpr int kNumSlotParams = 12;
-// Number of preset choices ("None" + presets 1-16)
-inline constexpr int kNumPresetChoices = 17;
+// Number of preset choices ("None" + presets 1-8)
+inline constexpr int kNumPresetChoices = 9;
 
 /** Check whether a Processor is still alive (for use in callAsync lambdas). */
 inline bool isAlive (const std::weak_ptr<std::atomic<bool>>& w)
