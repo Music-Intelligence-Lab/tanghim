@@ -39,3 +39,17 @@ Testing/
 
 # API cache
 .cache/
+
+# Node
+ui/node_modules/
+
+# UI build output
+ui/dist/
+
+# Development notes
+CLAUDE.md
+DIARY.md
+diary/
+TODO.md
+IMPLEMENTATION_PLAN.md
+project_idea.md
