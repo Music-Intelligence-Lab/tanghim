@@ -136,6 +136,20 @@ export function useJuceBridge() {
     return callNative<TuningState>('setSlotCentsFinalize', chromaticIndex, centsValue)
   }, [])
 
+  const setNoteCents = useCallback(async (
+    midiNote: number,
+    centsValue: number
+  ): Promise<void> => {
+    await callNative('setNoteCents', midiNote, centsValue)
+  }, [])
+
+  const setNoteCentsFinalize = useCallback(async (
+    midiNote: number,
+    centsValue: number
+  ): Promise<TuningState | undefined> => {
+    return callNative<TuningState>('setNoteCentsFinalize', midiNote, centsValue)
+  }, [])
+
   const applyPreset = useCallback(async (presetIndex: number): Promise<TuningState | undefined> => {
     return callNative<TuningState>('applyPreset', presetIndex)
   }, [])
@@ -313,6 +327,8 @@ export function useJuceBridge() {
     setNoteVariant,
     setSlotCents,
     setSlotCentsFinalize,
+    setNoteCents,
+    setNoteCentsFinalize,
     setOscillatorEnabled,
     setHeptEnabled,
     setReferenceFreqCents,
@@ -344,7 +360,8 @@ export function useJuceBridge() {
     saveStateFile,
     loadStateFile,
   }), [getTuningSystems, selectTuningSystem, setSliderVariant, setNoteVariant,
-       setSlotCents, setSlotCentsFinalize, setOscillatorEnabled, setHeptEnabled,
+       setSlotCents, setSlotCentsFinalize, setNoteCents, setNoteCentsFinalize,
+       setOscillatorEnabled, setHeptEnabled,
        setReferenceFreqCents, setReferenceFreqCentsFinalize, beginRefFreqGesture, endRefFreqGesture,
        applyPreset, assignPreset, clearPreset,
        getMaqamList, applyMaqam, checkForUpdates, getCurrentState, setStartMidi, getMaqamMidiDragData, saveMaqamMidiFile,

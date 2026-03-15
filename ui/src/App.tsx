@@ -48,6 +48,7 @@ const EMPTY_STATE: TuningState = {
   })),
   noteNames: {},
   perNoteOverrides: {},
+  perNoteCentsOverrides: {},
   paoNameMap: {},
   paoOrder: [],
   paoNameInfo: {},
@@ -374,7 +375,7 @@ export default function App() {
     const { index, cents } = data as { index: number; cents: number }
     if (typeof index !== 'number' || typeof cents !== 'number') return
     if (index >= 0 && index < 12) {
-      slotCentsStore.set(index, cents)
+      slotCentsStore.setSlot(index, cents)
     }
   }, [slotCentsStore])
 
@@ -694,7 +695,7 @@ export default function App() {
     centsValue: number
   ) => {
     // Optimistic local update via per-slot store — only the dragged slider re-renders
-    slotCentsStore.set(chromaticIndex, centsValue)
+    slotCentsStore.setSlot(chromaticIndex, centsValue)
 
     // Track modifications for all slots when a maqam is selected
     // Use refs to always access latest values without stale closures
@@ -743,6 +744,61 @@ export default function App() {
     maqamModifiedRef.current = false
 
     const newState = await bridge.setSlotCentsFinalize(chromaticIndex, centsValue)
+    if (newState) {
+      slotCentsStore.clear()
+      setTuningState(newState)
+    }
+  }, [bridge, slotCentsStore])
+
+  /** Shift+drag: per-note cents override (fire-and-forget). */
+  const pendingNoteDragRef = useRef<{ midi: number; cents: number } | null>(null)
+  const noteDragRafRef = useRef<number>(0)
+
+  const handleNoteCentsDrag = useCallback((midiNote: number, centsValue: number) => {
+    // Optimistic local update via per-note store key
+    slotCentsStore.setNote(midiNote, centsValue)
+
+    // Track modifications — same logic as handleCentsDrag
+    const chromaticIndex = midiNote % 12
+    const isDegreeSlot = maqamDegreeIndicesRef.current.has(chromaticIndex)
+    const currentMaqamId = selectedMaqamIdRef.current
+    if (currentMaqamId) {
+      if (isDegreeSlot && !maqamModifiedRef.current) {
+        maqamModifiedRef.current = true
+        presetIndexOverrideRef.current = null
+        setActivePresetIndex(-1)
+        setIsMaqamModified(true)
+        isMaqamModifiedRef.current = true
+      }
+      setModifiedSlots(prev => {
+        if (prev.has(chromaticIndex)) return prev
+        return new Set(prev).add(chromaticIndex)
+      })
+    }
+
+    // Throttle C++ calls to one per animation frame
+    pendingNoteDragRef.current = { midi: midiNote, cents: centsValue }
+    if (!noteDragRafRef.current) {
+      noteDragRafRef.current = requestAnimationFrame(() => {
+        noteDragRafRef.current = 0
+        if (pendingNoteDragRef.current) {
+          bridge.setNoteCents(pendingNoteDragRef.current.midi, pendingNoteDragRef.current.cents)
+          pendingNoteDragRef.current = null
+        }
+      })
+    }
+  }, [bridge, slotCentsStore])
+
+  /** Shift+drag end: finalize per-note override + full state sync. */
+  const handleNoteCentsDragEnd = useCallback(async (midiNote: number, centsValue: number) => {
+    if (noteDragRafRef.current) {
+      cancelAnimationFrame(noteDragRafRef.current)
+      noteDragRafRef.current = 0
+    }
+    pendingNoteDragRef.current = null
+    maqamModifiedRef.current = false
+
+    const newState = await bridge.setNoteCentsFinalize(midiNote, centsValue)
     if (newState) {
       slotCentsStore.clear()
       setTuningState(newState)
@@ -1295,6 +1351,7 @@ export default function App() {
           bankWidthPx={bankWidthPx}
           noteNames={tuningState.noteNames}
           perNoteOverrides={tuningState.perNoteOverrides}
+          perNoteCentsOverrides={tuningState.perNoteCentsOverrides}
           degreeIpnMap={tuningState.degreeIpnMap}
           degreeSolfegeMap={tuningState.degreeSolfegeMap}
           maqamDegreeIndices={maqamDegreeIndices}
@@ -1307,6 +1364,8 @@ export default function App() {
           onVariantSelect={handleVariantSelect}
           onCentsDrag={handleCentsDrag}
           onCentsDragEnd={handleCentsDragEnd}
+          onNoteCentsDrag={handleNoteCentsDrag}
+          onNoteCentsDragEnd={handleNoteCentsDragEnd}
           onGestureStart={handleGestureStart}
           onGestureEnd={handleGestureEnd}
         />

@@ -49,6 +49,7 @@ interface Props {
   bankWidthPx: number
   noteNames: Record<string, Record<string, string>>
   perNoteOverrides: Record<string, number>
+  perNoteCentsOverrides: Record<string, number>
   degreeIpnMap: Record<string, string>
   degreeSolfegeMap: Record<string, string>
   maqamDegreeIndices: Set<number>
@@ -61,11 +62,13 @@ interface Props {
   onVariantSelect: (chromaticIndex: number, variantIndex: number) => void
   onCentsDrag: (chromaticIndex: number, centsValue: number) => void
   onCentsDragEnd: (chromaticIndex: number, centsValue: number) => void
+  onNoteCentsDrag: (midiNote: number, centsValue: number) => void
+  onNoteCentsDragEnd: (midiNote: number, centsValue: number) => void
   onGestureStart?: (chromaticIndex: number) => void
   onGestureEnd?: (chromaticIndex: number) => void
 }
 
-const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidthPx, noteNames, perNoteOverrides, degreeIpnMap, degreeSolfegeMap, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, modifiedSlots, maqamDegreePaoNames, heptEnabled, slotCentsStore, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
+const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidthPx, noteNames, perNoteOverrides, perNoteCentsOverrides, degreeIpnMap, degreeSolfegeMap, maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi, modifiedSlots, maqamDegreePaoNames, heptEnabled, slotCentsStore, onVariantSelect, onCentsDrag, onCentsDragEnd, onNoteCentsDrag, onNoteCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
   const renderStart = Math.floor(startMidi)
   const pixelOffset = (startMidi - renderStart) * SLOT_WIDTH_PX
 
@@ -131,9 +134,13 @@ const NoteSliderBank = memo(function NoteSliderBank({ slots, startMidi, bankWidt
               solfege={solfege}
               paoName={paoName}
               slotCentsStore={slotCentsStore}
+              hasPerNoteCentsOverride={perNoteCentsOverrides?.[String(midi)] !== undefined}
+              perNoteCentsValue={perNoteCentsOverrides?.[String(midi)]}
               onVariantSelect={onVariantSelect}
               onCentsDrag={onCentsDrag}
               onCentsDragEnd={onCentsDragEnd}
+              onNoteCentsDrag={onNoteCentsDrag}
+              onNoteCentsDragEnd={onNoteCentsDragEnd}
               onGestureStart={onGestureStart}
               onGestureEnd={onGestureEnd}
             />

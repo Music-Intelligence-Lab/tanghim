@@ -49,9 +49,15 @@ struct ActiveTuningState
     /// >= 0 = use this variant index for this specific MIDI note.
     std::array<int, 128> perNoteVariantOverrides;
 
+    /// Per-MIDI-note cents deviation overrides.
+    /// NaN = no override (use chromatic slot's centsOffset).
+    /// Any other value = use this cents deviation for this specific MIDI note.
+    std::array<double, 128> perNoteCentsOverrides;
+
     ActiveTuningState()
     {
         perNoteVariantOverrides.fill (-1);
+        clearPerNoteCentsOverrides();
     }
 
     // ── Per-note resolution ────────────────────────────────────────────────────
@@ -77,10 +83,32 @@ struct ActiveTuningState
         return &slot.variants[(size_t) effectiveVariantIndex (midi)];
     }
 
-    /** Clear all per-note overrides (reset to chromatic-wide behaviour). */
+    /** Clear all per-note variant overrides (reset to chromatic-wide behaviour). */
     void clearPerNoteOverrides()
     {
         perNoteVariantOverrides.fill (-1);
+    }
+
+    /** Clear all per-note cents overrides (reset to chromatic slot centsOffset). */
+    void clearPerNoteCentsOverrides()
+    {
+        for (auto& v : perNoteCentsOverrides)
+            v = std::numeric_limits<double>::quiet_NaN();
+    }
+
+    /** Check if a per-note cents override is active for a given MIDI note. */
+    bool hasPerNoteCentsOverride (int midi) const
+    {
+        if (midi < 0 || midi >= 128) return false;
+        return ! std::isnan (perNoteCentsOverrides[(size_t) midi]);
+    }
+
+    /** Get effective cents for a MIDI note: per-note override if set, else chromatic slot. */
+    double effectiveCents (int midi) const
+    {
+        if (midi >= 0 && midi < 128 && ! std::isnan (perNoteCentsOverrides[(size_t) midi]))
+            return perNoteCentsOverrides[(size_t) midi];
+        return slots[(size_t) (midi % 12)].centsOffset;
     }
 
     // ── Frequency / cents tables ──────────────────────────────────────────────
@@ -95,8 +123,7 @@ struct ActiveTuningState
         std::array<double, 128> table;
         for (int midi = 0; midi < 128; ++midi)
         {
-            const int chromaticIdx = midi % 12;
-            const double cents = slots[(size_t) chromaticIdx].centsOffset;
+            const double cents = effectiveCents (midi);
 
             double freq;
             if (cents != 0.0)
@@ -115,18 +142,15 @@ struct ActiveTuningState
 
     /**
      * Build a 128-entry cents-deviation table.
-     * Each entry is the deviation in cents from standard 12-EDO for that MIDI note,
-     * taken from the chromatic slot's centsOffset.
+     * Each entry is the deviation in cents from standard 12-EDO for that MIDI note.
+     * Per-note cents overrides take priority over chromatic slot centsOffset.
      */
     std::array<double, 128> buildCentsDeviationTable() const
     {
         std::array<double, 128> table;
         table.fill (0.0);
         for (int midi = 0; midi < 128; ++midi)
-        {
-            const int chromaticIdx = midi % 12;
-            table[(size_t) midi] = slots[(size_t) chromaticIdx].centsOffset;
-        }
+            table[(size_t) midi] = effectiveCents (midi);
         return table;
     }
 

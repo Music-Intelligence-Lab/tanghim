@@ -104,7 +104,7 @@
 .note-slider.locked .track-wrap { cursor: default; }
 .note-slider.locked .thumb { cursor: default; }
 
-/* Per-note override indicator */
+/* Per-note variant override indicator (blue) */
 .note-slider.has-override .thumb {
   box-shadow: 0 0 0 3px rgba(80, 180, 255, 0.45);
 }
@@ -270,4 +270,29 @@
   font-size: 9px;
   opacity: 0.6;
   margin: 0 1px;
+}
+
+/* ── Per-note cents override (violet) ────────────────────────────────
+   MUST be last to override gold, cyan, teal, and red thumbs.         */
+.note-slider.has-per-note-cents .thumb,
+.note-slider.maqam-degree.has-per-note-cents .thumb,
+.note-slider.maqam-degree-equiv.has-per-note-cents .thumb,
+.note-slider.maqam-tonic.has-per-note-cents .thumb,
+.note-slider.maqam-tonic-equiv.has-per-note-cents .thumb,
+.note-slider.modified.has-per-note-cents .thumb,
+.note-slider.maqam-degree.modified.has-per-note-cents .thumb,
+.note-slider.maqam-degree-equiv.modified.has-per-note-cents .thumb {
+  background: #b07aff;
+  box-shadow: 0 0 0 3px rgba(176, 122, 255, 0.5);
+}
+.note-slider.has-per-note-cents .ipn-label,
+.note-slider.maqam-degree.has-per-note-cents .ipn-label,
+.note-slider.maqam-degree-equiv.has-per-note-cents .ipn-label {
+  color: #b07aff;
+}
+.note-slider.has-per-note-cents .solfege,
+.note-slider.maqam-degree.has-per-note-cents .solfege,
+.note-slider.maqam-degree-equiv.has-per-note-cents .solfege {
+  color: #b07aff;
+  opacity: 1;
 }

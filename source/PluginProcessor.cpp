@@ -484,6 +484,16 @@ void TanghimProcessor::getStateInformation (juce::MemoryBlock& dest)
     }
     state.addChild (perNoteNode, -1, nullptr);
 
+    // Per-note cents overrides (sparse: only save non-NaN entries)
+    auto perNoteCentsNode = juce::ValueTree ("PerNoteCentsOverrides");
+    for (int i = 0; i < 128; ++i)
+    {
+        if (activeTuningState.hasPerNoteCentsOverride (i))
+            perNoteCentsNode.setProperty ("c" + juce::String (i),
+                                          activeTuningState.perNoteCentsOverrides[(size_t) i], nullptr);
+    }
+    state.addChild (perNoteCentsNode, -1, nullptr);
+
     // Current maqam (for MTS-ESP scale name)
     state.setProperty ("maqamDisplay", currentMaqamDisplay, nullptr);
     state.setProperty ("tonicDisplay", currentTonicDisplay, nullptr);
@@ -684,11 +694,25 @@ void TanghimProcessor::setStateInformation (const void* data, int sizeInBytes)
         }
     }
 
+    // Read per-note cents overrides (sparse)
+    auto perNoteCentsNode = state.getChildWithName ("PerNoteCentsOverrides");
+    std::array<double, 128> savedPerNoteCents;
+    for (auto& v : savedPerNoteCents) v = std::numeric_limits<double>::quiet_NaN();
+    if (perNoteCentsNode.isValid())
+    {
+        for (int i = 0; i < 128; ++i)
+        {
+            auto prop = perNoteCentsNode.getProperty ("c" + juce::String (i), juce::var());
+            if (! prop.isVoid())
+                savedPerNoteCents[(size_t) i] = (double) prop;
+        }
+    }
+
     if (sysId.isNotEmpty() && startNote.isNotEmpty())
     {
         std::weak_ptr<std::atomic<bool>> weak (alive);
         loadTuningSystem (sysId, startNote,
-            [this, weak, savedPositions, savedCentsOffsets, savedPerNote,
+            [this, weak, savedPositions, savedCentsOffsets, savedPerNote, savedPerNoteCents,
              savedMaqamId, savedTransIdx, savedPresetIdx, savedStartMidi, savedDegreeNames] ()
         {
             if (! isAlive (weak)) return;
@@ -710,6 +734,7 @@ void TanghimProcessor::setStateInformation (const void* data, int sizeInBytes)
 
             // Restore per-note overrides
             activeTuningState.perNoteVariantOverrides = savedPerNote;
+            activeTuningState.perNoteCentsOverrides = savedPerNoteCents;
 
             // Restore maqam selection state
             currentMaqamId           = savedMaqamId;
@@ -959,6 +984,19 @@ void TanghimProcessor::restoreStateFromJson (const juce::String& json)
         }
     }
 
+    // Read per-note cents overrides
+    std::array<double, 128> savedPerNoteCents;
+    for (auto& v : savedPerNoteCents) v = std::numeric_limits<double>::quiet_NaN();
+    if (auto* pcObj = root->getProperty ("perNoteCentsOverrides").getDynamicObject())
+    {
+        for (int i = 0; i < 128; ++i)
+        {
+            auto prop = pcObj->getProperty (juce::String (i));
+            if (! prop.isVoid())
+                savedPerNoteCents[(size_t) i] = (double) prop;
+        }
+    }
+
     // Restore tuning system (async — may need API fetch)
     const juce::String sysId     = root->getProperty ("tuningSystemId").toString();
     const juce::String startNote = root->getProperty ("startingNote").toString();
@@ -970,7 +1008,7 @@ void TanghimProcessor::restoreStateFromJson (const juce::String& json)
     {
         std::weak_ptr<std::atomic<bool>> weak (alive);
         loadTuningSystem (sysId, startNote,
-            [this, weak, savedPositions, savedCentsOffsets, savedPerNote,
+            [this, weak, savedPositions, savedCentsOffsets, savedPerNote, savedPerNoteCents,
              savedMaqamId, savedMaqamDisplay, savedTonicDisplay, savedTonicEnglish, savedTonicSolfege,
              savedTransIdx, savedPresetIdx, savedStartMidi,
              savedDegreeNames, savedTonicChromatic, savedRefCents] ()
@@ -994,6 +1032,7 @@ void TanghimProcessor::restoreStateFromJson (const juce::String& json)
 
             // Restore per-note overrides
             activeTuningState.perNoteVariantOverrides = savedPerNote;
+            activeTuningState.perNoteCentsOverrides = savedPerNoteCents;
 
             // Restore maqam selection + display state (loadTuningSystem clears these)
             currentMaqamId          = savedMaqamId;
@@ -1084,6 +1123,7 @@ void TanghimProcessor::loadTuningSystem (const juce::String& systemId,
 
         // Rebuild all slots with new variants, default to variant closest to 0 cents
         activeTuningState.clearPerNoteOverrides();
+        activeTuningState.clearPerNoteCentsOverrides();
         for (int i = 0; i < 12; ++i)
         {
             auto& slot = activeTuningState.slots[(size_t) i];
@@ -1226,7 +1266,10 @@ void TanghimProcessor::setSliderVariant (int chromaticIndex, int variantIndex)
 
     // Clear per-note overrides for this chromatic position (all-octaves reset)
     for (int midi = chromaticIndex; midi < 128; midi += 12)
+    {
         activeTuningState.perNoteVariantOverrides[(size_t) midi] = -1;
+        activeTuningState.perNoteCentsOverrides[(size_t) midi] = std::numeric_limits<double>::quiet_NaN();
+    }
 
     // Manual slider change deactivates preset (but preserves maqam association
     // so that degree highlights, hept map, and save/load work correctly)
@@ -1256,6 +1299,11 @@ void TanghimProcessor::setSlotCents (int chromaticIndex, double centsValue)
     }
     slot.selectedIndex = bestIdx;
 
+    // Clear per-note cents overrides for this chromatic position
+    // (chromatic slot drag overrides any per-note tuning)
+    for (int midi = chromaticIndex; midi < 128; midi += 12)
+        activeTuningState.perNoteCentsOverrides[(size_t) midi] = std::numeric_limits<double>::quiet_NaN();
+
     // Manual slider change deactivates preset (but preserves maqam association
     // so that degree highlights, hept map, and save/load work correctly)
     currentActivePresetIdx  = -1;
@@ -1270,6 +1318,41 @@ void TanghimProcessor::setSlotCents (int chromaticIndex, double centsValue)
 void TanghimProcessor::finalizeSlotCents (int chromaticIndex, double centsValue)
 {
     setSlotCents (chromaticIndex, centsValue);
+    notifyTuningChanged();
+}
+
+void TanghimProcessor::setNoteCents (int midiNote, double centsValue)
+{
+    if (midiNote < 0 || midiNote >= 128) return;
+    const double cents = juce::jlimit (-200.0, 200.0, centsValue);
+    activeTuningState.perNoteCentsOverrides[(size_t) midiNote] = cents;
+
+    // Update selectedIndex on the chromatic slot to nearest variant (for display)
+    const int chromaticIdx = midiNote % 12;
+    auto& slot = activeTuningState.slots[(size_t) chromaticIdx];
+    int bestIdx = 0;
+    double bestDist = std::numeric_limits<double>::max();
+    for (int v = 0; v < slot.variantCount(); ++v)
+    {
+        const double dist = std::abs (slot.variants[(size_t) v].midiCentsDeviation - cents);
+        if (dist < bestDist) { bestDist = dist; bestIdx = v; }
+    }
+    activeTuningState.perNoteVariantOverrides[(size_t) midiNote] = bestIdx;
+
+    // Deactivate preset (preserve maqam)
+    currentActivePresetIdx = -1;
+
+    // Fast path: update just this one MIDI note in the tuning engine
+    tuningEngine.updateNoteTuning (midiNote, cents, referenceCentsOffset);
+
+    if (heptEnabled.load (std::memory_order_relaxed))
+        rebroadcastHeptMts();
+}
+
+void TanghimProcessor::finalizeNoteCents (int midiNote, double centsValue)
+{
+    setNoteCents (midiNote, centsValue);
+    syncPresetParamFromState();
     notifyTuningChanged();
 }
 
@@ -1300,6 +1383,7 @@ void TanghimProcessor::applyPreset (int idx)
 
     // Apply all slider positions and cents offsets directly (not via setSliderVariant which clears maqam state)
     activeTuningState.clearPerNoteOverrides();
+    activeTuningState.clearPerNoteCentsOverrides();
     for (int i = 0; i < 12; ++i)
     {
         auto& slot = activeTuningState.slots[(size_t) i];
@@ -1955,6 +2039,7 @@ void TanghimProcessor::applyMaqamDegrees (const MaqamDegrees& degrees)
     // so we don't accumulate selections from previously applied maqamat
     // (same logic as loadTuningSystem)
     activeTuningState.clearPerNoteOverrides();
+    activeTuningState.clearPerNoteCentsOverrides();
     for (int ci = 0; ci < 12; ++ci)
     {
         auto& sl = activeTuningState.slots[(size_t) ci];
@@ -2122,7 +2207,10 @@ void TanghimProcessor::parameterChanged (const juce::String& parameterID, float 
 
         // Clear per-note overrides for this chromatic position
         for (int midi = chromaticIdx; midi < 128; midi += 12)
+        {
             activeTuningState.perNoteVariantOverrides[(size_t) midi] = -1;
+            activeTuningState.perNoteCentsOverrides[(size_t) midi] = std::numeric_limits<double>::quiet_NaN();
+        }
 
         // NOTE: We intentionally do NOT clear maqam state here.
         // DAW automation should update tuning without breaking maqam association.
@@ -2574,6 +2662,7 @@ void TanghimProcessor::clearCache()
 
     // Reset slider state
     activeTuningState.clearPerNoteOverrides();
+    activeTuningState.clearPerNoteCentsOverrides();
     for (int i = 0; i < 12; ++i)
     {
         auto& slot = activeTuningState.slots[(size_t) i];

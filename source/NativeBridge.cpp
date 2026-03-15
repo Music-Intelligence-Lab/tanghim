@@ -69,6 +69,26 @@ juce::WebBrowserComponent::Options NativeBridge::applyTo (juce::WebBrowserCompon
             complete (buildTuningStateJson());
         });
 
+    // ── setNoteCents(midiNote, centsValue) ────────────────────────────────
+    // Fire-and-forget during Shift+drag — per-note cents override.
+    opts = opts.withNativeFunction ("setNoteCents",
+        [this] (const juce::Array<juce::var>& args, Completion complete)
+        {
+            if (args.size() >= 2)
+                processor.setNoteCents ((int) args[0], (double) args[1]);
+            complete (juce::var());
+        });
+
+    // ── setNoteCentsFinalize(midiNote, centsValue) ────────────────────────
+    // Called on Shift+drag mouseup — per-note override + full state sync.
+    opts = opts.withNativeFunction ("setNoteCentsFinalize",
+        [this] (const juce::Array<juce::var>& args, Completion complete)
+        {
+            if (args.size() >= 2)
+                processor.finalizeNoteCents ((int) args[0], (double) args[1]);
+            complete (buildTuningStateJson());
+        });
+
     // ── applyPreset(presetIndex) ──────────────────────────────────────────────
     opts = opts.withNativeFunction ("applyPreset",
         [this] (const juce::Array<juce::var>& args, Completion complete)
@@ -499,6 +519,15 @@ juce::var NativeBridge::buildTuningStateJson() const
             perNoteObj->setProperty (juce::String (i), state.perNoteVariantOverrides[(size_t) i]);
     }
     root->setProperty ("perNoteOverrides", juce::var (perNoteObj));
+
+    // Per-note cents overrides (sparse: only entries that are not NaN)
+    auto* perNoteCentsObj = new juce::DynamicObject();
+    for (int i = 0; i < 128; ++i)
+    {
+        if (state.hasPerNoteCentsOverride (i))
+            perNoteCentsObj->setProperty (juce::String (i), state.perNoteCentsOverrides[(size_t) i]);
+    }
+    root->setProperty ("perNoteCentsOverrides", juce::var (perNoteCentsObj));
 
     // Note names map: chromaticIndex → { octave → PAO display name }
     // Uses effectiveVariantIndex() to respect per-note overrides.

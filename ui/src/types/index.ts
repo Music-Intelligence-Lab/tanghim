@@ -78,6 +78,9 @@ export interface TuningState {
   /** Per-MIDI-note variant overrides. Key = MIDI note number (string),
    *  value = variant index. Absent key = use chromatic slot default. */
   perNoteOverrides: Record<string, number>;
+  /** Per-MIDI-note cents overrides. Key = MIDI note number (string),
+   *  value = cents deviation. Absent key = use chromatic slot centsOffset. */
+  perNoteCentsOverrides: Record<string, number>;
   /** PAO idName → chromaticIndex (0-11) for ALL pitch classes across all octaves.
    *  Covers register-specific names (kirdan, muhayyar, etc.) that are absent
    *  from slot variants (which only contain MIDI 48-59 pitch classes). */

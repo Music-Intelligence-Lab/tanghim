@@ -22,9 +22,13 @@ interface Props {
   solfege: string        // e.g. "Mi -b3", "Do 2"
   paoName: string        // e.g. "rāst", "—"
   slotCentsStore: SlotCentsStore
+  hasPerNoteCentsOverride: boolean
+  perNoteCentsValue?: number  // per-note cents from tuning state (undefined = use slot)
   onVariantSelect: (chromaticIndex: number, variantIndex: number) => void
   onCentsDrag: (chromaticIndex: number, centsValue: number) => void
   onCentsDragEnd: (chromaticIndex: number, centsValue: number) => void
+  onNoteCentsDrag: (midiNote: number, centsValue: number) => void
+  onNoteCentsDragEnd: (midiNote: number, centsValue: number) => void
   onGestureStart?: (chromaticIndex: number) => void
   onGestureEnd?: (chromaticIndex: number) => void
 }
@@ -47,6 +51,8 @@ function propsAreEqual(prev: Props, next: Props): boolean {
     prev.ipnLabel === next.ipnLabel &&
     prev.solfege === next.solfege &&
     prev.paoName === next.paoName &&
+    prev.hasPerNoteCentsOverride === next.hasPerNoteCentsOverride &&
+    prev.perNoteCentsValue === next.perNoteCentsValue &&
     // Compare slot by value — centsOffset is handled by slotCentsStore subscription
     prev.slot.selectedIndex === next.slot.selectedIndex &&
     prev.slot.isLocked === next.slot.isLocked &&
@@ -54,19 +60,21 @@ function propsAreEqual(prev: Props, next: Props): boolean {
   )
 }
 
-const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, isModified, maqamVariantIndex, isWhiteKey, isHeptMuted, heptSourceKey, ipnLabel, solfege, paoName, slotCentsStore, onVariantSelect, onCentsDrag, onCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
+const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, effectiveIndex, hasOverride, isMaqamDegree, isMaqamDegreeEquiv, isMaqamTonic, isMaqamTonicEquiv, isModified, maqamVariantIndex, isWhiteKey, isHeptMuted, heptSourceKey, ipnLabel, solfege, paoName, slotCentsStore, hasPerNoteCentsOverride, perNoteCentsValue, onVariantSelect, onCentsDrag, onCentsDragEnd, onNoteCentsDrag, onNoteCentsDragEnd, onGestureStart, onGestureEnd }: Props) {
+  const rootRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const thumbRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
+  const perNoteDragging = useRef(false)
 
   const variantCount = slot.variants.length
   // Only lock if no variants at all (empty data) — with continuous tuning, even single-variant slots are adjustable
   const isLocked     = variantCount === 0
 
-  // Per-slot subscription: only this slider re-renders when its override changes
-  const centsOverride = useSlotCentsOverride(slotCentsStore, chromaticIndex)
-  // Derive centsOffset: store override > slot state > variant default
-  const centsOffset = centsOverride ?? slot.centsOffset ?? slot.variants[slot.selectedIndex]?.midiCentsDeviation ?? 0
+  // Per-slot/per-note subscription: only this slider re-renders when its override changes
+  const centsOverride = useSlotCentsOverride(slotCentsStore, chromaticIndex, midiNote)
+  // Derive centsOffset: store override > per-note state > slot state > variant default
+  const centsOffset = centsOverride ?? perNoteCentsValue ?? slot.centsOffset ?? slot.variants[slot.selectedIndex]?.midiCentsDeviation ?? 0
 
   // ── Deviation-based positioning (±150 cents range) ──────────────────────────
   // 0 cents deviation = 50% (vertical center of track)
@@ -95,30 +103,43 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
     return Math.max(-150, Math.min(150, cents))
   }
 
-  /** Free drag on track/thumb — continuous cents update. */
+  /** Free drag on track/thumb — continuous cents update.
+   *  Shift+drag = per-note override (this MIDI note only).
+   *  Normal drag = chromatic slot (all octaves). */
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isLocked) return
     dragging.current = true
     thumbRef.current?.classList.add('dragging')
+    const isPerNote = e.shiftKey
 
-    // Begin DAW automation gesture
-    onGestureStart?.(chromaticIndex)
+    // Track per-note drag for violet indicator (ref survives re-renders,
+    // classList gives immediate visual before any re-render)
+    perNoteDragging.current = isPerNote
+    if (isPerNote) rootRef.current?.classList.add('has-per-note-cents')
+
+    // Begin DAW automation gesture (only for chromatic slot drags)
+    if (!isPerNote) onGestureStart?.(chromaticIndex)
 
     const cents = yToCents(e.clientY)
-    onCentsDrag(chromaticIndex, cents)
+    if (isPerNote) onNoteCentsDrag(midiNote, cents)
+    else onCentsDrag(chromaticIndex, cents)
 
     const onMove = (ev: MouseEvent) => {
       if (!dragging.current) return
       const c = yToCents(ev.clientY)
-      onCentsDrag(chromaticIndex, c)
+      if (isPerNote) onNoteCentsDrag(midiNote, c)
+      else onCentsDrag(chromaticIndex, c)
     }
     const onUp = (ev: MouseEvent) => {
       dragging.current = false
+      perNoteDragging.current = false
       thumbRef.current?.classList.remove('dragging')
       const c = yToCents(ev.clientY)
-      onCentsDragEnd(chromaticIndex, c)
-      // End DAW automation gesture
-      onGestureEnd?.(chromaticIndex)
+      if (isPerNote) onNoteCentsDragEnd(midiNote, c)
+      else {
+        onCentsDragEnd(chromaticIndex, c)
+        onGestureEnd?.(chromaticIndex)
+      }
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
@@ -137,7 +158,7 @@ const NoteSlider = memo(function NoteSlider({ slot, chromaticIndex, midiNote, ef
   const thumbPct = devToPct(centsOffset)
 
   return (
-    <div data-midi={midiNote} className={`note-slider ${isLocked ? 'locked' : ''} ${hasOverride ? 'has-override' : ''} ${isMaqamDegree ? 'maqam-degree' : ''} ${isMaqamDegreeEquiv ? 'maqam-degree-equiv' : ''} ${isMaqamTonic ? 'maqam-tonic' : ''} ${isMaqamTonicEquiv ? 'maqam-tonic-equiv' : ''} ${isModified ? 'modified' : ''} ${isHeptMuted ? 'hept-muted' : ''}`}>
+    <div ref={rootRef} data-midi={midiNote} className={`note-slider ${isLocked ? 'locked' : ''} ${hasOverride ? 'has-override' : ''} ${hasPerNoteCentsOverride || perNoteDragging.current ? 'has-per-note-cents' : ''} ${isMaqamDegree ? 'maqam-degree' : ''} ${isMaqamDegreeEquiv ? 'maqam-degree-equiv' : ''} ${isMaqamTonic ? 'maqam-tonic' : ''} ${isMaqamTonicEquiv ? 'maqam-tonic-equiv' : ''} ${isModified ? 'modified' : ''} ${isHeptMuted ? 'hept-muted' : ''}`}>
       <div className="track-wrap" ref={trackRef} onMouseDown={handleMouseDown}>
         <div className="track">
           {/* Snap markers on the left — clickable to snap to variant */}

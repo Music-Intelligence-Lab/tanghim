@@ -53,6 +53,13 @@ public:
     void updateSlotTuning (int chromaticIndex, double centsOffset,
                            double referenceCentsOffset);
 
+    /**
+     * Fast path: update a single MIDI note's tuning.
+     * Used for per-note cents overrides (Shift+drag).
+     */
+    void updateNoteTuning (int midiNote, double centsOffset,
+                           double referenceCentsOffset);
+
     // ── MTS-ESP broadcast (without modifying internal tables) ────────────────
     /** Broadcast a frequency table to MTS-ESP without updating internal state. */
     void broadcastMtsTable (const std::array<double, 128>& freqs);

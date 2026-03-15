@@ -122,6 +122,42 @@ void TuningEngine::updateSlotTuning (int chromaticIndex, double centsOffset,
         mtsEsp->setTuningTable (newFreqs);
 }
 
+void TuningEngine::updateNoteTuning (int midiNote, double centsOffset,
+                                     double referenceCentsOffset)
+{
+    if (midiNote < 0 || midiNote >= 128) return;
+
+    const double refRatio = (referenceCentsOffset != 0.0)
+        ? std::pow (2.0, referenceCentsOffset / 1200.0)
+        : 1.0;
+
+    std::array<double, 128> newFreqs;
+
+    {
+        juce::ScopedLock sl (tuningLock);
+
+        double baseFreq;
+        if (centsOffset != 0.0)
+        {
+            const double centsFromA440 = (midiNote - 69) * 100.0 + centsOffset;
+            baseFreq = 440.0 * std::pow (2.0, centsFromA440 / 1200.0);
+        }
+        else
+        {
+            baseFreq = 440.0 * std::pow (2.0, (midiNote - 69) / 12.0);
+        }
+
+        baseFreqTable[(size_t) midiNote] = baseFreq;
+        freqTable[(size_t) midiNote]     = baseFreq * refRatio;
+        centsTable[(size_t) midiNote]    = centsOffset;
+
+        newFreqs = freqTable;
+    }
+
+    if (mtsEsp && mtsEsp->isTransmitter())
+        mtsEsp->setTuningTable (newFreqs);
+}
+
 // ── MTS-ESP broadcast helpers ─────────────────────────────────────────────────
 
 void TuningEngine::broadcastMtsTable (const std::array<double, 128>& freqs)
