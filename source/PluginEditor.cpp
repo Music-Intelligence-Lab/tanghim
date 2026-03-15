@@ -28,7 +28,7 @@ TanghimEditor::TanghimEditor (TanghimProcessor& p)
 #if defined(JUCE_WINDOWS)
     opts = opts.withBackend (juce::WebBrowserComponent::Options::Backend::webview2)
                .withWinWebView2Options (
-                   juce::WebBrowserComponent::Options::WinWebView2Options()
+                   juce::WebBrowserComponent::Options::WinWebView2()
                        .withUserDataFolder (
                            juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
                                .getChildFile ("Tanghim/webview")));

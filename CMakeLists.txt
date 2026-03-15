@@ -82,6 +82,14 @@ target_include_directories(Tanghim
 add_dependencies(Tanghim GenerateBuildTimestamp)
 set_source_files_properties(source/NativeBridge.cpp PROPERTIES OBJECT_DEPENDS ${TIMESTAMP_HEADER})
 
+# ── Linux: GTK3 include path for juce_gui_extra WebBrowser ────────────────────
+# JUCE uses NOLINK for browser deps, but the include dirs are still needed at compile time
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+    target_include_directories(Tanghim PRIVATE ${GTK3_INCLUDE_DIRS})
+endif()
+
 # ── Compile definitions ───────────────────────────────────────────────────────
 target_compile_definitions(Tanghim
     PUBLIC
