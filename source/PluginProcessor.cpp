@@ -8,7 +8,7 @@
 
 // ── APVTS parameter layout ────────────────────────────────────────────────────
 
-juce::AudioProcessorValueTreeState::ParameterLayout ArabicMaqamTunerProcessor::createParameterLayout()
+juce::AudioProcessorValueTreeState::ParameterLayout TanghimProcessor::createParameterLayout()
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
@@ -41,7 +41,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ArabicMaqamTunerProcessor::c
     return { params.begin(), params.end() };
 }
 
-ArabicMaqamTunerProcessor::ArabicMaqamTunerProcessor()
+TanghimProcessor::TanghimProcessor()
     : AudioProcessor (BusesProperties()
                           .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
@@ -126,7 +126,7 @@ ArabicMaqamTunerProcessor::ArabicMaqamTunerProcessor()
     }
 }
 
-ArabicMaqamTunerProcessor::~ArabicMaqamTunerProcessor()
+TanghimProcessor::~TanghimProcessor()
 {
     // Stop direct MIDI input if active
     if (midiPresetInput)
@@ -147,15 +147,15 @@ ArabicMaqamTunerProcessor::~ArabicMaqamTunerProcessor()
 
 // ── AudioProcessor interface ──────────────────────────────────────────────────
 
-void ArabicMaqamTunerProcessor::prepareToPlay (double sampleRate, int /*samplesPerBlock*/)
+void TanghimProcessor::prepareToPlay (double sampleRate, int /*samplesPerBlock*/)
 {
     oscillator.prepare (sampleRate);
 }
-void ArabicMaqamTunerProcessor::releaseResources() {}
+void TanghimProcessor::releaseResources() {}
 
 // ── Audio-thread slot automation polling ──────────────────────────────────────
 
-void ArabicMaqamTunerProcessor::pollSlotAutomation()
+void TanghimProcessor::pollSlotAutomation()
 {
     uint16_t changedMask = 0;
 
@@ -181,7 +181,7 @@ void ArabicMaqamTunerProcessor::pollSlotAutomation()
     slotAutomationDirtyMask.fetch_or (changedMask, std::memory_order_relaxed);
 }
 
-void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<float>& audio,
+void TanghimProcessor::processBlock (juce::AudioBuffer<float>& audio,
                                                juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -306,7 +306,7 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<float>& audio,
     }
 }
 
-void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<double>& audio,
+void TanghimProcessor::processBlock (juce::AudioBuffer<double>& audio,
                                                juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -412,16 +412,16 @@ void ArabicMaqamTunerProcessor::processBlock (juce::AudioBuffer<double>& audio,
     }
 }
 
-juce::AudioProcessorEditor* ArabicMaqamTunerProcessor::createEditor()
+juce::AudioProcessorEditor* TanghimProcessor::createEditor()
 {
-    return new ArabicMaqamTunerEditor (*this);
+    return new TanghimEditor (*this);
 }
 
 // ── State persistence ─────────────────────────────────────────────────────────
 
-void ArabicMaqamTunerProcessor::getStateInformation (juce::MemoryBlock& dest)
+void TanghimProcessor::getStateInformation (juce::MemoryBlock& dest)
 {
-    auto state = juce::ValueTree ("ArabicMaqamTunerState");
+    auto state = juce::ValueTree ("TanghimState");
     state.setProperty ("tuningSystemId",   currentSystemId,     nullptr);
     state.setProperty ("startingNote",     currentStartingNote, nullptr);
     // Slider positions + cents offsets
@@ -535,7 +535,7 @@ void ArabicMaqamTunerProcessor::getStateInformation (juce::MemoryBlock& dest)
     copyXmlToBinary (*xml, dest);
 }
 
-void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeInBytes)
+void TanghimProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     auto xml = getXmlFromBinary (data, sizeInBytes);
     if (! xml) return;
@@ -737,7 +737,7 @@ void ArabicMaqamTunerProcessor::setStateInformation (const void* data, int sizeI
 
 // ── File-based state save/load (.tanghim files) ──────────────────────────────
 
-juce::String ArabicMaqamTunerProcessor::buildStateJson() const
+juce::String TanghimProcessor::buildStateJson() const
 {
     auto* root = new juce::DynamicObject();
     root->setProperty ("format",  "tanghim-state");
@@ -838,7 +838,7 @@ juce::String ArabicMaqamTunerProcessor::buildStateJson() const
     return juce::JSON::toString (juce::var (root));
 }
 
-void ArabicMaqamTunerProcessor::restoreStateFromJson (const juce::String& json)
+void TanghimProcessor::restoreStateFromJson (const juce::String& json)
 {
     auto parsed = juce::JSON::parse (json);
     auto* root = parsed.getDynamicObject();
@@ -1036,7 +1036,7 @@ void ArabicMaqamTunerProcessor::restoreStateFromJson (const juce::String& json)
 
 // ── Tuning control ────────────────────────────────────────────────────────────
 
-void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
+void TanghimProcessor::loadTuningSystem (const juce::String& systemId,
                                                     const juce::String& startingNote,
                                                     std::function<void()> onComplete)
 {
@@ -1214,7 +1214,7 @@ void ArabicMaqamTunerProcessor::loadTuningSystem (const juce::String& systemId,
     }
 }
 
-void ArabicMaqamTunerProcessor::setSliderVariant (int chromaticIndex, int variantIndex)
+void TanghimProcessor::setSliderVariant (int chromaticIndex, int variantIndex)
 {
     if (chromaticIndex < 0 || chromaticIndex >= 12) return;
     auto& slot = activeTuningState.slots[(size_t) chromaticIndex];
@@ -1240,7 +1240,7 @@ void ArabicMaqamTunerProcessor::setSliderVariant (int chromaticIndex, int varian
     notifyTuningChanged();
 }
 
-void ArabicMaqamTunerProcessor::setSlotCents (int chromaticIndex, double centsValue)
+void TanghimProcessor::setSlotCents (int chromaticIndex, double centsValue)
 {
     if (chromaticIndex < 0 || chromaticIndex >= 12) return;
     auto& slot = activeTuningState.slots[(size_t) chromaticIndex];
@@ -1267,13 +1267,13 @@ void ArabicMaqamTunerProcessor::setSlotCents (int chromaticIndex, double centsVa
     updateTuningAndBroadcast();
 }
 
-void ArabicMaqamTunerProcessor::finalizeSlotCents (int chromaticIndex, double centsValue)
+void TanghimProcessor::finalizeSlotCents (int chromaticIndex, double centsValue)
 {
     setSlotCents (chromaticIndex, centsValue);
     notifyTuningChanged();
 }
 
-void ArabicMaqamTunerProcessor::setNoteVariant (int midiNote, int variantIndex)
+void TanghimProcessor::setNoteVariant (int midiNote, int variantIndex)
 {
     if (midiNote < 0 || midiNote >= 128) return;
     const int chromaticIdx = midiNote % 12;
@@ -1292,7 +1292,7 @@ void ArabicMaqamTunerProcessor::setNoteVariant (int midiNote, int variantIndex)
     notifyTuningChanged();
 }
 
-void ArabicMaqamTunerProcessor::applyPreset (int idx)
+void TanghimProcessor::applyPreset (int idx)
 {
     if (idx < 0 || idx >= 16) return;
     const auto& preset = presets[(size_t) idx];
@@ -1356,7 +1356,7 @@ void ArabicMaqamTunerProcessor::applyPreset (int idx)
     notifyTuningChanged();
 }
 
-void ArabicMaqamTunerProcessor::assignPreset (int idx,
+void TanghimProcessor::assignPreset (int idx,
                                                const juce::String& maqamId,
                                                const juce::String& maqamDisplay,
                                                const juce::String& baseMaqamId,
@@ -1392,7 +1392,7 @@ void ArabicMaqamTunerProcessor::assignPreset (int idx,
     savePresetsToDisk();
 }
 
-void ArabicMaqamTunerProcessor::applyMaqam (const juce::String& maqamId, int transpositionIndex)
+void TanghimProcessor::applyMaqam (const juce::String& maqamId, int transpositionIndex)
 {
     // Find the maqam in the current list
     const MaqamListEntry* found = nullptr;
@@ -1465,7 +1465,7 @@ void ArabicMaqamTunerProcessor::applyMaqam (const juce::String& maqamId, int tra
     fetchAndApplyMaqamDetail();
 }
 
-void ArabicMaqamTunerProcessor::applyDegreeIpnRefs (const MaqamDetailResult& detail)
+void TanghimProcessor::applyDegreeIpnRefs (const MaqamDetailResult& detail)
 {
     currentDegreeIpnRefs.fill ({});
     currentDegreeSolfegeRefs.fill ({});
@@ -1482,7 +1482,7 @@ void ArabicMaqamTunerProcessor::applyDegreeIpnRefs (const MaqamDetailResult& det
     }
 }
 
-void ArabicMaqamTunerProcessor::fetchAndApplyMaqamDetail()
+void TanghimProcessor::fetchAndApplyMaqamDetail()
 {
     if (currentSystemId.isEmpty() || currentStartingNote.isEmpty()) return;
     if (currentMaqamId.isEmpty()) return;
@@ -1595,7 +1595,7 @@ void ArabicMaqamTunerProcessor::fetchAndApplyMaqamDetail()
         transpositionId);
 }
 
-void ArabicMaqamTunerProcessor::clearPreset (int idx)
+void TanghimProcessor::clearPreset (int idx)
 {
     if (idx < 0 || idx >= 16) return;
     presets[(size_t) idx].clear();
@@ -1608,17 +1608,17 @@ void ArabicMaqamTunerProcessor::clearPreset (int idx)
 
 // ── Reference frequency control ───────────────────────────────────────────────
 
-double ArabicMaqamTunerProcessor::getReferenceDefaultHz() const
+double TanghimProcessor::getReferenceDefaultHz() const
 {
     return 440.0 * std::pow (2.0, (referenceNoteMidi - 69) / 12.0);
 }
 
-double ArabicMaqamTunerProcessor::getReferenceCurrentHz() const
+double TanghimProcessor::getReferenceCurrentHz() const
 {
     return getReferenceDefaultHz() * std::pow (2.0, referenceCentsOffset / 1200.0);
 }
 
-void ArabicMaqamTunerProcessor::setReferenceCentsOffset (double cents)
+void TanghimProcessor::setReferenceCentsOffset (double cents)
 {
     referenceCentsOffset = juce::jlimit (-700.0, 700.0, cents);
 
@@ -1640,19 +1640,19 @@ void ArabicMaqamTunerProcessor::setReferenceCentsOffset (double cents)
         rebroadcastHeptMts();
 }
 
-void ArabicMaqamTunerProcessor::finalizeReferenceCentsOffset (double cents)
+void TanghimProcessor::finalizeReferenceCentsOffset (double cents)
 {
     setReferenceCentsOffset (cents);
     notifyTuningChanged();
 }
 
-void ArabicMaqamTunerProcessor::beginRefFreqGesture()
+void TanghimProcessor::beginRefFreqGesture()
 {
     if (refFreqParam != nullptr)
         refFreqParam->beginChangeGesture();
 }
 
-void ArabicMaqamTunerProcessor::endRefFreqGesture()
+void TanghimProcessor::endRefFreqGesture()
 {
     if (refFreqParam != nullptr)
         refFreqParam->endChangeGesture();
@@ -1660,14 +1660,14 @@ void ArabicMaqamTunerProcessor::endRefFreqGesture()
 
 // ── Internal reference oscillator ──────────────────────────────────────────────
 
-void ArabicMaqamTunerProcessor::setOscillatorEnabled (bool enabled)
+void TanghimProcessor::setOscillatorEnabled (bool enabled)
 {
     const bool wasEnabled = oscillatorEnabled.exchange (enabled, std::memory_order_relaxed);
     if (wasEnabled && ! enabled)
         oscillator.allNotesOff();
 }
 
-void ArabicMaqamTunerProcessor::setHeptEnabled (bool enabled)
+void TanghimProcessor::setHeptEnabled (bool enabled)
 {
     const bool wasEnabled = heptEnabled.exchange (enabled, std::memory_order_relaxed);
     if (wasEnabled && ! enabled)
@@ -1688,7 +1688,7 @@ void ArabicMaqamTunerProcessor::setHeptEnabled (bool enabled)
     saveSettingsToDisk();
 }
 
-void ArabicMaqamTunerProcessor::rebuildHeptMap()
+void TanghimProcessor::rebuildHeptMap()
 {
     // Map each degree to its natural white key using IPN letter name.
     // Bb→B key, Gb→G key, F#→F key, Eb→E key, etc.
@@ -1807,7 +1807,7 @@ void ArabicMaqamTunerProcessor::rebuildHeptMap()
 
 // ── Heptatonic MTS-ESP broadcast helpers ──────────────────────────────────────
 
-void ArabicMaqamTunerProcessor::updateTuningAndBroadcast()
+void TanghimProcessor::updateTuningAndBroadcast()
 {
     tuningEngine.updateTuning (activeTuningState, referenceCentsOffset, buildScaleName());
 
@@ -1816,7 +1816,7 @@ void ArabicMaqamTunerProcessor::updateTuningAndBroadcast()
         rebroadcastHeptMts();
 }
 
-void ArabicMaqamTunerProcessor::rebroadcastHeptMts()
+void TanghimProcessor::rebroadcastHeptMts()
 {
     // Build remapped table: for each MIDI note N, MTS-ESP freq[N] = internal freq[N + delta].
     // This makes MTS-ESP synths receiving the original (un-remapped) MIDI note play the
@@ -1837,36 +1837,36 @@ void ArabicMaqamTunerProcessor::rebroadcastHeptMts()
 
 // ── Accessors ─────────────────────────────────────────────────────────────────
 
-const std::vector<TuningSystem>& ArabicMaqamTunerProcessor::getTuningSystems() const
+const std::vector<TuningSystem>& TanghimProcessor::getTuningSystems() const
 {
     return dataCache.getTuningSystemsList();
 }
 
-bool ArabicMaqamTunerProcessor::hasCachedTuningData (const juce::String& systemId,
+bool TanghimProcessor::hasCachedTuningData (const juce::String& systemId,
                                                       const juce::String& startingNote) const
 {
     return dataCache.hasData (systemId, startingNote);
 }
 
-const std::vector<MaqamListEntry>& ArabicMaqamTunerProcessor::getMaqamList() const
+const std::vector<MaqamListEntry>& TanghimProcessor::getMaqamList() const
 {
     return currentMaqamList;
 }
 
-const ActiveTuningState& ArabicMaqamTunerProcessor::getActiveTuningState() const
+const ActiveTuningState& TanghimProcessor::getActiveTuningState() const
 {
     return activeTuningState;
 }
 
-const std::array<MaqamPreset, 16>& ArabicMaqamTunerProcessor::getPresets() const
+const std::array<MaqamPreset, 16>& TanghimProcessor::getPresets() const
 {
     return presets;
 }
 
-juce::String ArabicMaqamTunerProcessor::getCurrentSystemId()  const { return currentSystemId; }
-juce::String ArabicMaqamTunerProcessor::getCurrentStartingNote() const { return currentStartingNote; }
+juce::String TanghimProcessor::getCurrentSystemId()  const { return currentSystemId; }
+juce::String TanghimProcessor::getCurrentStartingNote() const { return currentStartingNote; }
 
-const std::vector<PitchClass>& ArabicMaqamTunerProcessor::getCurrentPitchClasses() const
+const std::vector<PitchClass>& TanghimProcessor::getCurrentPitchClasses() const
 {
     static const std::vector<PitchClass> empty;
     if (currentSystemId.isEmpty() || currentStartingNote.isEmpty())
@@ -1876,11 +1876,11 @@ const std::vector<PitchClass>& ArabicMaqamTunerProcessor::getCurrentPitchClasses
     return dataCache.getData (currentSystemId, currentStartingNote).pitchClasses;
 }
 
-bool           ArabicMaqamTunerProcessor::isMtsTransmitter()   const { return tuningEngine.isMtsTransmitter(); }
-int            ArabicMaqamTunerProcessor::mtsNumReceivers()   const { return tuningEngine.mtsNumReceivers(); }
-ReceiverCounts ArabicMaqamTunerProcessor::getReceiverCounts() const { return ReceiverRegistry::scan(); }
+bool           TanghimProcessor::isMtsTransmitter()   const { return tuningEngine.isMtsTransmitter(); }
+int            TanghimProcessor::mtsNumReceivers()   const { return tuningEngine.mtsNumReceivers(); }
+ReceiverCounts TanghimProcessor::getReceiverCounts() const { return ReceiverRegistry::scan(); }
 
-void ArabicMaqamTunerProcessor::checkForDataUpdates (
+void TanghimProcessor::checkForDataUpdates (
     std::function<void (std::vector<juce::String>)> onUpdatesFound,
     std::function<void()>                            onNoUpdates,
     std::function<void (juce::String)>               onError)
@@ -1892,7 +1892,7 @@ void ArabicMaqamTunerProcessor::checkForDataUpdates (
 
 // ── Private helpers ───────────────────────────────────────────────────────────
 
-void ArabicMaqamTunerProcessor::fetchMaqamListIfNeeded()
+void TanghimProcessor::fetchMaqamListIfNeeded()
 {
     if (currentSystemId.isEmpty() || currentStartingNote.isEmpty()) return;
 
@@ -1931,7 +1931,7 @@ void ArabicMaqamTunerProcessor::fetchMaqamListIfNeeded()
         });
 }
 
-void ArabicMaqamTunerProcessor::applyMaqamDegrees (const MaqamDegrees& degrees)
+void TanghimProcessor::applyMaqamDegrees (const MaqamDegrees& degrees)
 {
     if (currentSystemId.isEmpty() || currentStartingNote.isEmpty()) return;
     if (! dataCache.hasData (currentSystemId, currentStartingNote)) return;
@@ -2025,7 +2025,7 @@ void ArabicMaqamTunerProcessor::applyMaqamDegrees (const MaqamDegrees& degrees)
     notifyTuningChanged();
 }
 
-void ArabicMaqamTunerProcessor::rebuildTuningStateFromCache()
+void TanghimProcessor::rebuildTuningStateFromCache()
 {
     if (currentSystemId.isEmpty() || currentStartingNote.isEmpty()) return;
     if (! dataCache.hasData (currentSystemId, currentStartingNote)) return;
@@ -2044,12 +2044,12 @@ void ArabicMaqamTunerProcessor::rebuildTuningStateFromCache()
     }
 }
 
-void ArabicMaqamTunerProcessor::notifyTuningChanged()
+void TanghimProcessor::notifyTuningChanged()
 {
     if (onTuningStateChanged) onTuningStateChanged();
 }
 
-juce::String ArabicMaqamTunerProcessor::buildScaleName() const
+juce::String TanghimProcessor::buildScaleName() const
 {
     if (currentSystemId.isEmpty()) return "Tanghim";
 
@@ -2084,7 +2084,7 @@ juce::String ArabicMaqamTunerProcessor::buildScaleName() const
 
 // ── APVTS listener ────────────────────────────────────────────────────────────
 
-void ArabicMaqamTunerProcessor::parameterChanged (const juce::String& parameterID, float newValue)
+void TanghimProcessor::parameterChanged (const juce::String& parameterID, float newValue)
 {
     // Skip if we're programmatically updating params to avoid feedback loops
     if (updatingParamsFromCode)
@@ -2197,7 +2197,7 @@ void ArabicMaqamTunerProcessor::parameterChanged (const juce::String& parameterI
 
 // ── APVTS sync helpers ────────────────────────────────────────────────────────
 
-void ArabicMaqamTunerProcessor::syncSlotParamFromState (int chromaticIndex)
+void TanghimProcessor::syncSlotParamFromState (int chromaticIndex)
 {
     if (chromaticIndex < 0 || chromaticIndex >= kNumSlotParams)
         return;
@@ -2216,7 +2216,7 @@ void ArabicMaqamTunerProcessor::syncSlotParamFromState (int chromaticIndex)
     updatingParamsFromCode = false;
 }
 
-void ArabicMaqamTunerProcessor::syncAllSlotParamsFromState()
+void TanghimProcessor::syncAllSlotParamsFromState()
 {
     updatingParamsFromCode = true;
     for (int slotIdx = 0; slotIdx < kNumSlotParams; ++slotIdx)
@@ -2234,7 +2234,7 @@ void ArabicMaqamTunerProcessor::syncAllSlotParamsFromState()
     updatingParamsFromCode = false;
 }
 
-void ArabicMaqamTunerProcessor::syncPresetParamFromState()
+void TanghimProcessor::syncPresetParamFromState()
 {
     if (presetParam == nullptr)
         return;
@@ -2251,7 +2251,7 @@ void ArabicMaqamTunerProcessor::syncPresetParamFromState()
 
 // ── Gesture marking ───────────────────────────────────────────────────────────
 
-void ArabicMaqamTunerProcessor::beginSliderGesture (int chromaticIndex)
+void TanghimProcessor::beginSliderGesture (int chromaticIndex)
 {
     if (chromaticIndex < 0 || chromaticIndex >= kNumSlotParams)
         return;
@@ -2263,7 +2263,7 @@ void ArabicMaqamTunerProcessor::beginSliderGesture (int chromaticIndex)
         param->beginChangeGesture();
 }
 
-void ArabicMaqamTunerProcessor::endSliderGesture (int chromaticIndex)
+void TanghimProcessor::endSliderGesture (int chromaticIndex)
 {
     if (chromaticIndex < 0 || chromaticIndex >= kNumSlotParams)
         return;
@@ -2275,13 +2275,13 @@ void ArabicMaqamTunerProcessor::endSliderGesture (int chromaticIndex)
         param->endChangeGesture();
 }
 
-void ArabicMaqamTunerProcessor::beginPresetGesture()
+void TanghimProcessor::beginPresetGesture()
 {
     if (presetParam != nullptr)
         presetParam->beginChangeGesture();
 }
 
-void ArabicMaqamTunerProcessor::endPresetGesture()
+void TanghimProcessor::endPresetGesture()
 {
     if (presetParam != nullptr)
         presetParam->endChangeGesture();
@@ -2289,12 +2289,12 @@ void ArabicMaqamTunerProcessor::endPresetGesture()
 
 // ── Maqam/scroll state ───────────────────────────────────────────────────────
 
-void ArabicMaqamTunerProcessor::setStartMidi (double startMidi)
+void TanghimProcessor::setStartMidi (double startMidi)
 {
     currentStartMidi = startMidi;
 }
 
-void ArabicMaqamTunerProcessor::setMidiPresetNote (int presetIdx, int midiNote)
+void TanghimProcessor::setMidiPresetNote (int presetIdx, int midiNote)
 {
     if (presetIdx >= 0 && presetIdx < 16)
     {
@@ -2303,26 +2303,26 @@ void ArabicMaqamTunerProcessor::setMidiPresetNote (int presetIdx, int midiNote)
     }
 }
 
-int ArabicMaqamTunerProcessor::getMidiPresetNote (int presetIdx) const
+int TanghimProcessor::getMidiPresetNote (int presetIdx) const
 {
     if (presetIdx >= 0 && presetIdx < 16)
         return midiPresetNotes[(size_t) presetIdx].load (std::memory_order_relaxed);
     return -1;
 }
 
-void ArabicMaqamTunerProcessor::setMidiPresetChannel (int channel)
+void TanghimProcessor::setMidiPresetChannel (int channel)
 {
     // 0 = any channel, 1-16 = specific channel
     midiPresetChannel.store (juce::jlimit (0, 16, channel), std::memory_order_relaxed);
     saveSettingsToDisk();
 }
 
-int ArabicMaqamTunerProcessor::consumePendingMidiPreset()
+int TanghimProcessor::consumePendingMidiPreset()
 {
     return pendingMidiPreset.exchange (-1, std::memory_order_relaxed);
 }
 
-void ArabicMaqamTunerProcessor::startMidiLearn (int presetIdx)
+void TanghimProcessor::startMidiLearn (int presetIdx)
 {
     if (presetIdx >= 0 && presetIdx < 16)
     {
@@ -2331,13 +2331,13 @@ void ArabicMaqamTunerProcessor::startMidiLearn (int presetIdx)
     }
 }
 
-void ArabicMaqamTunerProcessor::cancelMidiLearn()
+void TanghimProcessor::cancelMidiLearn()
 {
     midiLearnTargetPreset.store (-1, std::memory_order_relaxed);
     notifyTuningChanged();  // Update UI to hide learning animation
 }
 
-void ArabicMaqamTunerProcessor::clearMidiPresetNote (int presetIdx)
+void TanghimProcessor::clearMidiPresetNote (int presetIdx)
 {
     if (presetIdx >= 0 && presetIdx < 16)
     {
@@ -2347,7 +2347,7 @@ void ArabicMaqamTunerProcessor::clearMidiPresetNote (int presetIdx)
     }
 }
 
-void ArabicMaqamTunerProcessor::clearAllMidiPresetNotes()
+void TanghimProcessor::clearAllMidiPresetNotes()
 {
     for (int i = 0; i < 16; ++i)
         midiPresetNotes[(size_t) i].store (-1, std::memory_order_relaxed);
@@ -2356,7 +2356,7 @@ void ArabicMaqamTunerProcessor::clearAllMidiPresetNotes()
 
 // ── Direct MIDI device input ─────────────────────────────────────────────────
 
-juce::StringArray ArabicMaqamTunerProcessor::getAvailableMidiDevices() const
+juce::StringArray TanghimProcessor::getAvailableMidiDevices() const
 {
     juce::StringArray devices;
     devices.add ("None");  // First option to disable
@@ -2365,17 +2365,17 @@ juce::StringArray ArabicMaqamTunerProcessor::getAvailableMidiDevices() const
     return devices;
 }
 
-juce::String ArabicMaqamTunerProcessor::getMidiPresetDevice() const
+juce::String TanghimProcessor::getMidiPresetDevice() const
 {
     return midiPresetDeviceName;
 }
 
-bool ArabicMaqamTunerProcessor::isMidiPresetDeviceOpen() const
+bool TanghimProcessor::isMidiPresetDeviceOpen() const
 {
     return midiPresetInput != nullptr;
 }
 
-void ArabicMaqamTunerProcessor::setMidiPresetDevice (const juce::String& deviceName)
+void TanghimProcessor::setMidiPresetDevice (const juce::String& deviceName)
 {
     DBG ("setMidiPresetDevice: requested=\"" + deviceName
          + "\" current=\"" + midiPresetDeviceName
@@ -2440,7 +2440,7 @@ void ArabicMaqamTunerProcessor::setMidiPresetDevice (const juce::String& deviceN
     DBG ("  device not found in available list (" + juce::String (availableDevices.size()) + " devices)");
 }
 
-void ArabicMaqamTunerProcessor::recheckMidiPresetDevice()
+void TanghimProcessor::recheckMidiPresetDevice()
 {
     // Nothing to check if no device is configured or no connection exists
     if (midiPresetDeviceName.isEmpty() || midiPresetInput == nullptr)
@@ -2466,7 +2466,7 @@ void ArabicMaqamTunerProcessor::recheckMidiPresetDevice()
     }
 }
 
-void ArabicMaqamTunerProcessor::handleIncomingMidiMessage (juce::MidiInput* /*source*/,
+void TanghimProcessor::handleIncomingMidiMessage (juce::MidiInput* /*source*/,
                                                             const juce::MidiMessage& message)
 {
     if (! message.isNoteOn())
@@ -2523,7 +2523,7 @@ static juce::File getTanghimDir()
                .getChildFile ("Tanghim");
 }
 
-void ArabicMaqamTunerProcessor::saveSettingsToDisk() const
+void TanghimProcessor::saveSettingsToDisk() const
 {
     auto* obj = new juce::DynamicObject();
     obj->setProperty ("tuningSystemId", currentSystemId);
@@ -2546,7 +2546,7 @@ void ArabicMaqamTunerProcessor::saveSettingsToDisk() const
        .replaceWithText (juce::JSON::toString (juce::var (obj)));
 }
 
-void ArabicMaqamTunerProcessor::clearCache()
+void TanghimProcessor::clearCache()
 {
     dataCache.clearAll();
 
@@ -2604,7 +2604,7 @@ void ArabicMaqamTunerProcessor::clearCache()
     DBG ("Cache cleared — reset to init state");
 }
 
-void ArabicMaqamTunerProcessor::loadSettingsFromDisk()
+void TanghimProcessor::loadSettingsFromDisk()
 {
     const auto file = getTanghimDir().getChildFile ("settings.json");
     if (! file.existsAsFile()) return;
@@ -2656,7 +2656,7 @@ void ArabicMaqamTunerProcessor::loadSettingsFromDisk()
     }
 }
 
-void ArabicMaqamTunerProcessor::savePresetsToDisk() const
+void TanghimProcessor::savePresetsToDisk() const
 {
     juce::Array<juce::var> arr;
     for (int i = 0; i < 16; ++i)
@@ -2705,7 +2705,7 @@ void ArabicMaqamTunerProcessor::savePresetsToDisk() const
        .replaceWithText (juce::JSON::toString (juce::var (arr)));
 }
 
-void ArabicMaqamTunerProcessor::loadPresetsFromDisk()
+void TanghimProcessor::loadPresetsFromDisk()
 {
     const auto file = getTanghimDir().getChildFile ("presets.json");
     if (! file.existsAsFile()) return;
@@ -2755,5 +2755,5 @@ void ArabicMaqamTunerProcessor::loadPresetsFromDisk()
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new ArabicMaqamTunerProcessor();
+    return new TanghimProcessor();
 }

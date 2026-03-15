@@ -27,13 +27,13 @@ inline bool isAlive (const std::weak_ptr<std::atomic<bool>>& w)
     return f && f->load (std::memory_order_acquire);
 }
 
-class ArabicMaqamTunerProcessor : public juce::AudioProcessor,
+class TanghimProcessor : public juce::AudioProcessor,
                                    public juce::AudioProcessorValueTreeState::Listener,
                                    public juce::MidiInputCallback
 {
 public:
-    ArabicMaqamTunerProcessor();
-    ~ArabicMaqamTunerProcessor() override;
+    TanghimProcessor();
+    ~TanghimProcessor() override;
 
     // ── AudioProcessor interface ──────────────────────────────────────────────
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
@@ -322,5 +322,5 @@ private:
     void savePresetsToDisk() const;
     void loadPresetsFromDisk();
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ArabicMaqamTunerProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TanghimProcessor)
 };

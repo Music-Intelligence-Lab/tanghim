@@ -117,7 +117,7 @@ public:
 class MidiDragButton : public juce::Component
 {
 public:
-    MidiDragButton (ArabicMaqamTunerProcessor& p) : processor (p) {}
+    MidiDragButton (TanghimProcessor& p) : processor (p) {}
 
     void paint (juce::Graphics& g) override
     {
@@ -160,7 +160,7 @@ public:
 private:
     void prepareMidiFile();
 
-    ArabicMaqamTunerProcessor& processor;
+    TanghimProcessor& processor;
     juce::File tempMidiFile;
     bool dragStarted = false;
 };
@@ -172,12 +172,12 @@ private:
  * Debug builds point to the Vite dev server (hot reload).
  * Release builds serve the bundled dist/ from BinaryData via a resource provider.
  */
-class ArabicMaqamTunerEditor : public juce::AudioProcessorEditor,
+class TanghimEditor : public juce::AudioProcessorEditor,
                                 private juce::Timer
 {
 public:
-    explicit ArabicMaqamTunerEditor (ArabicMaqamTunerProcessor&);
-    ~ArabicMaqamTunerEditor() override;
+    explicit TanghimEditor (TanghimProcessor&);
+    ~TanghimEditor() override;
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -192,7 +192,7 @@ public:
 private:
     void timerCallback() override;
 
-    ArabicMaqamTunerProcessor& processor;
+    TanghimProcessor& processor;
 
     // bridge must be declared before browser: native functions are registered
     // in Options during browser construction, so bridge must exist first.
@@ -233,5 +233,5 @@ private:
     juce::MidiDeviceListConnection midiDeviceListConnection;
     std::atomic<bool>              midiDevicesChanged { true };  // true on init to populate list
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ArabicMaqamTunerEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TanghimEditor)
 };

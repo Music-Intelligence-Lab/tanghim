@@ -2,7 +2,7 @@
 #include "BuildTimestamp.h"
 #include "engine/MidiFileGenerator.h"
 
-NativeBridge::NativeBridge (ArabicMaqamTunerProcessor& p)
+NativeBridge::NativeBridge (TanghimProcessor& p)
     : processor (p)
 {
 }

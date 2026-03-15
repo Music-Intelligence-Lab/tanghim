@@ -25,7 +25,7 @@
 class NativeBridge
 {
 public:
-    NativeBridge (ArabicMaqamTunerProcessor& processor);
+    NativeBridge (TanghimProcessor& processor);
     ~NativeBridge() = default;
 
     /**
@@ -45,7 +45,7 @@ public:
     juce::var buildMaqamListJson() const;
 
 private:
-    ArabicMaqamTunerProcessor& processor;
+    TanghimProcessor& processor;
     mutable std::unique_ptr<juce::FileChooser> fileChooser;  // Must stay alive during async dialog
     mutable juce::File lastTanghimDirectory;                  // Remembers last save/load directory
 

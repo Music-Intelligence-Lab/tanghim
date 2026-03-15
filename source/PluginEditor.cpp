@@ -8,7 +8,7 @@
   #include "BinaryData.h"
 #endif
 
-ArabicMaqamTunerEditor::ArabicMaqamTunerEditor (ArabicMaqamTunerProcessor& p)
+TanghimEditor::TanghimEditor (TanghimProcessor& p)
     : AudioProcessorEditor (p), processor (p), midiDragButton (p)
 {
     setSize (832, 620);
@@ -118,7 +118,7 @@ ArabicMaqamTunerEditor::ArabicMaqamTunerEditor (ArabicMaqamTunerProcessor& p)
     startTimerHz (30);
 }
 
-ArabicMaqamTunerEditor::~ArabicMaqamTunerEditor()
+TanghimEditor::~TanghimEditor()
 {
     stopTimer();
     midiDeviceListConnection.reset();
@@ -132,7 +132,7 @@ ArabicMaqamTunerEditor::~ArabicMaqamTunerEditor()
     processor.onSlotCentsChanged    = {};
 }
 
-void ArabicMaqamTunerEditor::paint (juce::Graphics& g)
+void TanghimEditor::paint (juce::Graphics& g)
 {
     g.fillAll (juce::Colour (0xff1a1a2e)); // dark fallback while WebView loads
 
@@ -153,7 +153,7 @@ void ArabicMaqamTunerEditor::paint (juce::Graphics& g)
                 juce::Justification::centredLeft);
 }
 
-void ArabicMaqamTunerEditor::resized()
+void TanghimEditor::resized()
 {
     // Reserve 26px at bottom for native status bar (MIDI button overlay doesn't work on WKWebView)
     const int nativeStatusBarHeight = 26;
@@ -198,7 +198,7 @@ void ArabicMaqamTunerEditor::resized()
 
 // ── MIDI activity + MTS-ESP status polling ───────────────────────────────────
 
-void ArabicMaqamTunerEditor::timerCallback()
+void TanghimEditor::timerCallback()
 {
     if (! browser) return;
 
@@ -340,31 +340,31 @@ void ArabicMaqamTunerEditor::timerCallback()
 
 // ── Push state to WebView ─────────────────────────────────────────────────────
 
-void ArabicMaqamTunerEditor::emitTuningStateChanged()
+void TanghimEditor::emitTuningStateChanged()
 {
     if (browser) browser->emitEventIfBrowserIsVisible ("tuningStateChanged",
                                                         bridge->buildTuningStateJson());
 }
 
-void ArabicMaqamTunerEditor::emitTuningSystemsLoaded()
+void TanghimEditor::emitTuningSystemsLoaded()
 {
     if (browser) browser->emitEventIfBrowserIsVisible ("tuningSystemsLoaded",
                                                         bridge->buildTuningSystemsJson());
 }
 
-void ArabicMaqamTunerEditor::emitMaqamListLoaded()
+void TanghimEditor::emitMaqamListLoaded()
 {
     if (browser) browser->emitEventIfBrowserIsVisible ("maqamListLoaded",
                                                         bridge->buildMaqamListJson());
 }
 
-void ArabicMaqamTunerEditor::emitStatusMessage (const juce::String& msg)
+void TanghimEditor::emitStatusMessage (const juce::String& msg)
 {
     // Forward to React (for any future use)
     if (browser) browser->emitEventIfBrowserIsVisible ("statusMessage", juce::var (msg));
 }
 
-void ArabicMaqamTunerEditor::emitSlotCentsChanged (int chromaticIndex, double centsOffset)
+void TanghimEditor::emitSlotCentsChanged (int chromaticIndex, double centsOffset)
 {
     if (! browser) return;
     auto* obj = new juce::DynamicObject();
@@ -376,7 +376,7 @@ void ArabicMaqamTunerEditor::emitSlotCentsChanged (int chromaticIndex, double ce
 // ── Resource provider (release builds) ───────────────────────────────────────
 
 #if EMBED_UI_BUNDLE
-juce::WebBrowserComponent::Resource ArabicMaqamTunerEditor::getResourceForPath (const juce::String& path)
+juce::WebBrowserComponent::Resource TanghimEditor::getResourceForPath (const juce::String& path)
 {
     auto cleanPath = path.isEmpty() || path == "/" ? juce::String ("index.html") : path.trimCharactersAtStart ("/");
 
@@ -423,7 +423,7 @@ juce::WebBrowserComponent::Resource ArabicMaqamTunerEditor::getResourceForPath (
              mime };
 }
 #else
-juce::WebBrowserComponent::Resource ArabicMaqamTunerEditor::getResourceForPath (const juce::String&)
+juce::WebBrowserComponent::Resource TanghimEditor::getResourceForPath (const juce::String&)
 {
     return {};
 }
@@ -540,7 +540,7 @@ void MidiDragButton::prepareMidiFile()
 
 // ── MIDI preset trigger control setup ──────────────────────────────────────
 
-void ArabicMaqamTunerEditor::setupMidiPresetControls()
+void TanghimEditor::setupMidiPresetControls()
 {
     // Consistent dark theme colors
     const auto bgColor      = juce::Colour (0xff1a1a2e);  // --surface
@@ -574,7 +574,7 @@ void ArabicMaqamTunerEditor::setupMidiPresetControls()
     populateMidiChannelList();
 }
 
-void ArabicMaqamTunerEditor::populateMidiChannelList()
+void TanghimEditor::populateMidiChannelList()
 {
     midiChannelSelector.clear();
     midiChannelSelector.addItem ("All", 1);  // ID 1 = channel 0 (any)
@@ -586,14 +586,14 @@ void ArabicMaqamTunerEditor::populateMidiChannelList()
     midiChannelSelector.setSelectedId (channel + 1);  // channel 0 → ID 1, channel 1 → ID 2, etc.
 }
 
-void ArabicMaqamTunerEditor::onMidiChannelChanged()
+void TanghimEditor::onMidiChannelChanged()
 {
     const int selectedId = midiChannelSelector.getSelectedId();
     const int channel = selectedId - 1;  // ID 1 → 0 (All), ID 2 → 1, etc.
     processor.setMidiPresetChannel (channel);
 }
 
-void ArabicMaqamTunerEditor::populateMidiDeviceList()
+void TanghimEditor::populateMidiDeviceList()
 {
     midiDeviceSelector.clear (juce::dontSendNotification);
     const auto devices = processor.getAvailableMidiDevices();
@@ -618,7 +618,7 @@ void ArabicMaqamTunerEditor::populateMidiDeviceList()
     }
 }
 
-void ArabicMaqamTunerEditor::onMidiDeviceChanged()
+void TanghimEditor::onMidiDeviceChanged()
 {
     const int selected = midiDeviceSelector.getSelectedId();
     if (selected <= 1)

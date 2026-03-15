@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(ArabicMaqamTuner VERSION 0.1.1)
+project(Tanghim VERSION 0.1.1)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -18,7 +18,7 @@ add_subdirectory(libs/JUCE)
 add_subdirectory(libs/clap-juce-extensions EXCLUDE_FROM_ALL)
 
 # ── Plugin target ─────────────────────────────────────────────────────────────
-juce_add_plugin(ArabicMaqamTuner
+juce_add_plugin(Tanghim
     COMPANY_NAME            "KhyamAllami"
     BUNDLE_ID               "com.khyamallami.tanghim"
     PLUGIN_MANUFACTURER_CODE Khya
@@ -41,13 +41,13 @@ juce_add_plugin(ArabicMaqamTuner
 
 # CLAP format via clap-juce-extensions
 clap_juce_extensions_plugin(
-    TARGET      ArabicMaqamTuner
+    TARGET      Tanghim
     CLAP_ID     "com.khyamallami.tanghim"
     CLAP_FEATURES "note-effect" "utility"
 )
 
 # ── Sources ───────────────────────────────────────────────────────────────────
-target_sources(ArabicMaqamTuner
+target_sources(Tanghim
     PRIVATE
         # MTS-ESP transmitter (included directly — no separate cmake target)
         libs/MTS-ESP/Master/libMTSMaster.cpp
@@ -71,7 +71,7 @@ target_sources(ArabicMaqamTuner
         source/engine/MidiFileGenerator.cpp
 )
 
-target_include_directories(ArabicMaqamTuner
+target_include_directories(Tanghim
     PRIVATE
         source
         libs/MTS-ESP/Master
@@ -79,11 +79,11 @@ target_include_directories(ArabicMaqamTuner
 )
 
 # Ensure timestamp is generated before compiling and NativeBridge.cpp recompiles when it changes
-add_dependencies(ArabicMaqamTuner GenerateBuildTimestamp)
+add_dependencies(Tanghim GenerateBuildTimestamp)
 set_source_files_properties(source/NativeBridge.cpp PROPERTIES OBJECT_DEPENDS ${TIMESTAMP_HEADER})
 
 # ── Compile definitions ───────────────────────────────────────────────────────
-target_compile_definitions(ArabicMaqamTuner
+target_compile_definitions(Tanghim
     PUBLIC
         JUCE_WEB_BROWSER=1
         JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1
@@ -95,7 +95,7 @@ target_compile_definitions(ArabicMaqamTuner
 )
 
 # ── Linked libraries ──────────────────────────────────────────────────────────
-target_link_libraries(ArabicMaqamTuner
+target_link_libraries(Tanghim
     PRIVATE
         juce::juce_audio_utils
         juce::juce_audio_processors
@@ -109,7 +109,7 @@ target_link_libraries(ArabicMaqamTuner
 
 # ── Receiver plugin target ────────────────────────────────────────────────────
 # Lightweight MIDI effect that reads MTS-ESP tuning and applies pitch bend/MPE
-juce_add_plugin(ArabicMaqamTunerReceiver
+juce_add_plugin(TanghimReceiver
     COMPANY_NAME            "KhyamAllami"
     BUNDLE_ID               "com.khyamallami.tanghimreceiver"
     PLUGIN_MANUFACTURER_CODE Khya
@@ -125,12 +125,12 @@ juce_add_plugin(ArabicMaqamTunerReceiver
 )
 
 clap_juce_extensions_plugin(
-    TARGET      ArabicMaqamTunerReceiver
+    TARGET      TanghimReceiver
     CLAP_ID     "com.khyamallami.tanghimreceiver"
     CLAP_FEATURES "note-effect" "utility"
 )
 
-target_sources(ArabicMaqamTunerReceiver
+target_sources(TanghimReceiver
     PRIVATE
         libs/MTS-ESP/Client/libMTSClient.cpp
         source/receiver/ReceiverProcessor.cpp
@@ -139,13 +139,13 @@ target_sources(ArabicMaqamTunerReceiver
         source/engine/MonoPitchBendProcessor.cpp
 )
 
-target_include_directories(ArabicMaqamTunerReceiver
+target_include_directories(TanghimReceiver
     PRIVATE
         source
         libs/MTS-ESP/Client
 )
 
-target_compile_definitions(ArabicMaqamTunerReceiver
+target_compile_definitions(TanghimReceiver
     PUBLIC
         JUCE_WEB_BROWSER=0
         JUCE_DISPLAY_SPLASH_SCREEN=0
@@ -155,7 +155,7 @@ target_compile_definitions(ArabicMaqamTunerReceiver
         PLUGIN_VERSION="${PROJECT_VERSION}"
 )
 
-target_link_libraries(ArabicMaqamTunerReceiver
+target_link_libraries(TanghimReceiver
     PRIVATE
         juce::juce_audio_utils
         juce::juce_audio_processors
@@ -171,11 +171,11 @@ target_link_libraries(ArabicMaqamTunerReceiver
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     file(GLOB_RECURSE UI_DIST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/ui/dist/*")
     if(UI_DIST_FILES)
-        juce_add_binary_data(ArabicMaqamTunerUI
+        juce_add_binary_data(TanghimUI
             SOURCES ${UI_DIST_FILES}
         )
-        target_link_libraries(ArabicMaqamTuner PRIVATE ArabicMaqamTunerUI)
-        target_compile_definitions(ArabicMaqamTuner PRIVATE EMBED_UI_BUNDLE=1)
+        target_link_libraries(Tanghim PRIVATE TanghimUI)
+        target_compile_definitions(Tanghim PRIVATE EMBED_UI_BUNDLE=1)
     else()
         message(WARNING "ui/dist/ not found — run `cd ui && npm run build` for release builds")
     endif()
