@@ -13,6 +13,8 @@ Three tuning methods — **MTS-ESP**, **MPE**, and **Mono Pitch Bend** — ensur
 
 Tanghīm was concieved and designed by [Khyam Allami](https://khyamallami.com) in 2026 as part of his postdoctoral research in the [Music Intelligence Lab](https://musicintelligencelab.com/) at the American University of Beirut, and coded with [Claude](https://claude.ai).
 
+![Tanghīm UI](assets/tanghim-ui.png)
+
 ---
 
 ## Table of Contents
