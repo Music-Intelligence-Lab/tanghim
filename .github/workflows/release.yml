@@ -88,7 +88,7 @@ jobs:
           cd "build/TanghimReceiver_artefacts/Release/VST3" && zip -r /tmp/Tanghim-Receiver-VST3-macOS.zip "Tanghim Receiver.vst3" && cd -
           cd "build/TanghimReceiver_artefacts/Release/AU" && zip -r /tmp/Tanghim-Receiver-AU-macOS.zip "Tanghim Receiver.component" && cd -
           cd "build/TanghimReceiver_artefacts/Release/CLAP" && zip -r /tmp/Tanghim-Receiver-CLAP-macOS.zip "Tanghim Receiver.clap" && cd -
-          cd m4l && zip -r /tmp/Tanghim-Receiver-M4L.zip "Tanghim Receiver.amxd" "Tanghim Receiver.maxpat" mts_midi_effect.js && cd -
+          cd m4l && zip -r /tmp/Tanghim-Receiver-M4L.zip "Tanghim Receiver.amxd" && cd -
 
       - name: Package (Windows)
         if: runner.os == 'Windows'

@@ -833,6 +833,24 @@
 						"bang"
 					]
 				}
+			},
+			{
+				"box": {
+					"id": "obj-38",
+					"maxclass": "message",
+					"numinlets": 2,
+					"numoutlets": 1,
+					"patching_rect": [
+						100,
+						150,
+						250,
+						22
+					],
+					"outlettype": [
+						""
+					],
+					"text": "set_mode 0, set_mpe_bend_range 48, set_mono_bend_range 2"
+				}
 			}
 		],
 		"lines": [
@@ -1372,6 +1390,30 @@
 					],
 					"destination": [
 						"obj-35",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-37",
+						0
+					],
+					"destination": [
+						"obj-38",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-38",
+						0
+					],
+					"destination": [
+						"obj-5",
 						0
 					]
 				}

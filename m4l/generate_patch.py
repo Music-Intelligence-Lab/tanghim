@@ -376,6 +376,18 @@ p.add_line(delay_resend, mode_pattr, outlet=0, inlet=0)
 p.add_line(delay_resend, mpe_pb_pattr, outlet=0, inlet=0)
 p.add_line(delay_resend, mono_pb_pattr, outlet=0, inlet=0)
 
+# Explicit JS defaults on load — pattr bang may not output on first load if
+# pattrstorage has no saved state yet. Send defaults directly to JS to guarantee
+# correct initial values regardless of pattr timing.
+js_defaults = p.add_box(Box(
+    id=p.get_id(), maxclass="message",
+    numinlets=2, numoutlets=1, outlettype=[""],
+    patching_rect=[100, 150, 250, 22],
+    text="set_mode 0, set_mpe_bend_range 48, set_mono_bend_range 2",
+))
+p.add_line(delay_resend, js_defaults)
+p.add_line(js_defaults, js)
+
 # ═══════════════════════════════════════════════════════════════════════
 # Save and post-process for M4L-specific patcher properties
 # ═══════════════════════════════════════════════════════════════════════
@@ -440,16 +452,74 @@ with open(OUTPUT_MAXPAT, "w") as f:
     json.dump(data, f, indent="\t")
 print(f"Generated: {OUTPUT_MAXPAT}")
 
-# Write .amxd (binary container for Ableton Live)
-# Format: ampf header + mmmmmeta section + ptch section with JSON + null terminator
+# Write frozen .amxd (binary container with embedded JS for Ableton Live)
+# Format: ampf header + aaaameta(7) + ptch(mx@c + files + dlst directory)
+# Reverse-engineered from Ableton factory frozen devices (e.g. LFO.amxd)
+JS_FILE = "m4l/mts_midi_effect.js"
+
+# Add dependency_cache so Max knows about the embedded JS file
+patcher["dependency_cache"] = [
+    {"name": "mts_midi_effect.js", "bootpath": ".", "type": "TEXT", "implicit": 1}
+]
+patcher["project"]["contents"]["code"] = {
+    "mts_midi_effect.js": {"kind": "javascript", "local": 1}
+}
+
 json_bytes = json.dumps(data, indent="\t").encode("utf-8") + b"\x00"
+js_bytes = open(JS_FILE, "rb").read()
+
+# File entries: (name, type_tag, content_bytes, flag)
+# flag=17 for main patch, flag=0 for dependencies
+files = [
+    ("Tanghim Receiver.amxd", b"JSON", json_bytes, 17),
+    ("mts_midi_effect.js",    b"TEXT", js_bytes,    0),
+]
+
+# Build dire entries for the dlst directory
+def build_dire(name, type_tag, size, offset, flag):
+    """Build a single dire entry with sub-fields (all big-endian)."""
+    # fnam: null-terminated filename padded to 4-byte alignment
+    name_bytes = name.encode("ascii") + b"\x00"
+    name_padded = name_bytes + b"\x00" * ((4 - len(name_bytes) % 4) % 4)
+    fnam_size = 8 + len(name_padded)  # tag(4) + size(4) + data
+
+    entry = b""
+    entry += b"type" + struct.pack(">I", 12) + type_tag  # 4-byte type padded
+    entry += b"fnam" + struct.pack(">I", fnam_size) + name_padded
+    entry += b"sz32" + struct.pack(">I", 12) + struct.pack(">I", size)
+    entry += b"of32" + struct.pack(">I", 12) + struct.pack(">I", offset)
+    entry += b"vers" + struct.pack(">I", 12) + struct.pack(">I", 0)
+    entry += b"flag" + struct.pack(">I", 12) + struct.pack(">I", flag)
+    entry += b"mdat" + struct.pack(">I", 12) + struct.pack(">I", 0)
+
+    return b"dire" + struct.pack(">I", 8 + len(entry)) + entry
+
+# Compute offsets (relative to mx@c tag start, first file at offset 16 after mx@c header)
+MX_HEADER_SIZE = 16  # mx@c(4) + size(4) + flags(4) + dlst_offset(4)
+offset = MX_HEADER_SIZE
+dire_entries = b""
+for name, type_tag, content, flag in files:
+    dire_entries += build_dire(name, type_tag, len(content), offset, flag)
+    offset += len(content)
+
+dlst_offset = offset  # offset of dlst from mx@c start
+dlst_body = dire_entries
+dlst = b"dlst" + struct.pack(">I", 8 + len(dlst_body)) + dlst_body
+
+# Assemble ptch content: mx@c header + file data + dlst
+mx_header = b"mx@c" + struct.pack(">I", MX_HEADER_SIZE) + struct.pack(">I", 0) + struct.pack(">I", dlst_offset)
+ptch_content = mx_header
+for _, _, content, _ in files:
+    ptch_content += content
+ptch_content += dlst
+
 with open(OUTPUT_AMXD, "wb") as f:
     f.write(b"ampf")                              # magic
     f.write(struct.pack("<I", 4))                  # version
-    f.write(b"mmmmmeta")                           # meta section tag
+    f.write(b"mmmmmeta")                           # meta section tag (mmmmm = MIDI effect)
     f.write(struct.pack("<I", 4))                  # meta data length
-    f.write(b"\x00\x00\x00\x00")                  # meta data (empty)
+    f.write(struct.pack("<I", 4))                  # meta value 4 = frozen MIDI effect
     f.write(b"ptch")                               # patch section tag
-    f.write(struct.pack("<I", len(json_bytes)))    # patch data length
-    f.write(json_bytes)                            # JSON + null terminator
-print(f"Generated: {OUTPUT_AMXD}")
+    f.write(struct.pack("<I", len(ptch_content)))  # patch data length
+    f.write(ptch_content)                          # mx@c + files + dlst
+print(f"Generated: {OUTPUT_AMXD} (frozen, JS embedded)")
