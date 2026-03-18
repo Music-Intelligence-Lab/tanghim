@@ -1598,7 +1598,7 @@ void TanghimProcessor::fetchAndApplyMaqamDetail()
 
     if (currentTranspositionIdx >= 0)
     {
-        // Find the tonic ID for the current transposition
+        // Find the tonic ID for the current transposition — passed as transposeTo param
         const MaqamListEntry* found = nullptr;
         for (const auto& mle : currentMaqamList)
         {
@@ -1610,51 +1610,7 @@ void TanghimProcessor::fetchAndApplyMaqamDetail()
         }
 
         if (found != nullptr && currentTranspositionIdx < (int) found->transpositions.size())
-        {
-            const auto& tonicId = found->transpositions[(size_t) currentTranspositionIdx].tonicId;
-
-            // Look up the transposition idName from the cached base maqam detail
-            auto transIt = currentTranspositionIdMap.find (tonicId);
-            if (transIt != currentTranspositionIdMap.end())
-            {
-                transpositionId = transIt->second;
-            }
-            else
-            {
-                // We don't have the transposition map yet — fetch the base maqam first
-                // to get availableTranspositions, then re-invoke for the transposition
-                std::weak_ptr<std::atomic<bool>> weak (alive);
-                const auto sysId = currentSystemId;
-                const auto startNote = currentStartingNote;
-                const auto maqId = currentMaqamId;
-
-                if (dataCache.hasMaqamDetail (sysId, startNote, maqId))
-                {
-                    const auto& baseDetail = dataCache.getMaqamDetail (sysId, startNote, maqId);
-                    currentTranspositionIdMap = baseDetail.transpositionIdMap;
-                    auto it2 = currentTranspositionIdMap.find (tonicId);
-                    if (it2 != currentTranspositionIdMap.end())
-                        transpositionId = it2->second;
-                }
-                else
-                {
-                    // Fetch base maqam detail to get the transposition map
-                    apiClient.fetchMaqamDetail (maqId, sysId, startNote,
-                        [this, weak, sysId, startNote, maqId] (MaqamDetailResult baseDetail)
-                        {
-                            if (! isAlive (weak)) return;
-                            if (currentMaqamId != maqId) return; // user changed maqam
-
-                            dataCache.storeMaqamDetail (sysId, startNote, maqId, baseDetail);
-                            currentTranspositionIdMap = baseDetail.transpositionIdMap;
-
-                            // Now re-invoke to fetch the transposition with the map populated
-                            fetchAndApplyMaqamDetail();
-                        });
-                    return;
-                }
-            }
-        }
+            transpositionId = found->transpositions[(size_t) currentTranspositionIdx].tonicId;
     }
 
     // Build the cache key: for transpositions, include the transpositionId
@@ -1825,18 +1781,14 @@ void TanghimProcessor::rebuildHeptMap()
     {
         const auto& data = dataCache.getData (currentSystemId, currentStartingNote);
 
-        // Build PAO name → { chromatic index, IPN reference } lookup
+        // Build PAO name → chromatic index lookup
         std::map<juce::String, int> nameToChrom;
-        std::map<juce::String, juce::String> nameToIpn;
         for (const auto& pc : data.pitchClasses)
         {
             if (pc.noteName.isEmpty()) continue;
             const int ci = chromaticIndexForIpnRef (pc.ipnReference);
             if (ci >= 0 && nameToChrom.count (pc.noteName) == 0)
-            {
                 nameToChrom[pc.noteName] = ci;
-                nameToIpn[pc.noteName] = pc.ipnReference;
-            }
         }
 
         // Collect degree info: chromatic index + white key from IPN letter
@@ -1850,14 +1802,9 @@ void TanghimProcessor::rebuildHeptMap()
             const int ci = chromIt->second;
             if (! seenChroms.insert (ci).second) continue;
 
-            // Prefer context-aware IPN ref, fall back to pitch class IPN
+            // Context-aware IPN ref from maqam detail (no fallback — tuning system IPN
+            // may have wrong enharmonic, e.g. "C#" vs "Db", causing white key collision)
             juce::String ipn = currentDegreeIpnRefs[(size_t) ci];
-            if (ipn.isEmpty())
-            {
-                auto ipnIt = nameToIpn.find (name);
-                if (ipnIt != nameToIpn.end())
-                    ipn = ipnIt->second;
-            }
             if (ipn.isEmpty()) continue;
 
             const int wki = letterToWhiteIdx (ipn[0]);

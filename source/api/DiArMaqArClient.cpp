@@ -101,7 +101,7 @@ void DiArMaqArClient::fetchMaqamDetail (
         + "&pitchClassDataType=all";
 
     if (transpositionId.isNotEmpty())
-        urlStr += "&transpositionId=" + transpositionId;
+        urlStr += "&transposeTo=" + transpositionId;
 
     const juce::URL url { urlStr };
 

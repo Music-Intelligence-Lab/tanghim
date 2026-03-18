@@ -72,11 +72,15 @@ inline int chromaticIndexForIpnRef (const juce::String& ref)
         if (ref == kChromaticIpnRefs[i]) return i;
 
     // Accept enharmonic equivalents (sharps ↔ flats)
+    if (ref == "Cb") return 11;
     if (ref == "Db") return 1;
     if (ref == "D#") return 3;
+    if (ref == "E#") return 5;
+    if (ref == "Fb") return 4;
     if (ref == "Gb") return 6;
     if (ref == "G#") return 8;
     if (ref == "A#") return 10;
+    if (ref == "B#") return 0;
 
     return -1;
 }

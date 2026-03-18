@@ -56,7 +56,7 @@ public:
 
     /**
      * GET /maqamat/{maqamId}?tuningSystem={id}&startingNote={note}&pitchClassDataType=all
-     * Optionally with &transpositionId={idName} for transposed maqamat.
+     * Optionally with &transposeTo={tonicIdName} for transposed maqamat.
      * Returns ascending degree pitch classes with context-aware IPN references,
      * plus available transposition mapping (tonicId → transposition idName).
      */

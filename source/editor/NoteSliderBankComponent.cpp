@@ -205,8 +205,6 @@ void NoteSliderBankComponent::computeHeptInfo()
     {
         reachable.insert (ci);
         juce::String ipn = degreeIpnMap[(size_t) ci];
-        if (ipn.isEmpty() && ci < 12 && ! tuningState.slots[(size_t) ci].variants.empty())
-            ipn = tuningState.slots[(size_t) ci].ipnReference;
 
         if (ipn.isNotEmpty())
         {
