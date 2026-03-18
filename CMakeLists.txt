@@ -30,13 +30,9 @@ juce_add_plugin(Tanghim
     NEEDS_MIDI_INPUT        TRUE
     NEEDS_MIDI_OUTPUT       TRUE
     EDITOR_WANTS_KEYBOARD_FOCUS TRUE
-    NEEDS_WEBVIEW2          TRUE    # Windows WebView2
+    NEEDS_WEBVIEW2          FALSE
     VST3_CATEGORIES         "Instrument" "Tools"
-    # Allow localhost HTTP for Vite dev server (macOS ATS)
-    PLIST_TO_MERGE          "<plist version=\"1.0\"><dict>
-        <key>NSAppTransportSecurity</key>
-        <dict><key>NSAllowsLocalNetworking</key><true/></dict>
-    </dict></plist>"
+    # No custom plist needed (WebView removed)
 )
 
 # CLAP format via clap-juce-extensions
@@ -54,8 +50,17 @@ target_sources(Tanghim
 
         # Plugin entry points
         source/PluginProcessor.cpp
-        source/PluginEditor.cpp
-        source/NativeBridge.cpp
+
+        # Native editor components
+        source/editor/TanghimNativeEditor.cpp
+        source/editor/NoteSliderComponent.cpp
+        source/editor/NoteSliderBankComponent.cpp
+        source/editor/ReferenceFreqControl.cpp
+        source/editor/SearchablePopup.cpp
+        source/editor/OutputBadges.cpp
+        source/editor/RangeScrollerComponent.cpp
+        source/editor/MaqamPresetBar.cpp
+        source/editor/MaqamSelectorComponent.cpp
 
         # API layer
         source/api/DiArMaqArClient.cpp
@@ -78,26 +83,21 @@ target_include_directories(Tanghim
         ${CMAKE_BINARY_DIR}/generated
 )
 
-# Ensure timestamp is generated before compiling and NativeBridge.cpp recompiles when it changes
+# Ensure timestamp is generated before compiling
 add_dependencies(Tanghim GenerateBuildTimestamp)
-set_source_files_properties(source/NativeBridge.cpp PROPERTIES OBJECT_DEPENDS ${TIMESTAMP_HEADER})
+set_source_files_properties(source/editor/TanghimNativeEditor.cpp PROPERTIES OBJECT_DEPENDS ${TIMESTAMP_HEADER})
 
-# ── Linux: GTK3 include path for juce_gui_extra WebBrowser ────────────────────
-# JUCE uses NOLINK for browser deps, but the include dirs are still needed at compile time
+# ── Linux: libcurl for HTTP client ────────────────────────────────────────────
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     find_package(PkgConfig REQUIRED)
-    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
-    pkg_check_modules(WEBKIT2GTK REQUIRED webkit2gtk-4.1)
     pkg_check_modules(LIBCURL REQUIRED libcurl)
-    target_include_directories(Tanghim PRIVATE ${GTK3_INCLUDE_DIRS} ${WEBKIT2GTK_INCLUDE_DIRS})
     target_link_libraries(Tanghim PRIVATE ${LIBCURL_LIBRARIES})
 endif()
 
 # ── Compile definitions ───────────────────────────────────────────────────────
 target_compile_definitions(Tanghim
     PUBLIC
-        JUCE_WEB_BROWSER=1
-        JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1
+        JUCE_WEB_BROWSER=0
         JUCE_DISPLAY_SPLASH_SCREEN=0
         JUCE_REPORT_APP_USAGE=0
     PRIVATE
@@ -111,7 +111,7 @@ target_link_libraries(Tanghim
         juce::juce_audio_utils
         juce::juce_audio_processors
         juce::juce_audio_devices    # MidiInput for direct MIDI preset triggering
-        juce::juce_gui_extra        # WebBrowserComponent lives here
+        juce::juce_gui_basics
         juce::juce_core
     PUBLIC
         juce::juce_recommended_config_flags
@@ -181,21 +181,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(TanghimReceiver PRIVATE ${LIBCURL_LIBRARIES})
 endif()
 
-# ── Embed UI bundle as BinaryData ─────────────────────────────────────────────
-# In release builds the React dist/ is bundled. In debug we hot-reload from Vite.
-# Run `cd ui && npm run build` before the cmake build in release mode.
-if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    file(GLOB_RECURSE UI_DIST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/ui/dist/*")
-    if(UI_DIST_FILES)
-        juce_add_binary_data(TanghimUI
-            SOURCES ${UI_DIST_FILES}
-        )
-        target_link_libraries(Tanghim PRIVATE TanghimUI)
-        target_compile_definitions(Tanghim PRIVATE EMBED_UI_BUNDLE=1)
-    else()
-        message(WARNING "ui/dist/ not found — run `cd ui && npm run build` for release builds")
-    endif()
-endif()
+# (WebView UI bundle removed — now using native JUCE editor)
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 # Each test file has its own main(), so each gets its own executable.

@@ -1,5 +1,5 @@
 #include "PluginProcessor.h"
-#include "PluginEditor.h"
+#include "editor/TanghimNativeEditor.h"
 #include "api/ApiResponseParser.h"
 #include <cmath>
 #include <limits>
@@ -414,7 +414,7 @@ void TanghimProcessor::processBlock (juce::AudioBuffer<double>& audio,
 
 juce::AudioProcessorEditor* TanghimProcessor::createEditor()
 {
-    return new TanghimEditor (*this);
+    return new TanghimNativeEditor (*this);
 }
 
 // ── State persistence ─────────────────────────────────────────────────────────
@@ -1201,6 +1201,10 @@ void TanghimProcessor::loadTuningSystem (const juce::String& systemId,
         if (onComplete) onComplete();
 
         saveSettingsToDisk();
+
+        // After the selected starting note loads, background-preload
+        // all other starting notes for this tuning system
+        backgroundPreloadRemainingNotes (systemId);
     };
 
     if (dataCache.hasData (systemId, startingNote))
@@ -1555,11 +1559,26 @@ void TanghimProcessor::applyDegreeIpnRefs (const MaqamDetailResult& detail)
     currentDegreeSolfegeRefs.fill ({});
     for (const auto& pc : detail.ascendingDegrees)
     {
-        if (pc.ipnReference.isEmpty()) continue;
-        const int ci = chromaticIndexForIpnRef (pc.ipnReference);
+        // Derive IPN reference from englishName (primary source of truth)
+        // englishName format: "G#3", "Eb3", "E-b3", "D-#3", "C3"
+        // Strip octave digits and microtonal modifiers to get base IPN: "G#", "Eb", "E", "D#", "C"
+        juce::String ipn;
+        if (pc.englishName.isNotEmpty())
+        {
+            ipn = pc.englishName;
+            // Remove trailing octave digits
+            while (ipn.isNotEmpty() && juce::CharacterFunctions::isDigit (ipn.getLastCharacter()))
+                ipn = ipn.dropLastCharacters (1);
+            // Remove microtonal modifiers: "-b", "-#", "+", etc. (indicated by "-" prefix)
+            if (ipn.contains ("-"))
+                ipn = ipn.upToFirstOccurrenceOf ("-", false, false);
+        }
+        if (ipn.isEmpty()) continue;
+
+        const int ci = chromaticIndexForIpnRef (ipn);
         if (ci >= 0)
         {
-            currentDegreeIpnRefs[(size_t) ci] = pc.ipnReference;
+            currentDegreeIpnRefs[(size_t) ci] = ipn;
             if (pc.solfege.isNotEmpty())
                 currentDegreeSolfegeRefs[(size_t) ci] = pc.solfege;
         }
@@ -1849,9 +1868,9 @@ void TanghimProcessor::rebuildHeptMap()
         }
     }
 
-    if (degreeInfos.size() < 7)
+    if (degreeInfos.empty())
     {
-        // Identity map — delta 0 = no remapping
+        // No degree info at all — identity map (delta 0 = no remapping)
         for (int i = 0; i < 12; ++i)
             heptMap[i].store (0, std::memory_order_relaxed);
 
@@ -2013,6 +2032,56 @@ void TanghimProcessor::fetchMaqamListIfNeeded()
             DBG ("fetchMaqamListIfNeeded: API ERROR: " + err);
             if (onStatusMessage) onStatusMessage ("Maqam list: " + err);
         });
+}
+
+void TanghimProcessor::backgroundPreloadRemainingNotes (const juce::String& systemId)
+{
+    // Find the tuning system and its starting notes
+    const auto& systems = dataCache.getTuningSystemsList();
+    const TuningSystem* sys = nullptr;
+    for (const auto& ts : systems)
+    {
+        if (ts.id == systemId) { sys = &ts; break; }
+    }
+    if (sys == nullptr) return;
+
+    std::weak_ptr<std::atomic<bool>> weak (alive);
+
+    for (const auto& noteId : sys->startingNoteIds)
+    {
+        // Skip the currently loaded starting note and already cached ones
+        if (noteId == currentStartingNote) continue;
+        if (dataCache.hasData (systemId, noteId)) continue;
+
+        DBG ("backgroundPreload: fetching " + systemId + "/" + noteId);
+
+        apiClient.fetchPitchClasses (systemId, noteId,
+            [this, weak, systemId, noteId] (std::vector<PitchClass> pcs)
+            {
+                if (! isAlive (weak)) return;
+                ApiDataCache::TuningData td;
+                td.pitchClasses = std::move (pcs);
+                td.lastChecked  = juce::Time::getCurrentTime().toISO8601 (true);
+
+                for (const auto& ts : dataCache.getTuningSystemsList())
+                    if (ts.id == systemId) { td.tuningSystemVersion = ts.version; break; }
+
+                dataCache.storeData (systemId, noteId, std::move (td));
+                DBG ("backgroundPreload: cached " + systemId + "/" + noteId);
+
+                // Update cache status icons in UI
+                juce::MessageManager::callAsync ([this, weak]
+                {
+                    if (! isAlive (weak)) return;
+                    if (onTuningSystemsLoaded) onTuningSystemsLoaded();
+                });
+            },
+            [weak, systemId, noteId] (juce::String err)
+            {
+                if (! isAlive (weak)) return;
+                DBG ("backgroundPreload: error for " + systemId + "/" + noteId + ": " + err);
+            });
+    }
 }
 
 void TanghimProcessor::applyMaqamDegrees (const MaqamDegrees& degrees)

@@ -51,32 +51,9 @@ jobs:
             libxinerama-dev \
             libxrandr-dev \
             libxrender-dev \
-            libwebkit2gtk-4.1-dev \
             libgtk-3-dev \
             libglu1-mesa-dev \
             mesa-common-dev
-
-      # ── Windows WebView2 SDK (required by JUCE) ──────────────────────────
-      - name: Install WebView2 SDK
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          Register-PackageSource -provider NuGet -name nugetRepository -location https://www.nuget.org/api/v2 -ErrorAction SilentlyContinue
-          Install-Package Microsoft.Web.WebView2 -Scope CurrentUser -RequiredVersion 1.0.3485.44 -Source nugetRepository -Force
-
-      # ── Build React UI ────────────────────────────────────────────────────
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: ui/package-lock.json
-
-      - name: Build UI
-        working-directory: ui
-        run: |
-          npm ci
-          npm run build
 
       # ── Build C++ plugins ────────────────────────────────────────────────
       - name: Configure CMake

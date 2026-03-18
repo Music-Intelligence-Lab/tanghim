@@ -127,6 +127,7 @@ public:
     juce::String                             getCurrentMaqamId()           const { return currentMaqamId; }
     int                                      getCurrentTranspositionIdx()  const { return currentTranspositionIdx; }
     int                                      getCurrentActivePresetIdx()   const { return currentActivePresetIdx; }
+    void                                     setCurrentActivePresetIdx (int idx)  { currentActivePresetIdx = idx; }
     double                                   getCurrentStartMidi()         const { return currentStartMidi; }
     const std::vector<juce::String>&         getCurrentDegreeNames()       const { return currentDegreeNames; }
     bool                                     getSessionRecallInProgress()  const { return sessionRecallInProgress; }
@@ -294,6 +295,7 @@ private:
     void rebuildTuningStateFromCache();
     void fetchMaqamListIfNeeded();
     void fetchAndApplyMaqamDetail();
+    void backgroundPreloadRemainingNotes (const juce::String& systemId);
     void applyDegreeIpnRefs (const MaqamDetailResult& detail);
     void applyMaqamDegrees (const MaqamDegrees& degrees);
     void notifyTuningChanged();
