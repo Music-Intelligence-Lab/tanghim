@@ -316,13 +316,9 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
         tuningSystemSelector.setCurrentSelection (processor.getCurrentSystemId(),
                                                   processor.getCurrentStartingNote());
         // Update cache status icons (✓ cached, ↓ not cached)
-        std::map<juce::String, bool> cacheMap;
-        for (const auto& sys : processor.getTuningSystems())
-        {
-            for (const auto& noteId : sys.startingNoteIds)
-                cacheMap[sys.id + ":" + noteId] = processor.hasCachedTuningData (sys.id, noteId);
-        }
+        auto cacheMap = buildCacheMap();
         tuningSystemSelector.setCacheStatus (cacheMap);
+        maqamSelector.setCacheStatus (cacheMap, processor.getCurrentSystemId());
     };
     processor.onMaqamListLoaded = [this] { syncMaqamList(); };
     processor.onSlotCentsChanged = [this] (int ci, double cents)
@@ -336,11 +332,9 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
         tuningSystemSelector.setCurrentSelection (processor.getCurrentSystemId(),
                                                   processor.getCurrentStartingNote());
         // Initial cache status
-        std::map<juce::String, bool> cacheMap;
-        for (const auto& sys : processor.getTuningSystems())
-            for (const auto& noteId : sys.startingNoteIds)
-                cacheMap[sys.id + ":" + noteId] = processor.hasCachedTuningData (sys.id, noteId);
+        auto cacheMap = buildCacheMap();
         tuningSystemSelector.setCacheStatus (cacheMap);
+        maqamSelector.setCacheStatus (cacheMap, processor.getCurrentSystemId());
     }
 
     // Load the saved tuning system (like React's selectTuningSystem on mount)
@@ -523,6 +517,7 @@ void TanghimNativeEditor::syncFullState()
 void TanghimNativeEditor::syncMaqamList()
 {
     const auto& list = processor.getMaqamList();
+    maqamSelector.setCacheStatus (buildCacheMap(), processor.getCurrentSystemId());
     maqamSelector.setMaqamList (list);
 
     // Preset compatibility check
@@ -559,6 +554,15 @@ void TanghimNativeEditor::syncMtsStatus()
     const int tanghimTotal = rc.mpeReceivers + rc.monoPbReceivers;
     const int mtsNative = std::max (0, totalReceivers - tanghimTotal);
     outputBadges.setMtsStatus (isTx, mtsNative, rc.mpeReceivers, rc.monoPbReceivers);
+}
+
+std::map<juce::String, bool> TanghimNativeEditor::buildCacheMap() const
+{
+    std::map<juce::String, bool> cacheMap;
+    for (const auto& sys : processor.getTuningSystems())
+        for (const auto& noteId : sys.startingNoteIds)
+            cacheMap[sys.id + ":" + noteId] = processor.hasCachedTuningData (sys.id, noteId);
+    return cacheMap;
 }
 
 // ── Derived state computation ─────────────────────────────────────────────────

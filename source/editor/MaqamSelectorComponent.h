@@ -56,6 +56,10 @@ public:
      *  and a MIDI note order map for sorting transpositions by pitch. */
     void setTranspositionFilter (const std::set<juce::String>& allowed,
                                   const std::map<juce::String, int>& midiOrder);
+    /** Set cache status map (key: "systemId:startingNote", value: is cached).
+     *  Used to show ✓/↓ indicators on maqam/transposition tonic items. */
+    void setCacheStatus (const std::map<juce::String, bool>& cacheMap,
+                          const juce::String& currentSystemId);
 
     std::function<void (const juce::String& maqamId, int transpositionIndex)> onSelect;
 
@@ -72,6 +76,8 @@ private:
     int activePresetIdx = -1;
     std::set<juce::String> allowedTonicIds;  // tonic IDs in octaves 1–2
     std::map<juce::String, int> paoMidiOrder; // PAO name → MIDI note for pitch sorting
+    std::map<juce::String, bool> cacheStatus;
+    juce::String systemId;
 
     void updateTranspositionItems();
 

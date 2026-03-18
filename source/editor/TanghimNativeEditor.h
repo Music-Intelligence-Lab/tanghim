@@ -175,6 +175,7 @@ private:
     std::map<juce::String, int>                paoNameMap;  // PAO idName -> chromaticIndex
 
     void buildNoteNameMaps();
+    std::map<juce::String, bool> buildCacheMap() const;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TanghimNativeEditor)
 };
