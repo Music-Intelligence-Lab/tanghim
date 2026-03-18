@@ -146,11 +146,9 @@ MaqamSelectorComponent::MaqamSelectorComponent()
     addAndMakeVisible (transpositionSelect);
 }
 
-void MaqamSelectorComponent::setCacheStatus (const std::map<juce::String, bool>& cacheMap,
-                                               const juce::String& sysId)
+void MaqamSelectorComponent::setCacheStatus (bool hasMaqamList)
 {
-    cacheStatus = cacheMap;
-    systemId = sysId;
+    maqamListCached = hasMaqamList;
     // Re-set maqam list to update suffixes
     setMaqamList (maqamList);
 }
@@ -159,24 +157,15 @@ void MaqamSelectorComponent::setMaqamList (const std::vector<MaqamListEntry>& li
 {
     maqamList = list;
 
+    // All maqamat come from the same system+startingNote cache entry.
+    // Show ✓ if the maqam list is cached, ↓ if not (list will be empty when uncached,
+    // but we still set the flag so the indicator updates when data arrives).
+    juce::String suffix = maqamListCached ? juce::String::charToString (0x2713)
+                                          : juce::String::charToString (0x2193);
+
     std::vector<SearchablePopup::Item> items;
     for (const auto& entry : maqamList)
-    {
-        juce::String suffix;
-        bool cached = false;
-        if (! cacheStatus.empty() && systemId.isNotEmpty())
-        {
-            auto key = systemId + ":" + entry.tonicId;
-            auto it = cacheStatus.find (key);
-            if (it != cacheStatus.end())
-            {
-                suffix = it->second ? juce::String::charToString (0x2713)
-                                    : juce::String::charToString (0x2193);
-                cached = it->second;
-            }
-        }
-        items.push_back ({ entry.maqamId, entry.maqamDisplay, suffix, cached });
-    }
+        items.push_back ({ entry.maqamId, entry.maqamDisplay, suffix, maqamListCached });
 
     std::sort (items.begin(), items.end(),
                [] (const SearchablePopup::Item& a, const SearchablePopup::Item& b)
@@ -231,7 +220,7 @@ void MaqamSelectorComponent::updateTranspositionItems()
         if (entry.maqamId == selectedMaqamId)
         {
             // Collect all options: base + filtered transpositions
-            struct TransOption { juce::String value; juce::String label; int midiOrder; juce::String tonicId; };
+            struct TransOption { juce::String value; juce::String label; int midiOrder; };
             std::vector<TransOption> options;
 
             // Base (qarār)
@@ -240,7 +229,7 @@ void MaqamSelectorComponent::updateTranspositionItems()
                 int order = orderIt != paoMidiOrder.end() ? orderIt->second : 0;
                 options.push_back ({ "-1",
                     entry.tonicDisplay + juce::String (juce::CharPointer_UTF8 (" (qar\xc4\x81r)")),
-                    order, entry.tonicId });
+                    order });
             }
 
             // Transpositions — filter to octaves 1–2 via allowedTonicIds
@@ -251,31 +240,19 @@ void MaqamSelectorComponent::updateTranspositionItems()
                     continue;
                 auto orderIt = paoMidiOrder.find (trans.tonicId);
                 int order = orderIt != paoMidiOrder.end() ? orderIt->second : 999;
-                options.push_back ({ juce::String (i), trans.tonicDisplay, order, trans.tonicId });
+                options.push_back ({ juce::String (i), trans.tonicDisplay, order });
             }
 
             // Sort by ascending MIDI pitch order (base qarār in its natural position)
             std::sort (options.begin(), options.end(),
                        [] (const TransOption& a, const TransOption& b) { return a.midiOrder < b.midiOrder; });
 
+            juce::String suffix = maqamListCached ? juce::String::charToString (0x2713)
+                                                    : juce::String::charToString (0x2193);
+
             std::vector<SearchablePopup::Item> items;
             for (const auto& opt : options)
-            {
-                juce::String suffix;
-                bool cached = false;
-                if (! cacheStatus.empty() && systemId.isNotEmpty())
-                {
-                    auto key = systemId + ":" + opt.tonicId;
-                    auto it = cacheStatus.find (key);
-                    if (it != cacheStatus.end())
-                    {
-                        suffix = it->second ? juce::String::charToString (0x2713)
-                                            : juce::String::charToString (0x2193);
-                        cached = it->second;
-                    }
-                }
-                items.push_back ({ opt.value, opt.label, suffix, cached });
-            }
+                items.push_back ({ opt.value, opt.label, suffix, maqamListCached });
 
             transpositionSelect.setItems (items);
             return;

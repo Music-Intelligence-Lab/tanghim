@@ -318,7 +318,7 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
         // Update cache status icons (✓ cached, ↓ not cached)
         auto cacheMap = buildCacheMap();
         tuningSystemSelector.setCacheStatus (cacheMap);
-        maqamSelector.setCacheStatus (cacheMap, processor.getCurrentSystemId());
+        maqamSelector.setCacheStatus (! processor.getMaqamList().empty());
     };
     processor.onMaqamListLoaded = [this] { syncMaqamList(); };
     processor.onSlotCentsChanged = [this] (int ci, double cents)
@@ -334,7 +334,7 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
         // Initial cache status
         auto cacheMap = buildCacheMap();
         tuningSystemSelector.setCacheStatus (cacheMap);
-        maqamSelector.setCacheStatus (cacheMap, processor.getCurrentSystemId());
+        maqamSelector.setCacheStatus (! processor.getMaqamList().empty());
     }
 
     // Load the saved tuning system (like React's selectTuningSystem on mount)
@@ -517,7 +517,7 @@ void TanghimNativeEditor::syncFullState()
 void TanghimNativeEditor::syncMaqamList()
 {
     const auto& list = processor.getMaqamList();
-    maqamSelector.setCacheStatus (buildCacheMap(), processor.getCurrentSystemId());
+    maqamSelector.setCacheStatus (! list.empty());
     maqamSelector.setMaqamList (list);
 
     // Preset compatibility check
