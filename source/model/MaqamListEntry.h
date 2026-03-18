@@ -11,6 +11,8 @@ struct MaqamDegrees
 {
     std::vector<juce::String> ascending;
     std::vector<juce::String> descending;
+    std::vector<juce::String> ascendingEnglishNames;  // e.g., "Db3", "E-b3" (parallel to ascending)
+    std::vector<juce::String> ascendingSolfeges;       // e.g., "Reb3", "Mi-b3" (parallel to ascending)
 };
 
 /**

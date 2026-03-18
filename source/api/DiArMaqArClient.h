@@ -54,20 +54,6 @@ public:
         std::function<void (std::vector<MaqamListEntry>)> onSuccess,
         ErrorCb onError = {});
 
-    /**
-     * GET /maqamat/{maqamId}?tuningSystem={id}&startingNote={note}&pitchClassDataType=all
-     * Optionally with &transposeTo={tonicIdName} for transposed maqamat.
-     * Returns ascending degree pitch classes with context-aware IPN references,
-     * plus available transposition mapping (tonicId → transposition idName).
-     */
-    void fetchMaqamDetail (
-        const juce::String& maqamId,
-        const juce::String& systemId,
-        const juce::String& startingNote,
-        std::function<void (MaqamDetailResult)> onSuccess,
-        ErrorCb onError = {},
-        const juce::String& transpositionId = {});
-
     /** Run a generic job on the background thread (e.g. cache preloading). */
     void runOnThread (std::function<void()> job);
 

@@ -210,41 +210,9 @@ void ApiDataCache::loadFromDisk()
         lazyKeys.insert (key);
     }
 
-    // Scan maqam detail directory for lazy loading
-    // Filename format: systemId_startingNote_maqamId.json (underscore separator)
-    // Key format: systemId:startingNote:maqamId (colon separator)
-    // Both systemId and maqamId contain underscores — starting notes never do.
-    // Match against known starting notes (from tuning systems list loaded above)
-    // to find the correct split point.
-    const auto detailDir = getMaqamDetailDirectory();
-    if (detailDir.isDirectory())
-    {
-        std::set<juce::String> knownNotes;
-        for (const auto& ts : tuningSystemsList)
-            for (const auto& sn : ts.startingNoteIds)
-                knownNotes.insert (sn);
-
-        for (const auto& f : detailDir.findChildFiles (juce::File::findFiles, false, "*.json"))
-        {
-            const auto name = f.getFileNameWithoutExtension();
-            for (const auto& sn : knownNotes)
-            {
-                const auto marker = "_" + sn + "_";
-                const auto pos = name.indexOf (marker);
-                if (pos <= 0) continue;
-                const auto systemId = name.substring (0, pos);
-                const auto maqamId = name.substring (pos + marker.length());
-                if (maqamId.isEmpty()) continue;
-                maqamDetailLazyKeys.insert (systemId + ":" + sn + ":" + maqamId);
-                break;
-            }
-        }
-    }
-
     const auto elapsed = juce::Time::getMillisecondCounterHiRes() - startTime;
     DBG ("ApiDataCache::loadFromDisk: scanned " + juce::String ((int) lazyKeys.size())
-         + " tuning + " + juce::String ((int) maqamDetailLazyKeys.size())
-         + " maqam detail entries in " + juce::String (elapsed, 1) + " ms (lazy)");
+         + " tuning entries in " + juce::String (elapsed, 1) + " ms (lazy)");
 }
 
 void ApiDataCache::clearAll()
@@ -252,132 +220,9 @@ void ApiDataCache::clearAll()
     juce::ScopedLock sl (lock);
     cache.clear();
     lazyKeys.clear();
-    maqamDetailCache.clear();
-    maqamDetailLazyKeys.clear();
     tuningSystemsList.clear();
     hasSystems = false;
     getCacheDirectory().deleteRecursively();
-    getMaqamDetailDirectory().deleteRecursively();
-}
-
-// ── Maqam detail cache ─────────────────────────────────────────────────────
-
-juce::File ApiDataCache::getMaqamDetailDirectory() const
-{
-    return getCacheDirectory().getChildFile ("maqam-detail");
-}
-
-juce::File ApiDataCache::getMaqamDetailFile (const juce::String& key) const
-{
-    return getMaqamDetailDirectory().getChildFile (key.replaceCharacter (':', '_') + ".json");
-}
-
-juce::String ApiDataCache::makeMaqamDetailKey (const juce::String& systemId,
-                                                const juce::String& startingNote,
-                                                const juce::String& maqamId) const
-{
-    return systemId + ":" + startingNote + ":" + maqamId;
-}
-
-bool ApiDataCache::hasMaqamDetail (const juce::String& systemId,
-                                    const juce::String& startingNote,
-                                    const juce::String& maqamId) const
-{
-    juce::ScopedLock sl (lock);
-    const auto key = makeMaqamDetailKey (systemId, startingNote, maqamId);
-    return maqamDetailCache.count (key) > 0 || maqamDetailLazyKeys.count (key) > 0;
-}
-
-const MaqamDetailResult& ApiDataCache::getMaqamDetail (const juce::String& systemId,
-                                                        const juce::String& startingNote,
-                                                        const juce::String& maqamId) const
-{
-    juce::ScopedLock sl (lock);
-    static MaqamDetailResult empty;
-    const auto key = makeMaqamDetailKey (systemId, startingNote, maqamId);
-    ensureMaqamDetailLoaded (key);
-    auto it = maqamDetailCache.find (key);
-    return (it != maqamDetailCache.end()) ? it->second : empty;
-}
-
-void ApiDataCache::storeMaqamDetail (const juce::String& systemId,
-                                      const juce::String& startingNote,
-                                      const juce::String& maqamId,
-                                      MaqamDetailResult detail)
-{
-    juce::ScopedLock sl (lock);
-    const auto key = makeMaqamDetailKey (systemId, startingNote, maqamId);
-    maqamDetailLazyKeys.erase (key);
-    maqamDetailCache[key] = std::move (detail);
-    saveMaqamDetailToDisk (key, maqamDetailCache[key]);
-}
-
-void ApiDataCache::ensureMaqamDetailLoaded (const juce::String& key) const
-{
-    if (maqamDetailCache.count (key) > 0) return;
-    if (maqamDetailLazyKeys.count (key) == 0) return;
-
-    const auto file = getMaqamDetailFile (key);
-    if (file.existsAsFile())
-    {
-        const auto json = juce::JSON::parse (file.loadFileAsString());
-        if (json.getDynamicObject() != nullptr)
-            maqamDetailCache[key] = jsonToMaqamDetail (json);
-    }
-    maqamDetailLazyKeys.erase (key);
-}
-
-void ApiDataCache::saveMaqamDetailToDisk (const juce::String& key,
-                                           const MaqamDetailResult& detail) const
-{
-    const auto dir = getMaqamDetailDirectory();
-    if (! dir.isDirectory())
-    {
-        const auto result = dir.createDirectory();
-        if (result.failed()) return;
-    }
-    getMaqamDetailFile (key).replaceWithText (juce::JSON::toString (maqamDetailToJson (detail)));
-}
-
-juce::var ApiDataCache::maqamDetailToJson (const MaqamDetailResult& detail)
-{
-    auto* obj = new juce::DynamicObject();
-
-    juce::Array<juce::var> degrees;
-    for (const auto& pc : detail.ascendingDegrees)
-        degrees.add (pitchClassToJson (pc));
-    obj->setProperty ("ascendingDegrees", degrees);
-
-    auto* transMap = new juce::DynamicObject();
-    for (const auto& [tonicId, transId] : detail.transpositionIdMap)
-        transMap->setProperty (tonicId, transId);
-    obj->setProperty ("transpositionIdMap", juce::var (transMap));
-
-    return juce::var (obj);
-}
-
-MaqamDetailResult ApiDataCache::jsonToMaqamDetail (const juce::var& json)
-{
-    MaqamDetailResult result;
-    if (json.getDynamicObject() == nullptr) return result;
-    const auto& p = json.getDynamicObject()->getProperties();
-
-    const juce::var* degrees = p.getVarPointer ("ascendingDegrees");
-    if (degrees && degrees->isArray())
-    {
-        for (int i = 0; i < degrees->size(); ++i)
-            result.ascendingDegrees.push_back (jsonToPitchClass ((*degrees)[i]));
-    }
-
-    const juce::var* transMap = p.getVarPointer ("transpositionIdMap");
-    if (transMap && transMap->getDynamicObject())
-    {
-        const auto& tp = transMap->getDynamicObject()->getProperties();
-        for (int i = 0; i < tp.size(); ++i)
-            result.transpositionIdMap[tp.getName (i).toString()] = tp.getValueAt (i).toString();
-    }
-
-    return result;
 }
 
 bool ApiDataCache::isInMemory (const juce::String& systemId,
@@ -568,13 +413,17 @@ juce::var ApiDataCache::tuningDataToJson (const TuningData& data)
         mleObj->setProperty ("tonicId",        mle.tonicId);
         mleObj->setProperty ("tonicDisplay",   mle.tonicDisplay);
 
-        // Degrees (ascending + descending)
+        // Degrees (ascending + descending + enriched fields)
         auto* degObj = new juce::DynamicObject();
-        juce::Array<juce::var> asc, desc;
-        for (const auto& n : mle.degrees.ascending)  asc.add (juce::var (n));
-        for (const auto& n : mle.degrees.descending) desc.add (juce::var (n));
-        degObj->setProperty ("ascending",  asc);
-        degObj->setProperty ("descending", desc);
+        juce::Array<juce::var> asc, desc, ascEn, ascSol;
+        for (const auto& n : mle.degrees.ascending)             asc.add (juce::var (n));
+        for (const auto& n : mle.degrees.descending)            desc.add (juce::var (n));
+        for (const auto& n : mle.degrees.ascendingEnglishNames) ascEn.add (juce::var (n));
+        for (const auto& n : mle.degrees.ascendingSolfeges)     ascSol.add (juce::var (n));
+        degObj->setProperty ("ascending",              asc);
+        degObj->setProperty ("descending",             desc);
+        degObj->setProperty ("ascendingEnglishNames",  ascEn);
+        degObj->setProperty ("ascendingSolfeges",      ascSol);
         mleObj->setProperty ("degrees", juce::var (degObj));
 
         // Transpositions
@@ -586,11 +435,15 @@ juce::var ApiDataCache::tuningDataToJson (const TuningData& data)
             tObj->setProperty ("tonicDisplay", t.tonicDisplay);
 
             auto* tdObj = new juce::DynamicObject();
-            juce::Array<juce::var> tAsc, tDesc;
-            for (const auto& n : t.degrees.ascending)  tAsc.add (juce::var (n));
-            for (const auto& n : t.degrees.descending) tDesc.add (juce::var (n));
-            tdObj->setProperty ("ascending",  tAsc);
-            tdObj->setProperty ("descending", tDesc);
+            juce::Array<juce::var> tAsc, tDesc, tAscEn, tAscSol;
+            for (const auto& n : t.degrees.ascending)             tAsc.add (juce::var (n));
+            for (const auto& n : t.degrees.descending)            tDesc.add (juce::var (n));
+            for (const auto& n : t.degrees.ascendingEnglishNames) tAscEn.add (juce::var (n));
+            for (const auto& n : t.degrees.ascendingSolfeges)     tAscSol.add (juce::var (n));
+            tdObj->setProperty ("ascending",              tAsc);
+            tdObj->setProperty ("descending",             tDesc);
+            tdObj->setProperty ("ascendingEnglishNames",  tAscEn);
+            tdObj->setProperty ("ascendingSolfeges",      tAscSol);
             tObj->setProperty ("degrees", juce::var (tdObj));
 
             transArr.add (juce::var (tObj));
@@ -660,6 +513,20 @@ ApiDataCache::TuningData ApiDataCache::jsonToTuningData (const juce::var& json)
                     for (int j = 0; j < descV->size(); ++j)
                         mle.degrees.descending.push_back ((*descV)[j].toString());
                 }
+                const juce::var* ascEnV = dp.getVarPointer ("ascendingEnglishNames");
+                if (ascEnV && ascEnV->isArray())
+                {
+                    mle.degrees.ascendingEnglishNames.reserve ((size_t) ascEnV->size());
+                    for (int j = 0; j < ascEnV->size(); ++j)
+                        mle.degrees.ascendingEnglishNames.push_back ((*ascEnV)[j].toString());
+                }
+                const juce::var* ascSolV = dp.getVarPointer ("ascendingSolfeges");
+                if (ascSolV && ascSolV->isArray())
+                {
+                    mle.degrees.ascendingSolfeges.reserve ((size_t) ascSolV->size());
+                    for (int j = 0; j < ascSolV->size(); ++j)
+                        mle.degrees.ascendingSolfeges.push_back ((*ascSolV)[j].toString());
+                }
             }
 
             // Transpositions
@@ -695,6 +562,20 @@ ApiDataCache::TuningData ApiDataCache::jsonToTuningData (const juce::var& json)
                             trans.degrees.descending.reserve ((size_t) tDescV->size());
                             for (int a = 0; a < tDescV->size(); ++a)
                                 trans.degrees.descending.push_back ((*tDescV)[a].toString());
+                        }
+                        const juce::var* tAscEnV = tdp.getVarPointer ("ascendingEnglishNames");
+                        if (tAscEnV && tAscEnV->isArray())
+                        {
+                            trans.degrees.ascendingEnglishNames.reserve ((size_t) tAscEnV->size());
+                            for (int a = 0; a < tAscEnV->size(); ++a)
+                                trans.degrees.ascendingEnglishNames.push_back ((*tAscEnV)[a].toString());
+                        }
+                        const juce::var* tAscSolV = tdp.getVarPointer ("ascendingSolfeges");
+                        if (tAscSolV && tAscSolV->isArray())
+                        {
+                            trans.degrees.ascendingSolfeges.reserve ((size_t) tAscSolV->size());
+                            for (int a = 0; a < tAscSolV->size(); ++a)
+                                trans.degrees.ascendingSolfeges.push_back ((*tAscSolV)[a].toString());
                         }
                     }
                     mle.transpositions.push_back (std::move (trans));

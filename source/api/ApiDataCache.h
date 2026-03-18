@@ -2,7 +2,6 @@
 #include "../model/PitchClass.h"
 #include "../model/TuningSystem.h"
 #include "../model/MaqamListEntry.h"
-#include "ApiResponseParser.h"
 #include <juce_core/juce_core.h>
 #include <map>
 #include <set>
@@ -64,25 +63,6 @@ public:
      *  then briefly locks to insert into cache. */
     void preload (const juce::String& systemId, const juce::String& startingNote);
 
-    // ── Maqam detail cache ──────────────────────────────────────────────────
-    /** Cache key for maqam detail: "systemId:startingNote:maqamId" */
-    juce::String makeMaqamDetailKey (const juce::String& systemId,
-                                     const juce::String& startingNote,
-                                     const juce::String& maqamId) const;
-
-    bool hasMaqamDetail (const juce::String& systemId,
-                         const juce::String& startingNote,
-                         const juce::String& maqamId) const;
-
-    const MaqamDetailResult& getMaqamDetail (const juce::String& systemId,
-                                             const juce::String& startingNote,
-                                             const juce::String& maqamId) const;
-
-    void storeMaqamDetail (const juce::String& systemId,
-                           const juce::String& startingNote,
-                           const juce::String& maqamId,
-                           MaqamDetailResult detail);
-
     // ── Disk persistence ──────────────────────────────────────────────────────
     juce::File getCacheDirectory() const;
     void       loadFromDisk();
@@ -99,13 +79,7 @@ private:
     // Keys found on disk but not yet deserialized (lazy loading)
     mutable std::set<juce::String> lazyKeys;
 
-    // Maqam detail cache (in-memory only, lazy-loaded from disk)
-    mutable std::map<juce::String, MaqamDetailResult> maqamDetailCache;
-    mutable std::set<juce::String> maqamDetailLazyKeys;
-
     juce::File getCacheFile (const juce::String& key) const;
-    juce::File getMaqamDetailDirectory() const;
-    juce::File getMaqamDetailFile (const juce::String& key) const;
     juce::File getSystemsListFile() const;
     bool       ensureCacheDirectory() const;
 
@@ -121,9 +95,4 @@ private:
     static juce::var pitchClassToJson (const PitchClass& pc);
     static PitchClass jsonToPitchClass (const juce::var& obj);
 
-    // Maqam detail disk persistence
-    void saveMaqamDetailToDisk (const juce::String& key, const MaqamDetailResult& detail) const;
-    void ensureMaqamDetailLoaded (const juce::String& key) const;
-    static juce::var maqamDetailToJson (const MaqamDetailResult& detail);
-    static MaqamDetailResult jsonToMaqamDetail (const juce::var& json);
 };

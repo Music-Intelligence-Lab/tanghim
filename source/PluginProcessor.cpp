@@ -743,6 +743,24 @@ void TanghimProcessor::setStateInformation (const void* data, int sizeInBytes)
             currentStartMidi         = savedStartMidi;
             currentDegreeNames       = savedDegreeNames;
 
+            // Populate IPN/solfège from maqam list enriched degree data
+            currentDegreeIpnRefs.fill ({});
+            currentDegreeSolfegeRefs.fill ({});
+            if (savedMaqamId.isNotEmpty())
+            {
+                for (const auto& mle : currentMaqamList)
+                {
+                    if (mle.maqamId == savedMaqamId)
+                    {
+                        if (savedTransIdx >= 0 && savedTransIdx < (int) mle.transpositions.size())
+                            applyDegreeIpnAndSolfege (mle.transpositions[(size_t) savedTransIdx].degrees);
+                        else
+                            applyDegreeIpnAndSolfege (mle.degrees);
+                        break;
+                    }
+                }
+            }
+
             hasRecalledSessionState  = true;
             sessionRecallInProgress  = false;
 
@@ -750,6 +768,7 @@ void TanghimProcessor::setStateInformation (const void* data, int sizeInBytes)
             syncAllSlotParamsFromState();
             syncPresetParamFromState();
 
+            rebuildHeptMap();
             updateTuningAndBroadcast();
             notifyTuningChanged();
         });
@@ -1046,6 +1065,24 @@ void TanghimProcessor::restoreStateFromJson (const juce::String& json)
             currentDegreeNames      = savedDegreeNames;
             currentTonicChromatic   = savedTonicChromatic;
 
+            // Populate IPN/solfège from maqam list enriched degree data
+            currentDegreeIpnRefs.fill ({});
+            currentDegreeSolfegeRefs.fill ({});
+            if (savedMaqamId.isNotEmpty())
+            {
+                for (const auto& mle : currentMaqamList)
+                {
+                    if (mle.maqamId == savedMaqamId)
+                    {
+                        if (savedTransIdx >= 0 && savedTransIdx < (int) mle.transpositions.size())
+                            applyDegreeIpnAndSolfege (mle.transpositions[(size_t) savedTransIdx].degrees);
+                        else
+                            applyDegreeIpnAndSolfege (mle.degrees);
+                        break;
+                    }
+                }
+            }
+
             // Rebuild heptatonic map from restored maqam degrees
             rebuildHeptMap();
 
@@ -1065,10 +1102,6 @@ void TanghimProcessor::restoreStateFromJson (const juce::String& json)
 
             updateTuningAndBroadcast();
             notifyTuningChanged();
-
-            // Fetch maqam detail for context-aware IPN/solfege labels (async)
-            if (savedMaqamId.isNotEmpty())
-                fetchAndApplyMaqamDetail();
         });
     }
 }
@@ -1099,7 +1132,6 @@ void TanghimProcessor::loadTuningSystem (const juce::String& systemId,
     currentDegreeNames.clear();
     currentDegreeIpnRefs.fill ({});
     currentDegreeSolfegeRefs.fill ({});
-    currentTranspositionIdMap.clear();
 
     // Reset heptatonic map to identity (no maqam = no remapping)
     rebuildHeptMap();
@@ -1435,6 +1467,22 @@ void TanghimProcessor::applyPreset (int idx)
         }
     }
 
+    // Populate IPN/solfège from maqam list enriched degree data
+    currentDegreeIpnRefs.fill ({});
+    currentDegreeSolfegeRefs.fill ({});
+    for (const auto& mle : currentMaqamList)
+    {
+        if (mle.maqamId == preset.maqamIdName)
+        {
+            if (preset.isTransposed && preset.pitchClassSetIndex >= 0
+                && preset.pitchClassSetIndex < (int) mle.transpositions.size())
+                applyDegreeIpnAndSolfege (mle.transpositions[(size_t) preset.pitchClassSetIndex].degrees);
+            else
+                applyDegreeIpnAndSolfege (mle.degrees);
+            break;
+        }
+    }
+
     // Sync APVTS params
     syncAllSlotParamsFromState();
     syncPresetParamFromState();
@@ -1514,6 +1562,7 @@ void TanghimProcessor::applyMaqam (const juce::String& maqamId, int transpositio
         for (const auto& name : found->degrees.ascending)
             currentDegreeNames.push_back (name);
 
+        applyDegreeIpnAndSolfege (found->degrees);
         applyMaqamDegrees (found->degrees);
     }
     else
@@ -1527,6 +1576,7 @@ void TanghimProcessor::applyMaqam (const juce::String& maqamId, int transpositio
         for (const auto& name : t.degrees.ascending)
             currentDegreeNames.push_back (name);
 
+        applyDegreeIpnAndSolfege (t.degrees);
         applyMaqamDegrees (t.degrees);
     }
 
@@ -1546,112 +1596,34 @@ void TanghimProcessor::applyMaqam (const juce::String& maqamId, int transpositio
             }
         }
     }
-
-    // Fetch maqam detail for context-aware IPN labels and solfege (async, updates on arrival)
-    currentDegreeIpnRefs.fill ({});
-    currentDegreeSolfegeRefs.fill ({});
-    fetchAndApplyMaqamDetail();
 }
 
-void TanghimProcessor::applyDegreeIpnRefs (const MaqamDetailResult& detail)
+void TanghimProcessor::applyDegreeIpnAndSolfege (const MaqamDegrees& degrees)
 {
     currentDegreeIpnRefs.fill ({});
     currentDegreeSolfegeRefs.fill ({});
-    for (const auto& pc : detail.ascendingDegrees)
+
+    for (size_t i = 0; i < degrees.ascendingEnglishNames.size(); ++i)
     {
-        // Derive IPN reference from englishName (primary source of truth)
-        // englishName format: "G#3", "Eb3", "E-b3", "D-#3", "C3"
-        // Strip octave digits and microtonal modifiers to get base IPN: "G#", "Eb", "E", "D#", "C"
-        juce::String ipn;
-        if (pc.englishName.isNotEmpty())
-        {
-            ipn = pc.englishName;
-            // Remove trailing octave digits
-            while (ipn.isNotEmpty() && juce::CharacterFunctions::isDigit (ipn.getLastCharacter()))
-                ipn = ipn.dropLastCharacters (1);
-            // Remove microtonal modifiers: "-b", "-#", "+", etc. (indicated by "-" prefix)
-            if (ipn.contains ("-"))
-                ipn = ipn.upToFirstOccurrenceOf ("-", false, false);
-        }
+        juce::String ipn = degrees.ascendingEnglishNames[i];
+        if (ipn.isEmpty()) continue;
+
+        // Strip trailing octave digits
+        while (ipn.isNotEmpty() && juce::CharacterFunctions::isDigit (ipn.getLastCharacter()))
+            ipn = ipn.dropLastCharacters (1);
+        // Strip microtonal modifiers: "-b", "-#", etc. (indicated by "-" prefix)
+        if (ipn.contains ("-"))
+            ipn = ipn.upToFirstOccurrenceOf ("-", false, false);
         if (ipn.isEmpty()) continue;
 
         const int ci = chromaticIndexForIpnRef (ipn);
         if (ci >= 0)
         {
             currentDegreeIpnRefs[(size_t) ci] = ipn;
-            if (pc.solfege.isNotEmpty())
-                currentDegreeSolfegeRefs[(size_t) ci] = pc.solfege;
+            if (i < degrees.ascendingSolfeges.size() && degrees.ascendingSolfeges[i].isNotEmpty())
+                currentDegreeSolfegeRefs[(size_t) ci] = degrees.ascendingSolfeges[i];
         }
     }
-}
-
-void TanghimProcessor::fetchAndApplyMaqamDetail()
-{
-    if (currentSystemId.isEmpty() || currentStartingNote.isEmpty()) return;
-    if (currentMaqamId.isEmpty()) return;
-
-    // Determine the maqam endpoint ID and transposition ID
-    // For transpositions, we need to look up the transposition idName from
-    // the base maqam's availableTranspositions mapping.
-    juce::String fetchMaqamId = currentMaqamId;
-    juce::String transpositionId;
-
-    if (currentTranspositionIdx >= 0)
-    {
-        // Find the tonic ID for the current transposition — passed as transposeTo param
-        const MaqamListEntry* found = nullptr;
-        for (const auto& mle : currentMaqamList)
-        {
-            if (mle.maqamId == currentMaqamId)
-            {
-                found = &mle;
-                break;
-            }
-        }
-
-        if (found != nullptr && currentTranspositionIdx < (int) found->transpositions.size())
-            transpositionId = found->transpositions[(size_t) currentTranspositionIdx].tonicId;
-    }
-
-    // Build the cache key: for transpositions, include the transpositionId
-    // so each transposition is cached separately
-    juce::String cacheKey = transpositionId.isNotEmpty()
-        ? (currentMaqamId + ":" + transpositionId)
-        : currentMaqamId;
-
-    // Check cache first
-    if (dataCache.hasMaqamDetail (currentSystemId, currentStartingNote, cacheKey))
-    {
-        const auto& detail = dataCache.getMaqamDetail (currentSystemId, currentStartingNote, cacheKey);
-        applyDegreeIpnRefs (detail);
-        rebuildHeptMap();  // IPN refs may change enharmonic letter → different white key mapping
-        if (! currentTranspositionIdMap.empty() || currentTranspositionIdx < 0)
-            currentTranspositionIdMap = detail.transpositionIdMap;
-        notifyTuningChanged();
-        return;
-    }
-
-    // Fetch from API
-    std::weak_ptr<std::atomic<bool>> weak (alive);
-    const auto sysId = currentSystemId;
-    const auto startNote = currentStartingNote;
-    const auto maqId = currentMaqamId;
-
-    apiClient.fetchMaqamDetail (fetchMaqamId, sysId, startNote,
-        [this, weak, sysId, startNote, cacheKey, maqId] (MaqamDetailResult detail)
-        {
-            if (! isAlive (weak)) return;
-            if (currentMaqamId != maqId) return; // user changed maqam while fetching
-
-            dataCache.storeMaqamDetail (sysId, startNote, cacheKey, detail);
-            applyDegreeIpnRefs (detail);
-            rebuildHeptMap();  // IPN refs may change enharmonic letter → different white key mapping
-            if (! detail.transpositionIdMap.empty())
-                currentTranspositionIdMap = detail.transpositionIdMap;
-            notifyTuningChanged();
-        },
-        {} /* onError — silently fallback to default IPN labels */,
-        transpositionId);
 }
 
 void TanghimProcessor::clearPreset (int idx)
@@ -2668,7 +2640,6 @@ void TanghimProcessor::clearCache()
     currentDegreeNames.clear();
     currentDegreeIpnRefs.fill ({});
     currentDegreeSolfegeRefs.fill ({});
-    currentTranspositionIdMap.clear();
     rebuildHeptMap();
 
     // Reset all presets

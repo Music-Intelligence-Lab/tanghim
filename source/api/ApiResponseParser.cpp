@@ -149,54 +149,6 @@ std::vector<MaqamListEntry> ApiResponseParser::parseMaqamList (const juce::var& 
     return result;
 }
 
-MaqamDetailResult ApiResponseParser::parseMaqamDetail (const juce::var& json)
-{
-    MaqamDetailResult result;
-
-    auto* root = json.getDynamicObject();
-    if (root == nullptr) return result;
-
-    // Parse pitchData.ascending
-    const juce::var* pitchData = root->getProperties().getVarPointer ("pitchData");
-    if (pitchData && pitchData->getDynamicObject())
-    {
-        const auto& pdProps = pitchData->getDynamicObject()->getProperties();
-        const juce::var* ascending = pdProps.getVarPointer ("ascending");
-        if (ascending && ascending->isArray())
-        {
-            for (int i = 0; i < ascending->size(); ++i)
-            {
-                auto pc = parseSinglePitchClass ((*ascending)[i]);
-                if (pc.isValid())
-                    result.ascendingDegrees.push_back (std::move (pc));
-            }
-        }
-    }
-
-    // Parse availableTranspositions: [ { idName, tonic: { idName } }, ... ]
-    const juce::var* transArr = root->getProperties().getVarPointer ("availableTranspositions");
-    if (transArr && transArr->isArray())
-    {
-        for (int i = 0; i < transArr->size(); ++i)
-        {
-            const auto& entry = (*transArr)[i];
-            if (entry.getDynamicObject() == nullptr) continue;
-            const auto& ep = entry.getDynamicObject()->getProperties();
-
-            const juce::var* transIdName = ep.getVarPointer ("idName");
-            const juce::var* tonicObj = ep.getVarPointer ("tonic");
-            if (transIdName && tonicObj && tonicObj->getDynamicObject())
-            {
-                const juce::var* tonicIdName = tonicObj->getDynamicObject()->getProperties().getVarPointer ("idName");
-                if (tonicIdName)
-                    result.transpositionIdMap[tonicIdName->toString()] = transIdName->toString();
-            }
-        }
-    }
-
-    return result;
-}
-
 bool ApiResponseParser::parseMidiNoteDeviation (const juce::String& s,
                                                 int&    midiNoteOut,
                                                 double& centsOut)
@@ -380,20 +332,40 @@ TuningSystem ApiResponseParser::parseSingleTuningSystem (const juce::var& obj)
 
 MaqamDegrees ApiResponseParser::parseMaqamDegrees (const juce::var& obj)
 {
-    MaqamDegrees deg;
-    if (obj.getDynamicObject() == nullptr) return deg;
+    MaqamDegrees result;
+    if (obj.getDynamicObject() == nullptr) return result;
     const auto& props = obj.getDynamicObject()->getProperties();
 
-    auto parseStringArray = [] (const juce::var* arr) -> std::vector<juce::String>
+    auto parseArray = [] (const juce::var* arr,
+                          std::vector<juce::String>& names,
+                          std::vector<juce::String>& englishNames,
+                          std::vector<juce::String>& solfeges)
     {
-        std::vector<juce::String> result;
-        if (arr && arr->isArray())
-            for (int i = 0; i < arr->size(); ++i)
-                result.push_back ((*arr)[i].toString());
-        return result;
+        if (! arr || ! arr->isArray()) return;
+        for (int i = 0; i < arr->size(); ++i)
+        {
+            const auto& entry = (*arr)[i];
+            if (entry.getDynamicObject() != nullptr)
+            {
+                // Enriched format: { noteName, englishName, solfege }
+                const auto& ep = entry.getDynamicObject()->getProperties();
+                const juce::var* nn = ep.getVarPointer ("noteName");
+                names.push_back (nn ? nn->toString() : juce::String());
+                const juce::var* en = ep.getVarPointer ("englishName");
+                englishNames.push_back (en ? en->toString() : juce::String());
+                const juce::var* sf = ep.getVarPointer ("solfege");
+                solfeges.push_back (sf ? sf->toString() : juce::String());
+            }
+            else
+            {
+                // Legacy string format: just PAO name
+                names.push_back (entry.toString());
+            }
+        }
     };
 
-    deg.ascending  = parseStringArray (props.getVarPointer ("ascending"));
-    deg.descending = parseStringArray (props.getVarPointer ("descending"));
-    return deg;
+    std::vector<juce::String> descEnglish, descSolfege;  // descending enriched data (not stored)
+    parseArray (props.getVarPointer ("ascending"),  result.ascending, result.ascendingEnglishNames, result.ascendingSolfeges);
+    parseArray (props.getVarPointer ("descending"), result.descending, descEnglish, descSolfege);
+    return result;
 }

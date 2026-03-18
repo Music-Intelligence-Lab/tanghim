@@ -70,7 +70,7 @@ void DiArMaqArClient::fetchMaqamList (
 {
     const juce::URL url {
         juce::String (BASE_URL) + "/tuning-systems/" + systemId + "/" + startingNote
-        + "/maqamat?includeMaqamDegrees=true&includeTranspositions=true"
+        + "/maqamat?includeMaqamDegrees=true&includeTranspositions=true&includeDegreeDetails=true"
     };
 
     enqueue ({
@@ -81,38 +81,6 @@ void DiArMaqArClient::fetchMaqamList (
             juce::MessageManager::callAsync ([onSuccess, entries = std::move(entries)] () mutable
             {
                 onSuccess (std::move (entries));
-            });
-        },
-        std::move (onError)
-    });
-}
-
-void DiArMaqArClient::fetchMaqamDetail (
-    const juce::String& maqamId,
-    const juce::String& systemId,
-    const juce::String& startingNote,
-    std::function<void (MaqamDetailResult)> onSuccess,
-    ErrorCb onError,
-    const juce::String& transpositionId)
-{
-    juce::String urlStr = juce::String (BASE_URL) + "/maqamat/" + maqamId
-        + "?tuningSystem=" + systemId
-        + "&startingNote=" + startingNote
-        + "&pitchClassDataType=all";
-
-    if (transpositionId.isNotEmpty())
-        urlStr += "&transposeTo=" + transpositionId;
-
-    const juce::URL url { urlStr };
-
-    enqueue ({
-        url,
-        [onSuccess = std::move (onSuccess)] (const juce::var& json)
-        {
-            auto detail = ApiResponseParser::parseMaqamDetail (json);
-            juce::MessageManager::callAsync ([onSuccess, detail = std::move(detail)] () mutable
-            {
-                onSuccess (std::move (detail));
             });
         },
         std::move (onError)

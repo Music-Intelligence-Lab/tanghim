@@ -260,7 +260,6 @@ private:
     // ── Maqam detail data (context-aware IPN references + solfege) ─────────
     std::array<juce::String, 12> currentDegreeIpnRefs;              // per chromatic slot, empty = no override
     std::array<juce::String, 12> currentDegreeSolfegeRefs;          // per chromatic slot, empty = no override
-    std::map<juce::String, juce::String> currentTranspositionIdMap;  // tonicId → transposition idName
 
     // ── Direct MIDI device input for preset triggering ──────────────────────
     std::unique_ptr<juce::MidiInput> midiPresetInput;
@@ -294,9 +293,8 @@ private:
     // ── Internal helpers ──────────────────────────────────────────────────────
     void rebuildTuningStateFromCache();
     void fetchMaqamListIfNeeded();
-    void fetchAndApplyMaqamDetail();
     void backgroundPreloadRemainingNotes (const juce::String& systemId);
-    void applyDegreeIpnRefs (const MaqamDetailResult& detail);
+    void applyDegreeIpnAndSolfege (const MaqamDegrees& degrees);
     void applyMaqamDegrees (const MaqamDegrees& degrees);
     void notifyTuningChanged();
     juce::String buildScaleName() const;
