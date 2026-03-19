@@ -102,28 +102,29 @@ Tanghīm stores cached tuning data, settings, and exported MIDI files locally:
 The Tanghīm window is organized into three main areas:
 
 ### Top Bar
-- **Tuning System Selector** (left) — choose the tuning system and starting note name
+- **Tuning System Selector** (left) — choose the tuning system and starting note name. Dropdowns show contextual placeholders (e.g. "Loading…", "Select Tuning System") and disable when their prerequisite hasn't been selected yet
 - **Reference Frequency Control** (center) — adjust the reference pitch
 - **Mode Badges** (right) — status indicators for MTS-ESP, MPE, and Mono PB connections; clickable toggles for Oscillator and Heptatonic modes
 
 ### Middle Section
-- **Maqam Selector** — searchable dropdown for maqam + variant/transposition
+- **Maqam Selector** — searchable dropdown for maqam + variant/transposition. Cache status indicators (green ticks) show which starting note / maqam combinations have been cached locally
 - **Preset Bar** — 8 preset slots for saving and recalling maqam configurations
 
 ### Slider Bank
-- **12 chromatic pitch sliders** — fine-tune each pitch class with cent-accurate control
+- **12 chromatic pitch sliders** — fine-tune each pitch class with cent-accurate control; multiple tuning variants per pitch class appear as snap markers
 - **Range Scroller** — navigate the full MIDI range; magnetic snap to C, G, and A positions
 - **Piano key indicators** — white/black key bars beneath each slider
 
 ### Status Bar (bottom)
 - Version and build info (left)
-- MIDI preset mapping controls, MIDI drag export, Clear Cache, and Update check (right)
+- Download status indicator — shows "Downloading…" during data fetches, or "No internet connection" with a Retry button if the connection fails
+- MIDI preset mapping controls, MIDI drag export, Clear Cache, and Check for Updates (right)
 
 ---
 
 ## Tuning Systems and Starting Note Names
 
-A tuning system (tanghīm) is an ordered sequence of pitch classes within an octave. The tuning system selector lets you browse all available systems from the DiArMaqAr API. You can check for updates to tuning system and maqamāt data at any time by clicking the **Update** button in the status bar.
+A tuning system (tanghīm) is an ordered sequence of pitch classes within an octave. The tuning system selector lets you browse all available systems from the DiArMaqAr API. The plugin automatically checks for new data when it loads; if updates are available, the **Check for Updates** button in the status bar turns gold.
 
 Each tuning system has one or more **starting note names** — the name for the foundational pitch from which the tuning begins. Starting note names are not arbitrary transpositions; they reflect the historical and practical origins of each system:
 
@@ -153,11 +154,28 @@ When a maqam is selected:
 
 ## The Slider Bank
 
-Each slider represents one chromatic pitch class and controls its tuning in cents deviation from 12-tone equal temperament.
+The slider bank presents 12 sliders — one for each chromatic step of the octave — arranged in the standard Western chromatic order: C, C#, D, D# (Eb), E, F, F#, G, G# (Ab), A, A# (Bb), B. Each slider controls the tuning of its pitch class in cents deviation from 12-tone equal temperament. The same tuning applies to that pitch class across all octaves (unless overridden per-note — see below).
+
+### How Pitch Classes Map to Sliders
+
+Arabic maqām tuning systems define far more than 12 pitch classes per octave — for example, the 24-tone modern Arabic system has 24 distinct pitches. Tanghīm resolves this by assigning each pitch class to the chromatic slider it is a **variant of**, based on Arabic musicological logic rather than proximity to a 12-EDO semitone.
+
+For example, in the 24-tone system starting on yegāh, the pitches between D and G map as follows:
+
+| Slider | Snap markers (variants) | PAO names |
+|--------|------------------------|-----------|
+| **E** | E−b (half-flat), E♮ | segāh, būselīk |
+| **F** | F♮, F+# (half-sharp) | chahārgāh, tīk būselīk |
+| **F#** | F#♮, F#+# (half-sharp) | nīm ḥijāz, ḥijāz |
+| **G** | G♮ | nawā |
+
+The key principle: **each pitch is a variant of the chromatic note it modifies, not the chromatic note it is closest to.** A half-flat E (segāh, E−b) lives on the E slider because it is a *lowered E*, not a raised Eb. Similarly, a half-sharp F (tīk būselīk, F+#) lives on the F slider because it is a *raised F*.
+
+When a slider has multiple variants, small **snap markers** on the slider track indicate each available tuning position. Clicking the note name cycles through the variants.
 
 ### Snap Markers vs Free Tuning
 
-Each slider has **snap markers** — small notches that indicate the tuning positions defined by the selected tuning system. When you select a maqam, the sliders snap to these positions automatically. However, snap markers are only a starting point. You are free to **drag any slider away from its marker** to adjust the tuning by ear. This is a core feature of Tanghīm — tuning systems in the database represent theoretical models, but in practice, performers constantly adjust intonation based on context, taste, and tradition. The sliders let you do exactly that: start from a theoretical tuning and refine it to match what sounds right to you.
+Snap markers indicate the tuning positions defined by the selected tuning system. When you select a maqam, the sliders snap to these positions automatically. However, snap markers are only a starting point. You are free to **drag any slider away from its marker** to adjust the tuning by ear. This is a core feature of Tanghīm — tuning systems in the database represent theoretical models, but in practice, performers constantly adjust intonation based on context, taste, and tradition. The sliders let you do exactly that: start from a theoretical tuning and refine it to match what sounds right to you.
 
 When you move a slider away from its snapped position, the thumb turns **cyan** and the maqam name shows an asterisk (`*`) suffix, indicating the tuning has been modified from its theoretical values.
 
@@ -410,13 +428,15 @@ For instruments that don't support MTS-ESP — including hardware synths and man
 
 #### Installing the Max for Live Device
 
-1. Locate the `Tanghim Receiver.maxpat` file in the `m4l/` folder of the project
-2. Copy the entire `Tanghim/` folder (containing the `.maxpat` and supporting files) to:
+1. Download the `Tanghim Receiver.amxd` file from the [GitHub Releases page](https://github.com/KhyamAllami/tanghim/releases) (or locate it in the `m4l/` folder if building from source)
+2. Copy the `.amxd` file to:
    ```
-   ~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim/
+   ~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/
    ```
 3. The Tanghīm Receiver VST3 plugin must also be installed (the M4L device loads it internally)
 4. Restart Ableton Live
+
+The `.amxd` is a single frozen file — no additional supporting files needed.
 
 #### Using the Max for Live Receiver
 
@@ -436,7 +456,7 @@ This design is necessary because Ableton doesn't allow VST3 plugins to process M
 
 ### Ableton-Specific Notes
 
-- **Computer MIDI Keyboard timing**: When the Tanghīm plugin window is focused, Ableton's built-in computer keyboard MIDI input may have slightly delayed timing. This is a known macOS WebView issue. **Workaround**: click outside the plugin window, or use an external MIDI controller (which is unaffected).
+- **Computer MIDI Keyboard**: When the Tanghīm plugin window is focused, Ableton's built-in computer keyboard MIDI input is disabled (this is standard DAW behavior when a plugin window has focus). **Workaround**: click outside the plugin window to return focus to Ableton, or use an external MIDI controller (which is unaffected).
 - **Plugin scanning**: On Apple Silicon Macs, Ableton's plugin scanner runs under Rosetta (x86_64). The plugin is built as a universal binary to ensure compatibility.
 - **MIDI routing between tracks**: Ableton normalizes MIDI to channel 1 between tracks. This is why the standalone Receiver VST3 cannot be used in Ableton — you must use the M4L Receiver device for MPE and Mono PB delivery, or use MTS-ESP directly.
 - **MIDI preset mapping with multi-channel controllers**: If your MIDI controller sends keys on one channel and pads on another (e.g. keys on ch1, pads on ch10), set the Ableton track's MIDI input to the keys channel only — not "All Channels". Because Ableton merges all channels to ch1, the plugin's channel filter cannot distinguish pad notes from key notes if both arrive on the same channel. The dedicated MIDI preset input receives directly from the device and preserves channel info, so preset switching works correctly regardless.
@@ -468,7 +488,7 @@ rm -rf ~/Library/Audio/Plug-Ins/VST3/Tanghim.vst3
 - The oscillator is quiet by design (−18 dBFS) — check your output volume
 
 ### Stale tuning data
-Click **Clear Cache** in the status bar to force a fresh fetch from the DiArMaqAr API on next load. You can also click the **Update** button to check for new tuning system and maqamāt data.
+Click **Check for Updates** in the status bar — the plugin also checks automatically when it loads. If updates are available, the button turns **gold** and reads "Update Available"; click it to download the latest data. You can also click **Clear Cache** (which asks for confirmation) to wipe all cached tuning data and force a fresh fetch on next load. Your presets are preserved.
 
 ### MIDI preset device not responding
 - Check that the correct MIDI input device and channel are selected in the status bar
@@ -482,4 +502,4 @@ Conceived and designed by [Khyam Allami](https://khyamallami.com) at the [Music 
 
 Accesses tuning data via the [Digital Arabic Maqām Archive (DiArMaqAr) API](https://diarmaqar.netlify.app) and broadcasts tuning via the [MTS-ESP](https://github.com/ODDSound/MTS-ESP) protocol.
 
-Built with [JUCE 8](https://juce.com/) and React/TypeScript.
+Built with [JUCE 8](https://juce.com/).
