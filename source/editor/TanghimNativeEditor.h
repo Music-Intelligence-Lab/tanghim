@@ -21,19 +21,34 @@ class MidiDragButton : public juce::Component
 public:
     MidiDragButton (TanghimProcessor& p) : processor (p) {}
 
+    void setActive (bool shouldBeActive)
+    {
+        if (active != shouldBeActive) { active = shouldBeActive; repaint(); }
+    }
+
     void paint (juce::Graphics& g) override
     {
         auto bounds = getLocalBounds().toFloat();
-        g.setColour (isMouseOver() ? Theme::goldPreset : Theme::surface);
-        g.fillRoundedRectangle (bounds, 3.0f);
-        g.setColour (isMouseOver() ? Theme::surface : Theme::goldPreset);
-        g.drawRoundedRectangle (bounds.reduced (0.5f), 3.0f, 1.0f);
+        if (active)
+        {
+            g.setColour (isMouseOver() ? Theme::goldPreset : Theme::surface);
+            g.fillRoundedRectangle (bounds, 3.0f);
+            g.setColour (isMouseOver() ? Theme::surface : Theme::goldPreset);
+            g.drawRoundedRectangle (bounds.reduced (0.5f), 3.0f, 1.0f);
+        }
+        else
+        {
+            g.setColour (Theme::surface);
+            g.fillRoundedRectangle (bounds, 3.0f);
+            g.setColour (juce::Colour (0xff808099));
+            g.drawRoundedRectangle (bounds.reduced (0.5f), 3.0f, 1.0f);
+        }
         g.setFont (11.0f);
         g.drawText ("MIDI", getLocalBounds(), juce::Justification::centred);
     }
 
-    void mouseEnter (const juce::MouseEvent&) override { repaint(); }
-    void mouseExit (const juce::MouseEvent&) override { repaint(); }
+    void mouseEnter (const juce::MouseEvent&) override { if (active) repaint(); }
+    void mouseExit (const juce::MouseEvent&) override { if (active) repaint(); }
     void mouseDown (const juce::MouseEvent&) override;
     void mouseDrag (const juce::MouseEvent& e) override;
 
@@ -42,6 +57,7 @@ private:
     TanghimProcessor& processor;
     juce::File tempMidiFile;
     bool dragStarted = false;
+    bool active = false;
 };
 
 /**

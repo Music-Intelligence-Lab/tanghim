@@ -1189,7 +1189,7 @@ void TanghimNativeEditor::timerCallback()
         if (maqamId != lastMaqamId)
         {
             lastMaqamId = maqamId;
-            midiDragButton.setVisible (maqamId.isNotEmpty());
+            midiDragButton.setActive (maqamId.isNotEmpty());
         }
 
         syncMtsStatus();
@@ -1250,9 +1250,8 @@ void TanghimNativeEditor::setupStatusBar()
     addAndMakeVisible (retryButton);
     retryButton.setVisible (false);
 
-    // MIDI drag button
+    // MIDI drag button (always visible; active state controls gold/grey styling)
     addAndMakeVisible (midiDragButton);
-    midiDragButton.setVisible (false);
 
     // Updates button
     addAndMakeVisible (updatesButton);
@@ -1402,6 +1401,7 @@ void TanghimNativeEditor::populateMidiChannelList()
 
 void MidiDragButton::mouseDown (const juce::MouseEvent&)
 {
+    if (! active) return;
     if (tempMidiFile.existsAsFile())
         tempMidiFile.deleteFile();
     dragStarted = false;
