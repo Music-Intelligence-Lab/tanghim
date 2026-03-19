@@ -1227,6 +1227,7 @@ void TanghimProcessor::loadTuningSystem (const juce::String& systemId,
 
         // Fetch maqam list BEFORE notifying UI, so preset compatibility
         // checks have the list available on the first render
+        maqamDataLoading.store (true);
         fetchMaqamListIfNeeded();
 
         notifyTuningChanged();
@@ -1250,13 +1251,15 @@ void TanghimProcessor::loadTuningSystem (const juce::String& systemId,
         {
             // Data on disk but not yet deserialized — preload in background
             // to avoid blocking the message thread with JSON parsing
+            loadingFromCache.store (true);
             std::weak_ptr<std::atomic<bool>> weak (alive);
             apiClient.runOnThread ([this, weak, systemId, startingNote, doLoad]
             {
                 dataCache.preload (systemId, startingNote);
-                juce::MessageManager::callAsync ([weak, doLoad]
+                juce::MessageManager::callAsync ([this, weak, doLoad]
                 {
                     if (! isAlive (weak)) return;
+                    loadingFromCache.store (false);
                     doLoad();
                 });
             });
@@ -1265,11 +1268,13 @@ void TanghimProcessor::loadTuningSystem (const juce::String& systemId,
     else
     {
         if (onStatusMessage) onStatusMessage ("Loading " + systemId + "…");
+        downloadState.store (DownloadState::downloading);
         std::weak_ptr<std::atomic<bool>> weak (alive);
         apiClient.fetchPitchClasses (systemId, startingNote,
             [this, weak, systemId, startingNote, doLoad] (std::vector<PitchClass> pcs)
             {
                 if (! isAlive (weak)) return;
+                downloadState.store (DownloadState::idle);
                 ApiDataCache::TuningData td;
                 td.pitchClasses = std::move (pcs);
                 td.lastChecked  = juce::Time::getCurrentTime().toISO8601 (true);
@@ -1282,9 +1287,13 @@ void TanghimProcessor::loadTuningSystem (const juce::String& systemId,
                 dataCache.storeData (systemId, startingNote, std::move (td));
                 doLoad();
             },
-            [this, weak] (juce::String err)
+            [this, weak, systemId, startingNote] (juce::String err)
             {
                 if (! isAlive (weak)) return;
+                downloadState.store (DownloadState::connectionError);
+                lastFailedFetch = [this, systemId, startingNote] {
+                    loadTuningSystem (systemId, startingNote);
+                };
                 if (onStatusMessage) onStatusMessage ("Error: " + err);
             });
     }
@@ -1870,6 +1879,23 @@ bool TanghimProcessor::hasCachedTuningData (const juce::String& systemId,
     return dataCache.hasData (systemId, startingNote);
 }
 
+bool TanghimProcessor::hasCachedMaqamList (const juce::String& systemId,
+                                            const juce::String& startingNote) const
+{
+    return dataCache.hasMaqamList (systemId, startingNote);
+}
+
+void TanghimProcessor::retryLastFailedFetch()
+{
+    if (lastFailedFetch)
+    {
+        downloadState.store (DownloadState::idle);
+        auto retry = std::move (lastFailedFetch);
+        lastFailedFetch = nullptr;
+        retry();
+    }
+}
+
 const std::vector<MaqamListEntry>& TanghimProcessor::getMaqamList() const
 {
     return currentMaqamList;
@@ -1926,6 +1952,7 @@ void TanghimProcessor::fetchMaqamListIfNeeded()
         {
             currentMaqamList = data.maqamList;
             DBG ("fetchMaqamListIfNeeded: loaded " + juce::String ((int) currentMaqamList.size()) + " maqamat from cache");
+            maqamDataLoading.store (false);
             if (onMaqamListLoaded) onMaqamListLoaded();
             return;
         }
@@ -1943,12 +1970,14 @@ void TanghimProcessor::fetchMaqamListIfNeeded()
             DBG ("fetchMaqamListIfNeeded: API returned " + juce::String ((int) entries.size()) + " maqamat");
             currentMaqamList = entries;
             dataCache.updateMaqamList (currentSystemId, currentStartingNote, entries);
+            maqamDataLoading.store (false);
             if (onMaqamListLoaded) onMaqamListLoaded();
         },
         [this, weak] (juce::String err)
         {
             if (! isAlive (weak)) return;
             DBG ("fetchMaqamListIfNeeded: API ERROR: " + err);
+            maqamDataLoading.store (false);
             if (onStatusMessage) onStatusMessage ("Maqam list: " + err);
         });
 }

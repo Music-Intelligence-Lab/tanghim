@@ -146,6 +146,21 @@ public:
                               std::function<void()> onNoUpdates,
                               std::function<void (juce::String)> onError = {});
 
+    // ── Download & connection state (editor polls via timer) ─────────────
+    enum class DownloadState { idle, downloading, connectionError };
+    enum class UpdateState { idle, checking, updatesAvailable, updating, updated, error };
+
+    std::atomic<DownloadState> downloadState { DownloadState::idle };
+    std::atomic<UpdateState>   updateState   { UpdateState::idle };
+    std::atomic<bool>          maqamDataLoading { false };  // true while maqam list is being fetched
+    std::atomic<bool>          loadingFromCache { false };   // true while lazy-loading from disk
+
+    /** Retry the last failed network operation. */
+    void retryLastFailedFetch();
+
+    /** Whether maqam list is cached for a given system+startingNote. */
+    bool hasCachedMaqamList (const juce::String& systemId, const juce::String& startingNote) const;
+
     // ── Change notifications (for NativeBridge → WebView) ────────────────────
     std::function<void()> onTuningStateChanged;
     std::function<void()> onTuningSystemsLoaded;
@@ -318,6 +333,9 @@ private:
     void syncSlotParamFromState (int chromaticIndex);
     void syncAllSlotParamsFromState();
     void syncPresetParamFromState();
+
+    // ── Retry state for failed fetches ───────────────────────────────────────
+    std::function<void()> lastFailedFetch;
 
     // ── Disk persistence ─────────────────────────────────────────────────────
     void loadSettingsFromDisk();
