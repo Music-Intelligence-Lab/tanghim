@@ -1081,16 +1081,32 @@ void TanghimNativeEditor::setupStatusBar()
     clearCacheButton.setColour (juce::TextButton::textColourOffId, mutedColor);
     clearCacheButton.onClick = [this]
     {
-        processor.clearCache();
-        clearCacheButton.setButtonText (juce::CharPointer_UTF8 ("\xe2\x9c\x93 Cleared!"));
-        clearCacheButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff4caf50));
-        juce::Component::SafePointer<juce::TextButton> safeBtn (&clearCacheButton);
-        juce::Timer::callAfterDelay (1500, [safeBtn] {
-            if (auto* btn = safeBtn.getComponent())
+        auto options = juce::MessageBoxOptions()
+            .withIconType (juce::MessageBoxIconType::QuestionIcon)
+            .withTitle ("Clear Cache")
+            .withMessage ("This will delete all cached tuning data. Continue?")
+            .withButton ("Clear")
+            .withButton ("Cancel")
+            .withAssociatedComponent (this);
+
+        juce::AlertWindow::showAsync (options, [this] (int result)
+        {
+            if (result != 1) return;  // Cancel or closed
+
+            processor.clearCache();
+
+            clearCacheButton.setButtonText (juce::CharPointer_UTF8 ("\xe2\x9c\x93 Cleared!"));
+            clearCacheButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff4caf50));
+
+            auto safeBtn = juce::Component::SafePointer<juce::TextButton> (&clearCacheButton);
+            juce::Timer::callAfterDelay (1500, [safeBtn]
             {
-                btn->setButtonText (juce::CharPointer_UTF8 ("\xc3\x97 Clear Cache"));
-                btn->setColour (juce::TextButton::textColourOffId, juce::Colour (0xff808099));
-            }
+                if (auto* btn = safeBtn.getComponent())
+                {
+                    btn->setButtonText (juce::CharPointer_UTF8 ("\xc3\x97 Clear Cache"));
+                    btn->setColour (juce::TextButton::textColourOffId, juce::Colour (0xff808099));
+                }
+            });
         });
     };
 
