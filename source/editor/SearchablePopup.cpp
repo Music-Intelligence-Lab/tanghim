@@ -38,12 +38,16 @@ juce::String SearchablePopup::stripDiacritics (const juce::String& text)
 
 SearchablePopup::SearchablePopup()
 {
+    setWantsKeyboardFocus (true);
+
     searchField.setFont (Theme::scaledFont (12.0f));
     searchField.setColour (juce::TextEditor::backgroundColourId,    Theme::surface);
     searchField.setColour (juce::TextEditor::outlineColourId,       Theme::border);
     searchField.setColour (juce::TextEditor::textColourId,          Theme::text);
     searchField.setColour (juce::TextEditor::focusedOutlineColourId, Theme::accent);
     searchField.onTextChange = [this] { filterItems(); };
+    searchField.setEscapeAndReturnKeysConsumed (false);
+    searchField.addKeyListener (this);  // Intercept up/down/return/escape before TextEditor
     addAndMakeVisible (searchField);
 
     listBox.setColour (juce::ListBox::backgroundColourId, Theme::bg);
@@ -206,7 +210,19 @@ void SearchablePopup::paintListBoxItem (int row, juce::Graphics& g, int w, int h
     }
 }
 
+// KeyListener override — intercepts keys from searchField before TextEditor consumes them
+bool SearchablePopup::keyPressed (const juce::KeyPress& key, juce::Component*)
+{
+    return handleKey (key);
+}
+
+// Component override — handles keys when popup itself has focus
 bool SearchablePopup::keyPressed (const juce::KeyPress& key)
+{
+    return handleKey (key);
+}
+
+bool SearchablePopup::handleKey (const juce::KeyPress& key)
 {
     const int numRows = (int) filteredIndices.size();
     if (numRows == 0) return false;

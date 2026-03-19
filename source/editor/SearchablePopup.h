@@ -9,7 +9,8 @@
  * with a TextEditor search field and a ListBox for results.
  */
 class SearchablePopup : public juce::Component,
-                        private juce::ListBoxModel
+                        private juce::ListBoxModel,
+                        private juce::KeyListener
 {
 public:
     struct Item
@@ -54,6 +55,8 @@ private:
     juce::ListBox     listBox { {}, this };
 
     void filterItems();
+    bool handleKey (const juce::KeyPress& key);
+    bool keyPressed (const juce::KeyPress& key, juce::Component* originatingComponent) override;  // KeyListener
     static juce::String stripDiacritics (const juce::String& text);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SearchablePopup)
