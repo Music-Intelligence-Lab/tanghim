@@ -363,11 +363,11 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
             [this] (auto staleIds)
             {
                 if (staleIds.empty())
-                    processor.updateState.store (TanghimProcessor::UpdateState::idle);
+                    processor.updateState.store (TanghimProcessor::UpdateState::upToDate);
                 else
                     processor.updateState.store (TanghimProcessor::UpdateState::updatesAvailable);
             },
-            [this] { processor.updateState.store (TanghimProcessor::UpdateState::idle); },
+            [this] { processor.updateState.store (TanghimProcessor::UpdateState::upToDate); },
             [this] (auto) { processor.updateState.store (TanghimProcessor::UpdateState::idle); }
         );
     }
@@ -861,12 +861,15 @@ void TanghimNativeEditor::paint (juce::Graphics& g)
     g.setColour (juce::Colour (0xff2d2d4a));
     g.drawHorizontalLine (statusBarBounds.getY(), 0.0f, (float) getWidth());
 
-    // Version + timestamp
-    g.setColour (juce::Colour (0xff808099));
-    g.setFont (11.0f);
-    g.drawText ("v" + juce::String (PLUGIN_VERSION) + " (" + juce::String (BUILD_TIMESTAMP) + ")",
-                statusBarBounds.withTrimmedLeft (16).withWidth (200),
-                juce::Justification::centredLeft);
+    // Version + timestamp (hidden when download status is showing)
+    if (! downloadStatusLabel.isVisible())
+    {
+        g.setColour (juce::Colour (0xff808099));
+        g.setFont (11.0f);
+        g.drawText ("v" + juce::String (PLUGIN_VERSION) + " (" + juce::String (BUILD_TIMESTAMP) + ")",
+                    statusBarBounds.withTrimmedLeft (16).withWidth (200),
+                    juce::Justification::centredLeft);
+    }
 }
 
 void TanghimNativeEditor::resized()
@@ -941,9 +944,9 @@ void TanghimNativeEditor::resized()
         const int btnHeight = 18;
         const int yPos = statusArea.getY() + (Theme::kStatusBarHeight - btnHeight) / 2;
 
-        // Download status label + retry button (left side, after version text)
-        downloadStatusLabel.setBounds (statusArea.withTrimmedLeft (220).withWidth (180).withY (yPos).withHeight (btnHeight));
-        retryButton.setBounds (statusArea.withTrimmedLeft (400).withWidth (50).withY (yPos).withHeight (btnHeight));
+        // Download status label + retry button (left side, replaces version text)
+        downloadStatusLabel.setBounds (statusArea.withTrimmedLeft (16).withWidth (200).withY (yPos).withHeight (btnHeight));
+        retryButton.setBounds (statusArea.withTrimmedLeft (216).withWidth (50).withY (yPos).withHeight (btnHeight));
 
         int rightEdge = getWidth() - 16;
 
@@ -1117,6 +1120,27 @@ void TanghimNativeEditor::timerCallback()
                 });
                 break;
             }
+            case TanghimProcessor::UpdateState::upToDate:
+            {
+                updateButtonShowingConfirmation = true;
+                updatesButton.setButtonText (juce::CharPointer_UTF8 ("Up to Date \xe2\x9c\x93"));
+                updatesButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff4caf50));  // Green
+                updatesButton.setEnabled (false);
+                processor.updateState.store (TanghimProcessor::UpdateState::idle);
+
+                auto safeThis2 = juce::Component::SafePointer<TanghimNativeEditor> (this);
+                juce::Timer::callAfterDelay (1500, [safeThis2]
+                {
+                    if (auto* editor = safeThis2.getComponent())
+                    {
+                        editor->updateButtonShowingConfirmation = false;
+                        editor->updatesButton.setButtonText ("Check for Updates");
+                        editor->updatesButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff808099));
+                        editor->updatesButton.setEnabled (true);
+                    }
+                });
+                break;
+            }
             case TanghimProcessor::UpdateState::error:
                 processor.updateState.store (TanghimProcessor::UpdateState::idle);
                 break;
@@ -1126,6 +1150,8 @@ void TanghimNativeEditor::timerCallback()
     // ── Download / connection state (~30Hz) ──────────────────────────────
     {
         auto dlState = processor.downloadState.load();
+        bool wasVisible = downloadStatusLabel.isVisible();
+
         if (dlState == TanghimProcessor::DownloadState::downloading)
         {
             downloadStatusLabel.setText (juce::CharPointer_UTF8 ("Downloading\xe2\x80\xa6"),
@@ -1147,6 +1173,10 @@ void TanghimNativeEditor::timerCallback()
             downloadStatusLabel.setVisible (false);
             retryButton.setVisible (false);
         }
+
+        // Repaint status bar when visibility changes (toggles version text)
+        if (wasVisible != downloadStatusLabel.isVisible())
+            repaint (getLocalBounds().removeFromBottom (Theme::kStatusBarHeight));
     }
 
     // ── MIDI drag button + MTS-ESP status (~2Hz) ──────────────────────────
@@ -1255,11 +1285,11 @@ void TanghimNativeEditor::setupStatusBar()
                 [this] (auto staleIds)
                 {
                     if (staleIds.empty())
-                        processor.updateState.store (TanghimProcessor::UpdateState::idle);
+                        processor.updateState.store (TanghimProcessor::UpdateState::upToDate);
                     else
                         processor.updateState.store (TanghimProcessor::UpdateState::updatesAvailable);
                 },
-                [this] { processor.updateState.store (TanghimProcessor::UpdateState::idle); },
+                [this] { processor.updateState.store (TanghimProcessor::UpdateState::upToDate); },
                 [this] (auto err) { processor.updateState.store (TanghimProcessor::UpdateState::error); }
             );
         }
@@ -1275,7 +1305,7 @@ void TanghimNativeEditor::setupStatusBar()
             .withIconType (juce::MessageBoxIconType::QuestionIcon)
             .withTitle ("Clear Cache")
             .withMessage ("This will delete all cached tuning data. Continue?")
-            .withButton ("Clear")
+            .withButton ("Yes")
             .withButton ("Cancel")
             .withAssociatedComponent (this);
 

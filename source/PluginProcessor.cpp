@@ -2735,10 +2735,8 @@ void TanghimProcessor::clearCache()
     currentDegreeSolfegeRefs.fill ({});
     rebuildHeptMap();
 
-    // Reset all presets
-    for (int i = 0; i < 16; ++i)
-        presets[(size_t) i].clear();
-    savePresetsToDisk();
+    // NOTE: presets are NOT cleared — they are user data, not cache
+    currentActivePresetIdx = -1;
 
     // Reset slider state
     activeTuningState.clearPerNoteOverrides();

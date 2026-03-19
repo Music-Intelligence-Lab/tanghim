@@ -152,7 +152,7 @@ public:
 
     // ── Download & connection state (editor polls via timer) ─────────────
     enum class DownloadState { idle, downloading, connectionError };
-    enum class UpdateState { idle, checking, updatesAvailable, updating, updated, error };
+    enum class UpdateState { idle, checking, updatesAvailable, updating, updated, upToDate, error };
 
     std::atomic<DownloadState> downloadState { DownloadState::idle };
     std::atomic<UpdateState>   updateState   { UpdateState::idle };
