@@ -164,11 +164,23 @@ void MaqamPresetBar::drawPresetButton (juce::Graphics& g, int index)
                         juce::Justification::centred, true);
         }
 
-        // Clear button (×) — CSS: font-size 12px, hidden until hover
-        g.setColour (Theme::textMuted.withAlpha (alpha * 0.6f));
-        g.setFont (Theme::scaledFont (12.0f));
-        g.drawText (juce::String::charToString (0x00D7),
-                    btn.clearBounds, juce::Justification::centred);
+        // Clear button (×) — highlight on hover
+        {
+            bool clearHovered = (hoveredClearButton == index);
+            if (clearHovered)
+            {
+                g.setColour (juce::Colour (0xffef5350).withAlpha (alpha));  // Red on hover
+                g.fillRoundedRectangle (btn.clearBounds.toFloat(), 3.0f);
+                g.setColour (juce::Colours::white.withAlpha (alpha));
+            }
+            else
+            {
+                g.setColour (Theme::textMuted.withAlpha (alpha * 0.6f));
+            }
+            g.setFont (Theme::scaledFont (12.0f));
+            g.drawText (juce::String::charToString (0x00D7),
+                        btn.clearBounds, juce::Justification::centred);
+        }
     }
 
     // MIDI badge
@@ -254,5 +266,60 @@ void MaqamPresetBar::mouseDown (const juce::MouseEvent& e)
             if (onSavePreset) onSavePreset (i);
         }
         return;
+    }
+}
+
+void MaqamPresetBar::mouseMove (const juce::MouseEvent& e)
+{
+    // Track × button hover
+    int newHover = -1;
+    for (int i = 0; i < 8; ++i)
+    {
+        if (presets[(size_t) i].isAssigned
+            && buttons[(size_t) i].clearBounds.contains (e.getPosition()))
+        {
+            newHover = i;
+            break;
+        }
+    }
+
+    if (newHover != hoveredClearButton)
+    {
+        hoveredClearButton = newHover;
+        repaint();
+    }
+
+    // Tooltips
+    juce::String tooltip;
+    for (int i = 0; i < 8; ++i)
+    {
+        if (buttons[(size_t) i].bounds.contains (e.getPosition()))
+        {
+            if (presets[(size_t) i].isAssigned)
+                tooltip = "Click to activate | Shift+Click to MIDI map";
+            else
+                tooltip = "Click to save preset | Shift+Click to MIDI map";
+            break;
+        }
+    }
+
+    if (tooltip != lastTooltip)
+    {
+        lastTooltip = tooltip;
+        setTooltip (tooltip);
+    }
+}
+
+void MaqamPresetBar::mouseExit (const juce::MouseEvent&)
+{
+    if (hoveredClearButton >= 0)
+    {
+        hoveredClearButton = -1;
+        repaint();
+    }
+    if (lastTooltip.isNotEmpty())
+    {
+        lastTooltip = {};
+        setTooltip ({});
     }
 }
