@@ -352,11 +352,11 @@ void SearchableSelect::paint (juce::Graphics& g)
     juce::String displayText = selectedLabel.isNotEmpty()
                                ? selectedLabel + selectedSuffix
                                : placeholder;
-    g.setColour (goldFill ? Theme::goldMaqam
-                          : (selectedLabel.isNotEmpty() ? juce::Colour (0xffb8b8c8) : Theme::textMuted));
-
+    auto textColour = goldFill ? Theme::goldMaqam
+                               : (selectedLabel.isNotEmpty() ? juce::Colour (0xffb8b8c8) : Theme::textMuted);
     if (! isEnabled())
-        g.setColour (g.getCurrentColour().withAlpha (0.35f));
+        textColour = textColour.withAlpha (0.35f);
+    g.setColour (textColour);
 
     g.setFont (Theme::scaledFont (12.0f));  // CSS: font-size 12px
     g.drawText (displayText, bounds.reduced (10.0f, 0.0f).toNearestInt(),
