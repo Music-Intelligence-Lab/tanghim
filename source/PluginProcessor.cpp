@@ -1237,7 +1237,7 @@ void TanghimProcessor::loadTuningSystem (const juce::String& systemId,
 
         // After the selected starting note loads, background-preload
         // all other starting notes for this tuning system
-        backgroundPreloadRemainingNotes (systemId);
+        backgroundPreloadRemainingNotes (systemId, startingNote);
     };
 
     if (dataCache.hasData (systemId, startingNote))
@@ -1992,53 +1992,107 @@ void TanghimProcessor::fetchMaqamListIfNeeded()
         });
 }
 
-void TanghimProcessor::backgroundPreloadRemainingNotes (const juce::String& systemId)
+void TanghimProcessor::backgroundPreloadRemainingNotes (const juce::String& systemId,
+                                                         const juce::String& loadedNote)
 {
-    // Find the tuning system and its starting notes
-    const auto& systems = dataCache.getTuningSystemsList();
-    const TuningSystem* sys = nullptr;
-    for (const auto& ts : systems)
+    // Find all starting notes for this system
+    std::vector<juce::String> otherNotes;
+    for (const auto& sys : dataCache.getTuningSystemsList())
     {
-        if (ts.id == systemId) { sys = &ts; break; }
+        if (sys.id == systemId)
+        {
+            for (const auto& noteId : sys.startingNoteIds)
+            {
+                if (noteId != loadedNote)
+                    otherNotes.push_back (noteId);
+            }
+            break;
+        }
     }
-    if (sys == nullptr) return;
+
+    if (otherNotes.empty()) return;
 
     std::weak_ptr<std::atomic<bool>> weak (alive);
 
-    for (const auto& noteId : sys->startingNoteIds)
+    // Phase 1 (concurrent): fetch pitch classes for all other starting notes
+    auto pitchClassesRemaining = std::make_shared<std::atomic<int>> ((int) otherNotes.size());
+
+    for (const auto& noteId : otherNotes)
     {
-        // Skip the currently loaded starting note and already cached ones
-        if (noteId == currentStartingNote) continue;
-        if (dataCache.hasData (systemId, noteId)) continue;
+        if (dataCache.hasData (systemId, noteId))
+        {
+            // Already cached — decrement and check for phase 2
+            if (pitchClassesRemaining->fetch_sub (1) == 1)
+                backgroundPreloadMaqamLists (systemId, loadedNote, otherNotes);
 
-        DBG ("backgroundPreload: fetching " + systemId + "/" + noteId);
-
-        apiClient.fetchPitchClasses (systemId, noteId,
-            [this, weak, systemId, noteId] (std::vector<PitchClass> pcs)
+            // Update cache icons
+            juce::MessageManager::callAsync ([this, weak]
             {
                 if (! isAlive (weak)) return;
-                ApiDataCache::TuningData td;
-                td.pitchClasses = std::move (pcs);
-                td.lastChecked  = juce::Time::getCurrentTime().toISO8601 (true);
+                if (onTuningSystemsLoaded) onTuningSystemsLoaded();
+            });
+            continue;
+        }
 
+        apiClient.fetchPitchClasses (systemId, noteId,
+            [this, systemId, noteId, weak, pitchClassesRemaining, loadedNote, otherNotes] (auto pitchClasses)
+            {
+                if (! isAlive (weak)) return;
+
+                // Store with version from systems list
+                ApiDataCache::TuningData td;
+                td.pitchClasses = std::move (pitchClasses);
                 for (const auto& ts : dataCache.getTuningSystemsList())
                     if (ts.id == systemId) { td.tuningSystemVersion = ts.version; break; }
-
                 dataCache.storeData (systemId, noteId, std::move (td));
-                DBG ("backgroundPreload: cached " + systemId + "/" + noteId);
 
-                // Update cache status icons in UI
+                // Update cache icons on message thread
+                juce::MessageManager::callAsync ([this, weak]
+                {
+                    if (! isAlive (weak)) return;
+                    if (onTuningSystemsLoaded) onTuningSystemsLoaded();
+                });
+
+                // When all pitch classes done → phase 2: maqam lists
+                if (pitchClassesRemaining->fetch_sub (1) == 1)
+                    backgroundPreloadMaqamLists (systemId, loadedNote, otherNotes);
+            },
+            [] (auto) {});  // Ignore individual errors during background preload
+    }
+}
+
+void TanghimProcessor::backgroundPreloadMaqamLists (const juce::String& systemId,
+                                                      const juce::String& loadedNote,
+                                                      const std::vector<juce::String>& otherNotes)
+{
+    std::weak_ptr<std::atomic<bool>> weak (alive);
+
+    for (const auto& noteId : otherNotes)
+    {
+        if (dataCache.hasMaqamList (systemId, noteId))
+        {
+            // Already has maqam list — update cache icons
+            juce::MessageManager::callAsync ([this, weak]
+            {
+                if (! isAlive (weak)) return;
+                if (onTuningSystemsLoaded) onTuningSystemsLoaded();
+            });
+            continue;
+        }
+
+        apiClient.fetchMaqamList (systemId, noteId,
+            [this, systemId, noteId, weak] (auto maqamList)
+            {
+                if (! isAlive (weak)) return;
+                dataCache.updateMaqamList (systemId, noteId, maqamList);
+
                 juce::MessageManager::callAsync ([this, weak]
                 {
                     if (! isAlive (weak)) return;
                     if (onTuningSystemsLoaded) onTuningSystemsLoaded();
                 });
             },
-            [weak, systemId, noteId] (juce::String err)
-            {
-                if (! isAlive (weak)) return;
-                DBG ("backgroundPreload: error for " + systemId + "/" + noteId + ": " + err);
-            });
+            [] (auto) {});  // Ignore individual errors during background preload
     }
 }
 

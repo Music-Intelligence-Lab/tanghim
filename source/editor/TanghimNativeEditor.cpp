@@ -621,7 +621,8 @@ std::map<juce::String, bool> TanghimNativeEditor::buildCacheMap() const
     std::map<juce::String, bool> cacheMap;
     for (const auto& sys : processor.getTuningSystems())
         for (const auto& noteId : sys.startingNoteIds)
-            cacheMap[sys.id + ":" + noteId] = processor.hasCachedTuningData (sys.id, noteId);
+            cacheMap[sys.id + ":" + noteId] = processor.hasCachedTuningData (sys.id, noteId)
+                                            && processor.hasCachedMaqamList (sys.id, noteId);
     return cacheMap;
 }
 

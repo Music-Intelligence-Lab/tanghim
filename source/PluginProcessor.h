@@ -312,7 +312,10 @@ private:
     // ── Internal helpers ──────────────────────────────────────────────────────
     void rebuildTuningStateFromCache();
     void fetchMaqamListIfNeeded();
-    void backgroundPreloadRemainingNotes (const juce::String& systemId);
+    void backgroundPreloadRemainingNotes (const juce::String& systemId, const juce::String& loadedNote);
+    void backgroundPreloadMaqamLists (const juce::String& systemId,
+                                       const juce::String& loadedNote,
+                                       const std::vector<juce::String>& otherNotes);
     void applyDegreeIpnAndSolfege (const MaqamDegrees& degrees);
     void applyMaqamDegrees (const MaqamDegrees& degrees);
     void notifyTuningChanged();
