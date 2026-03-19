@@ -40,7 +40,7 @@ public:
         {
             g.setColour (Theme::surface);
             g.fillRoundedRectangle (bounds, 3.0f);
-            g.setColour (juce::Colour (0xff808099));
+            g.setColour (Theme::border);
             g.drawRoundedRectangle (bounds.reduced (0.5f), 3.0f, 1.0f);
         }
         g.setFont (11.0f);
