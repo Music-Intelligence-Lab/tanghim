@@ -168,9 +168,6 @@ private:
     // ── File dialogs ─────────────────────────────────────────────────────
     std::unique_ptr<juce::FileChooser> fileChooser;
 
-    // ── Tooltip support ─────────────────────────────────────────────────
-    juce::TooltipWindow tooltipWindow { this };
-
     // ── Polling state ────────────────────────────────────────────────────
     bool updateButtonShowingConfirmation = false;
     int  mtsStatusFrameCounter = 0;

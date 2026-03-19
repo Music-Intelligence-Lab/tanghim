@@ -8,8 +8,7 @@
  * Native JUCE replacement for MaqamPresetBar.tsx + MaqamPresetButton.tsx.
  * 4×2 grid of 8 presets with save/apply/clear/MIDI-learn.
  */
-class MaqamPresetBar : public juce::Component,
-                       public juce::SettableTooltipClient
+class MaqamPresetBar : public juce::Component
 {
 public:
     MaqamPresetBar();
@@ -37,7 +36,6 @@ public:
 
 private:
     int  hoveredClearButton = -1;  // index of preset whose × is hovered, -1 = none
-    juce::String lastTooltip;
     std::array<MaqamPreset, 16> presets;
     int activePresetIndex = -1;
     int midiLearnTarget   = -1;

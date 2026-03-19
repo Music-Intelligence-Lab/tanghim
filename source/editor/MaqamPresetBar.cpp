@@ -289,25 +289,15 @@ void MaqamPresetBar::mouseMove (const juce::MouseEvent& e)
         repaint();
     }
 
-    // Tooltips
-    juce::String tooltip;
+    // Pointing hand cursor when hovering over a preset button
+    bool overPreset = false;
     for (int i = 0; i < 8; ++i)
     {
         if (buttons[(size_t) i].bounds.contains (e.getPosition()))
-        {
-            if (presets[(size_t) i].isAssigned)
-                tooltip = "Click to activate | Shift+Click to MIDI map";
-            else
-                tooltip = "Click to save preset | Shift+Click to MIDI map";
-            break;
-        }
+        { overPreset = true; break; }
     }
-
-    if (tooltip != lastTooltip)
-    {
-        lastTooltip = tooltip;
-        setTooltip (tooltip);
-    }
+    setMouseCursor (overPreset ? juce::MouseCursor::PointingHandCursor
+                               : juce::MouseCursor::NormalCursor);
 }
 
 void MaqamPresetBar::mouseExit (const juce::MouseEvent&)
@@ -316,10 +306,5 @@ void MaqamPresetBar::mouseExit (const juce::MouseEvent&)
     {
         hoveredClearButton = -1;
         repaint();
-    }
-    if (lastTooltip.isNotEmpty())
-    {
-        lastTooltip = {};
-        setTooltip ({});
     }
 }
