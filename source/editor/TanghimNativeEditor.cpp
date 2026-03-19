@@ -321,7 +321,7 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
         maqamSelector.setCacheStatus (! processor.getMaqamList().empty());
         tuningSystemSelector.setSystemPlaceholder ("Select Tuning System");
     };
-    processor.onMaqamListLoaded = [this] { syncMaqamList(); };
+    processor.onMaqamListLoaded = [this] { syncMaqamList(); syncFullState(); };
     processor.onSlotCentsChanged = [this] (int ci, double cents)
     {
         noteSliderBank.updateSlotCents (ci, cents);
