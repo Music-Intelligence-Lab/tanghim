@@ -232,12 +232,24 @@ void MaqamSelectorComponent::updateTranspositionItems()
             struct TransOption { juce::String value; juce::String label; int midiOrder; };
             std::vector<TransOption> options;
 
+            // Helper: build "PAOname / IPN / solfège" label from degrees
+            auto buildTonicLabel = [] (const juce::String& paoDisplay, const MaqamDegrees& deg)
+            {
+                juce::String label = paoDisplay;
+                if (! deg.ascendingEnglishNames.empty())
+                    label += " / " + deg.ascendingEnglishNames[0];
+                if (! deg.ascendingSolfeges.empty())
+                    label += " / " + deg.ascendingSolfeges[0];
+                return label;
+            };
+
             // Base (qarār)
             {
                 auto orderIt = paoMidiOrder.find (entry.tonicId);
                 int order = orderIt != paoMidiOrder.end() ? orderIt->second : 0;
                 options.push_back ({ "-1",
-                    entry.tonicDisplay + juce::String (juce::CharPointer_UTF8 (" (qar\xc4\x81r)")),
+                    buildTonicLabel (entry.tonicDisplay, entry.degrees)
+                        + juce::String (juce::CharPointer_UTF8 (" (qar\xc4\x81r)")),
                     order });
             }
 
@@ -249,7 +261,7 @@ void MaqamSelectorComponent::updateTranspositionItems()
                     continue;
                 auto orderIt = paoMidiOrder.find (trans.tonicId);
                 int order = orderIt != paoMidiOrder.end() ? orderIt->second : 999;
-                options.push_back ({ juce::String (i), trans.tonicDisplay, order });
+                options.push_back ({ juce::String (i), buildTonicLabel (trans.tonicDisplay, trans.degrees), order });
             }
 
             // Sort by ascending MIDI pitch order (base qarār in its natural position)
