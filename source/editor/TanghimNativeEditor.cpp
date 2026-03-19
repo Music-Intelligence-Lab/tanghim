@@ -921,6 +921,11 @@ void TanghimNativeEditor::resized()
     {
         const int btnHeight = 18;
         const int yPos = statusArea.getY() + (Theme::kStatusBarHeight - btnHeight) / 2;
+
+        // Download status label + retry button (left side, after version text)
+        downloadStatusLabel.setBounds (statusArea.withTrimmedLeft (220).withWidth (180).withY (yPos).withHeight (btnHeight));
+        retryButton.setBounds (statusArea.withTrimmedLeft (400).withWidth (50).withY (yPos).withHeight (btnHeight));
+
         int rightEdge = getWidth() - 16;
 
         const int updatesBtnW = 70;
@@ -1046,6 +1051,32 @@ void TanghimNativeEditor::timerCallback()
             noteSliderBank.updateMidiActivity (ons, offs);
     }
 
+    // ── Download / connection state (~30Hz) ──────────────────────────────
+    {
+        auto dlState = processor.downloadState.load();
+        if (dlState == TanghimProcessor::DownloadState::downloading)
+        {
+            downloadStatusLabel.setText (juce::CharPointer_UTF8 ("Downloading\xe2\x80\xa6"),
+                                         juce::dontSendNotification);
+            downloadStatusLabel.setColour (juce::Label::textColourId, juce::Colour (0xff808099));
+            downloadStatusLabel.setVisible (true);
+            retryButton.setVisible (false);
+        }
+        else if (dlState == TanghimProcessor::DownloadState::connectionError)
+        {
+            downloadStatusLabel.setText ("No internet connection",
+                                         juce::dontSendNotification);
+            downloadStatusLabel.setColour (juce::Label::textColourId, juce::Colour (0xffef5350));
+            downloadStatusLabel.setVisible (true);
+            retryButton.setVisible (true);
+        }
+        else
+        {
+            downloadStatusLabel.setVisible (false);
+            retryButton.setVisible (false);
+        }
+    }
+
     // ── MIDI drag button + MTS-ESP status (~2Hz) ──────────────────────────
     if (++mtsStatusFrameCounter >= 15)
     {
@@ -1101,6 +1132,21 @@ void TanghimNativeEditor::setupStatusBar()
     const auto borderColor = Theme::border;
     const auto textColor   = Theme::accent;
     const auto mutedColor  = juce::Colour (0xff808099);
+
+    // Download status label
+    downloadStatusLabel.setFont (juce::FontOptions (11.0f));
+    downloadStatusLabel.setColour (juce::Label::textColourId, juce::Colour (0xff808099));
+    downloadStatusLabel.setJustificationType (juce::Justification::centredLeft);
+    addAndMakeVisible (downloadStatusLabel);
+    downloadStatusLabel.setVisible (false);
+
+    // Retry button
+    retryButton.setButtonText ("Retry");
+    retryButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    retryButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff64b5f6));
+    retryButton.onClick = [this] { processor.retryLastFailedFetch(); };
+    addAndMakeVisible (retryButton);
+    retryButton.setVisible (false);
 
     // MIDI drag button
     addAndMakeVisible (midiDragButton);
