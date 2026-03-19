@@ -51,6 +51,8 @@ void DataUpdateChecker::checkForUpdates (
             }
 
             // Re-fetch stale systems. Count down completions.
+            // Each stale system requires both pitch classes AND maqam list — remaining
+            // is only decremented after both (or after maqam fetch fails).
             auto remaining = std::make_shared<std::atomic<int>> ((int) staleSystemIds.size());
             auto updated   = std::make_shared<std::vector<juce::String>> (staleSystemIds);
 
@@ -76,12 +78,83 @@ void DataUpdateChecker::checkForUpdates (
                         data.lastChecked         = juce::Time::getCurrentTime().toISO8601 (true);
                         cache.storeData (systemId, startingNote, std::move (data));
 
-                        if (--(*remaining) == 0)
-                        {
-                            checking.store (false);
-                            if (onUpdatesFound) onUpdatesFound (*updated);
-                        }
+                        // Chain maqam list fetch — decrement remaining after it completes
+                        client.fetchMaqamList (systemId, startingNote,
+                            [this, weak, systemId, startingNote, remaining, updated, onUpdatesFound]
+                            (std::vector<MaqamListEntry> maqamat)
+                            {
+                                if (! isAlive (weak)) { checking.store (false); return; }
+                                cache.updateMaqamList (systemId, startingNote, maqamat);
+
+                                if (--(*remaining) == 0)
+                                {
+                                    checking.store (false);
+                                    if (onUpdatesFound) onUpdatesFound (*updated);
+                                }
+                            },
+                            [this, weak, remaining, updated, onUpdatesFound]
+                            (juce::String)
+                            {
+                                // Maqam fetch failed — still count as done
+                                if (! isAlive (weak)) { checking.store (false); return; }
+                                if (--(*remaining) == 0)
+                                {
+                                    checking.store (false);
+                                    if (onUpdatesFound) onUpdatesFound (*updated);
+                                }
+                            });
                     });
+            }
+        },
+        [this, weak, onError] (juce::String err)
+        {
+            checking.store (false);
+            if (! isAlive (weak)) return;
+            if (onError) onError (err);
+        });
+}
+
+void DataUpdateChecker::checkOnly (
+    std::function<void (std::vector<juce::String>)> onStaleFound,
+    std::function<void()>                            onAllCurrent,
+    std::function<void (juce::String)>               onError)
+{
+    if (checking.exchange (true)) return; // already running
+
+    auto weak = alive;
+    client.fetchTuningSystems (
+        [this, weak, onStaleFound, onAllCurrent] (std::vector<TuningSystem> systems)
+        {
+            if (! isAlive (weak)) { checking.store (false); return; }
+            // Update the systems list in cache regardless
+            cache.setTuningSystemsList (systems);
+
+            // Find systems with cached data whose version has changed
+            std::vector<juce::String> staleSystemIds;
+            for (const auto& ts : systems)
+            {
+                if (ts.startingNoteIds.isEmpty()) continue;
+                const juce::String& startingNote = ts.startingNoteIds[0];
+
+                if (cache.hasData (ts.id, startingNote))
+                {
+                    const auto& cached = cache.getData (ts.id, startingNote);
+                    if (isVersionNewer (ts.version, cached.tuningSystemVersion))
+                        staleSystemIds.push_back (ts.id);
+                    else
+                        cache.updateLastChecked (ts.id, startingNote);
+                }
+            }
+
+            checking.store (false);
+
+            if (staleSystemIds.empty())
+            {
+                if (onAllCurrent) onAllCurrent();
+            }
+            else
+            {
+                if (onStaleFound) onStaleFound (staleSystemIds);
             }
         },
         [this, weak, onError] (juce::String err)

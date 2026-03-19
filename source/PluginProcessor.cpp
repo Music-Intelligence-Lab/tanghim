@@ -1938,6 +1938,16 @@ void TanghimProcessor::checkForDataUpdates (
                                    std::move (onError));
 }
 
+void TanghimProcessor::checkForDataUpdatesOnly (
+    std::function<void (std::vector<juce::String>)> onStaleFound,
+    std::function<void()>                            onAllCurrent,
+    std::function<void (juce::String)>               onError)
+{
+    updateChecker.checkOnly (std::move (onStaleFound),
+                              std::move (onAllCurrent),
+                              std::move (onError));
+}
+
 // ── Private helpers ───────────────────────────────────────────────────────────
 
 void TanghimProcessor::fetchMaqamListIfNeeded()

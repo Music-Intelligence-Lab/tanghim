@@ -153,6 +153,7 @@ private:
     std::unique_ptr<juce::FileChooser> fileChooser;
 
     // ── Polling state ────────────────────────────────────────────────────
+    bool updateButtonShowingConfirmation = false;
     int  mtsStatusFrameCounter = 0;
     int  lastMtsTotal = -1;
     bool lastIsMtsTransmitter = false;

@@ -354,6 +354,24 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
     syncMaqamList();
     syncMtsStatus();
 
+    // Auto-check for updates on load (only if we have cached data to compare against)
+    if (processor.getCurrentSystemId().isNotEmpty()
+        && processor.hasCachedTuningData (processor.getCurrentSystemId(), processor.getCurrentStartingNote()))
+    {
+        processor.updateState.store (TanghimProcessor::UpdateState::checking);
+        processor.checkForDataUpdatesOnly (
+            [this] (auto staleIds)
+            {
+                if (staleIds.empty())
+                    processor.updateState.store (TanghimProcessor::UpdateState::idle);
+                else
+                    processor.updateState.store (TanghimProcessor::UpdateState::updatesAvailable);
+            },
+            [this] { processor.updateState.store (TanghimProcessor::UpdateState::idle); },
+            [this] (auto) { processor.updateState.store (TanghimProcessor::UpdateState::idle); }
+        );
+    }
+
     startTimerHz (30);
 }
 
@@ -928,7 +946,7 @@ void TanghimNativeEditor::resized()
 
         int rightEdge = getWidth() - 16;
 
-        const int updatesBtnW = 70;
+        const int updatesBtnW = 120;
         updatesButton.setBounds (rightEdge - updatesBtnW, yPos, updatesBtnW, btnHeight);
         rightEdge -= updatesBtnW + 4;
 
@@ -1051,6 +1069,59 @@ void TanghimNativeEditor::timerCallback()
             noteSliderBank.updateMidiActivity (ons, offs);
     }
 
+    // ── Update button state (~30Hz) ──────────────────────────────────────
+    if (! updateButtonShowingConfirmation)
+    {
+        auto upState = processor.updateState.load();
+        switch (upState)
+        {
+            case TanghimProcessor::UpdateState::idle:
+                updatesButton.setButtonText ("Check for Updates");
+                updatesButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff808099));
+                updatesButton.setEnabled (true);
+                break;
+            case TanghimProcessor::UpdateState::checking:
+                updatesButton.setButtonText (juce::CharPointer_UTF8 ("Checking\xe2\x80\xa6"));
+                updatesButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff808099));
+                updatesButton.setEnabled (false);
+                break;
+            case TanghimProcessor::UpdateState::updatesAvailable:
+                updatesButton.setButtonText ("Update Available");
+                updatesButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xffd4a843));  // Gold
+                updatesButton.setEnabled (true);
+                break;
+            case TanghimProcessor::UpdateState::updating:
+                updatesButton.setButtonText (juce::CharPointer_UTF8 ("Updating\xe2\x80\xa6"));
+                updatesButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff808099));
+                updatesButton.setEnabled (false);
+                break;
+            case TanghimProcessor::UpdateState::updated:
+            {
+                updateButtonShowingConfirmation = true;
+                updatesButton.setButtonText (juce::CharPointer_UTF8 ("Updated \xe2\x9c\x93"));
+                updatesButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff4caf50));  // Green
+                updatesButton.setEnabled (false);
+                processor.updateState.store (TanghimProcessor::UpdateState::idle);
+
+                auto safeThis = juce::Component::SafePointer<TanghimNativeEditor> (this);
+                juce::Timer::callAfterDelay (1500, [safeThis]
+                {
+                    if (auto* editor = safeThis.getComponent())
+                    {
+                        editor->updateButtonShowingConfirmation = false;
+                        editor->updatesButton.setButtonText ("Check for Updates");
+                        editor->updatesButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xff808099));
+                        editor->updatesButton.setEnabled (true);
+                    }
+                });
+                break;
+            }
+            case TanghimProcessor::UpdateState::error:
+                processor.updateState.store (TanghimProcessor::UpdateState::idle);
+                break;
+        }
+    }
+
     // ── Download / connection state (~30Hz) ──────────────────────────────
     {
         auto dlState = processor.downloadState.load();
@@ -1154,13 +1225,43 @@ void TanghimNativeEditor::setupStatusBar()
 
     // Updates button
     addAndMakeVisible (updatesButton);
+    updatesButton.setButtonText ("Check for Updates");
     updatesButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     updatesButton.setColour (juce::TextButton::textColourOffId, mutedColor);
     updatesButton.onClick = [this]
     {
-        processor.checkForDataUpdates (
-            [] (auto) {}, [] {}, [] (auto) {}
-        );
+        auto upState = processor.updateState.load();
+
+        if (upState == TanghimProcessor::UpdateState::updatesAvailable)
+        {
+            // User clicked "Update Available" — download the updates
+            processor.updateState.store (TanghimProcessor::UpdateState::updating);
+            processor.checkForDataUpdates (
+                [this] (auto updatedIds)
+                {
+                    processor.updateState.store (TanghimProcessor::UpdateState::updated);
+                    if (processor.onTuningSystemsLoaded) processor.onTuningSystemsLoaded();
+                },
+                [this] { processor.updateState.store (TanghimProcessor::UpdateState::idle); },
+                [this] (auto err) { processor.updateState.store (TanghimProcessor::UpdateState::error); }
+            );
+        }
+        else if (upState == TanghimProcessor::UpdateState::idle)
+        {
+            // Manual check — check only, don't download yet
+            processor.updateState.store (TanghimProcessor::UpdateState::checking);
+            processor.checkForDataUpdatesOnly (
+                [this] (auto staleIds)
+                {
+                    if (staleIds.empty())
+                        processor.updateState.store (TanghimProcessor::UpdateState::idle);
+                    else
+                        processor.updateState.store (TanghimProcessor::UpdateState::updatesAvailable);
+                },
+                [this] { processor.updateState.store (TanghimProcessor::UpdateState::idle); },
+                [this] (auto err) { processor.updateState.store (TanghimProcessor::UpdateState::error); }
+            );
+        }
     };
 
     // Clear cache button

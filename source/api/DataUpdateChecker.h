@@ -34,6 +34,13 @@ public:
         std::function<void()>                                             onNoUpdates,
         std::function<void (juce::String)>                                onError = {});
 
+    /** Check which systems have newer versions, but do NOT re-fetch data.
+     *  Reports stale system IDs via onStaleFound. */
+    void checkOnly (
+        std::function<void (std::vector<juce::String> staleSystemIds)> onStaleFound,
+        std::function<void()>                                           onAllCurrent,
+        std::function<void (juce::String)>                              onError = {});
+
     /** Force-refresh data for a specific tuning system + starting note. */
     void forceRefresh (const juce::String& systemId,
                        const juce::String& startingNote,

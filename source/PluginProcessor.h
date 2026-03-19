@@ -145,6 +145,10 @@ public:
     void checkForDataUpdates (std::function<void (std::vector<juce::String>)> onUpdatesFound,
                               std::function<void()> onNoUpdates,
                               std::function<void (juce::String)> onError = {});
+    void checkForDataUpdatesOnly (
+        std::function<void (std::vector<juce::String>)> onStaleFound,
+        std::function<void()>                            onAllCurrent,
+        std::function<void (juce::String)>               onError = {});
 
     // ── Download & connection state (editor polls via timer) ─────────────
     enum class DownloadState { idle, downloading, connectionError };
