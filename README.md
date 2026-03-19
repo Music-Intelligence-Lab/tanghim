@@ -364,6 +364,21 @@ You can export the current maqam scale as a Standard MIDI File for use in other 
 
 The exported file contains all scale degrees played simultaneously as a chord (SMF Type 0, one quarter note).
 
+If a **preset is active** when you export, a MIDI Program Change message is embedded at the start of the file. When the clip plays back through Tanghim, the preset will automatically activate before the notes sound.
+
+---
+
+## Program Change Preset Switching
+
+Tanghim responds to MIDI Program Change messages for preset switching:
+
+- **PC 0-7** activates presets 1-8 respectively
+- Program Change messages from any source (DAW MIDI clips, external controllers, etc.) are accepted
+- This is always on — no configuration needed
+- Program Change messages are consumed and not passed through to the output
+
+This works alongside [MIDI Preset Mapping](#midi-preset-mapping), which uses a dedicated MIDI input device for note-based switching.
+
 ---
 
 ## Save and Load State Files

@@ -215,6 +215,15 @@ void TanghimProcessor::processBlock (juce::AudioBuffer<float>& audio,
         {
             auto msg = metadata.getMessage();
 
+            // Program change → preset switching (PC 0-7 = presets 0-7)
+            if (msg.isProgramChange())
+            {
+                const int pc = msg.getProgramChangeNumber();
+                if (pc >= 0 && pc < 8)
+                    pendingMidiPreset.store (pc, std::memory_order_relaxed);
+                continue;
+            }
+
             // Extract pitch bend for oscillator, strip from output
             if (msg.isPitchWheel())
             {
@@ -328,6 +337,15 @@ void TanghimProcessor::processBlock (juce::AudioBuffer<double>& audio,
         for (const auto metadata : midi)
         {
             auto msg = metadata.getMessage();
+
+            // Program change → preset switching (PC 0-7 = presets 0-7)
+            if (msg.isProgramChange())
+            {
+                const int pc = msg.getProgramChangeNumber();
+                if (pc >= 0 && pc < 8)
+                    pendingMidiPreset.store (pc, std::memory_order_relaxed);
+                continue;
+            }
 
             if (msg.isPitchWheel())
             {

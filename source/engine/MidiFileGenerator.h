@@ -21,6 +21,7 @@ public:
         juce::String tonicIpn;          // e.g. "C3"
         juce::String tonicSolfege;      // e.g. "Do 3"
         std::vector<int> midiNotes;     // MIDI note numbers for scale degrees
+        int presetIndex = -1;           // 0-7 = embed program change, -1 = none
     };
 
     /**

@@ -153,6 +153,14 @@ std::vector<uint8_t> MidiFileGenerator::generate (const MaqamInfo& info)
     track.push_back (0x24);  // 36 MIDI clocks per metronome click
     track.push_back (0x08);  // 8 32nd notes per beat
 
+    // Program change (preset selection) — before notes so preset activates first
+    if (info.presetIndex >= 0 && info.presetIndex < 8)
+    {
+        writeVLQ (track, 0);  // delta time
+        track.push_back (0xC0);  // Program Change, channel 0
+        track.push_back (static_cast<uint8_t> (info.presetIndex));
+    }
+
     // Sort notes ascending for consistent output
     std::vector<int> sortedNotes = info.midiNotes;
     std::sort (sortedNotes.begin(), sortedNotes.end());

@@ -1470,6 +1470,7 @@ void MidiDragButton::prepareMidiFile()
     info.tonicIpn = processor.getCurrentTonicEnglish();
     info.tonicSolfege = processor.getCurrentTonicSolfege();
     info.midiNotes = midiNotes;
+    info.presetIndex = processor.getCurrentActivePresetIdx();
 
     if (info.maqamDisplay.isEmpty()) info.maqamDisplay = maqamId;
     if (info.tonicPaoDisplay.isEmpty()) info.tonicPaoDisplay = degreeNames[0];
