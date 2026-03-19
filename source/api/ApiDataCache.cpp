@@ -51,6 +51,22 @@ bool ApiDataCache::hasData (const juce::String& systemId,
     return cache.count (key) > 0 || lazyKeys.count (key) > 0;
 }
 
+bool ApiDataCache::hasMaqamList (const juce::String& systemId,
+                                  const juce::String& startingNote) const
+{
+    juce::ScopedLock sl (lock);
+    const auto key = makeKey (systemId, startingNote);
+
+    // Ensure lazy entries are loaded before checking
+    ensureLoaded (key);
+
+    auto it = cache.find (key);
+    if (it != cache.end())
+        return ! it->second.maqamList.empty();
+
+    return false;
+}
+
 const ApiDataCache::TuningData& ApiDataCache::getData (
     const juce::String& systemId, const juce::String& startingNote) const
 {

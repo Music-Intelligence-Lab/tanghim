@@ -45,6 +45,8 @@ public:
                           const juce::String& startingNote) const;
 
     bool          hasData   (const juce::String& systemId, const juce::String& startingNote) const;
+    /** Whether the cache entry has a non-empty maqam list. */
+    bool          hasMaqamList (const juce::String& systemId, const juce::String& startingNote) const;
     const TuningData& getData (const juce::String& systemId, const juce::String& startingNote) const;
     void          storeData (const juce::String& systemId, const juce::String& startingNote, TuningData data);
 
