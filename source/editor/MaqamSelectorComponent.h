@@ -21,6 +21,9 @@ public:
     void setSystems (const std::vector<TuningSystem>& systems);
     void setCurrentSelection (const juce::String& systemId, const juce::String& startingNote);
     void setCacheStatus (const std::map<juce::String, bool>& cacheMap);
+    void setSystemPlaceholder (const juce::String& text);
+    void setNotePlaceholder (const juce::String& text);
+    void setNoteEnabled (bool enabled);
 
     std::function<void (const juce::String& systemId, const juce::String& startingNote)> onSelect;
 
@@ -59,6 +62,10 @@ public:
     /** Set cache status for the current system+startingNote.
      *  Shows ✓ (cached) or ↓ (not cached) on all maqam/transposition items. */
     void setCacheStatus (bool hasMaqamListCached);
+    void setMaqamPlaceholder (const juce::String& text);
+    void setTranspositionPlaceholder (const juce::String& text);
+    void setMaqamEnabled (bool enabled);
+    void setTranspositionEnabled (bool enabled);
 
     std::function<void (const juce::String& maqamId, int transpositionIndex)> onSelect;
 

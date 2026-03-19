@@ -319,6 +319,7 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
         auto cacheMap = buildCacheMap();
         tuningSystemSelector.setCacheStatus (cacheMap);
         maqamSelector.setCacheStatus (! processor.getMaqamList().empty());
+        tuningSystemSelector.setSystemPlaceholder ("Select Tuning System");
     };
     processor.onMaqamListLoaded = [this] { syncMaqamList(); };
     processor.onSlotCentsChanged = [this] (int ci, double cents)
@@ -510,6 +511,47 @@ void TanghimNativeEditor::syncFullState()
         else
         {
             rangeScroller.setStartMidi (processor.getCurrentStartMidi());
+        }
+    }
+
+    // ── Dropdown placeholder & enabled state ──────────────────────────────
+    {
+        auto dlState = processor.downloadState.load();
+        bool hasSystem = processor.getCurrentSystemId().isNotEmpty();
+        bool hasMaqamData = ! processor.getMaqamList().empty();
+        bool maqamLoading = processor.maqamDataLoading.load();
+
+        // Tuning system placeholder: contextual loading messages
+        if (! hasSystem && dlState == TanghimProcessor::DownloadState::downloading)
+            tuningSystemSelector.setSystemPlaceholder (juce::CharPointer_UTF8 ("Connecting to Server\xe2\x80\xa6"));
+        else if (! hasSystem && processor.loadingFromCache.load())
+            tuningSystemSelector.setSystemPlaceholder (juce::CharPointer_UTF8 ("Loading from Cache\xe2\x80\xa6"));
+
+        // Starting note: disabled when no system selected
+        tuningSystemSelector.setNoteEnabled (hasSystem);
+        if (! hasSystem)
+            tuningSystemSelector.setNotePlaceholder ("Starting Note Name");
+        else
+            tuningSystemSelector.setNotePlaceholder ("Select Starting Note Name");
+
+        // Maqam/Tonic: disabled when no system or maqam data loading
+        maqamSelector.setMaqamEnabled (hasMaqamData && ! maqamLoading);
+        maqamSelector.setTranspositionEnabled (hasMaqamData && ! maqamLoading);
+
+        if (! hasSystem)
+        {
+            maqamSelector.setMaqamPlaceholder (juce::CharPointer_UTF8 ("Maq\xc4\x81m"));
+            maqamSelector.setTranspositionPlaceholder ("Tonic");
+        }
+        else if (! hasMaqamData || maqamLoading)
+        {
+            maqamSelector.setMaqamPlaceholder (juce::CharPointer_UTF8 ("Loading Maq\xc4\x81m Data\xe2\x80\xa6"));
+            maqamSelector.setTranspositionPlaceholder (juce::CharPointer_UTF8 ("Loading Maq\xc4\x81m Data\xe2\x80\xa6"));
+        }
+        else
+        {
+            maqamSelector.setMaqamPlaceholder (juce::CharPointer_UTF8 ("Select Maq\xc4\x81m"));
+            maqamSelector.setTranspositionPlaceholder ("Select Tonic");
         }
     }
 }

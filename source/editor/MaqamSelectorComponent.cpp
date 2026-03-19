@@ -6,7 +6,7 @@
 
 TuningSystemSelectorComponent::TuningSystemSelectorComponent()
 {
-    systemSelect.setPlaceholder (juce::CharPointer_UTF8 ("Loading\xe2\x80\xa6"));
+    systemSelect.setPlaceholder ("Select Tuning System");
     systemSelect.setAccentColour (Theme::accent);
     systemSelect.onChange = [this] (const juce::String& value)
     {
@@ -26,7 +26,7 @@ TuningSystemSelectorComponent::TuningSystemSelectorComponent()
     };
     addAndMakeVisible (systemSelect);
 
-    noteSelect.setPlaceholder ("Note");
+    noteSelect.setPlaceholder ("Starting Note Name");
     noteSelect.setAccentColour (Theme::accent);
     noteSelect.onChange = [this] (const juce::String& value)
     {
@@ -79,6 +79,10 @@ void TuningSystemSelectorComponent::setCacheStatus (const std::map<juce::String,
     setSystems (tuningSystems);
 }
 
+void TuningSystemSelectorComponent::setSystemPlaceholder (const juce::String& text) { systemSelect.setPlaceholder (text); }
+void TuningSystemSelectorComponent::setNotePlaceholder (const juce::String& text)   { noteSelect.setPlaceholder (text); }
+void TuningSystemSelectorComponent::setNoteEnabled (bool enabled)                   { noteSelect.setEnabled (enabled); }
+
 void TuningSystemSelectorComponent::updateNoteItems()
 {
     for (const auto& sys : tuningSystems)
@@ -122,7 +126,7 @@ void TuningSystemSelectorComponent::resized()
 
 MaqamSelectorComponent::MaqamSelectorComponent()
 {
-    maqamSelect.setPlaceholder (juce::CharPointer_UTF8 ("Select maqam\xe2\x80\xa6"));
+    maqamSelect.setPlaceholder (juce::CharPointer_UTF8 ("Maq\xc4\x81m"));
     maqamSelect.setSearchable (true);
     maqamSelect.setAccentColour (Theme::goldMaqam);
     maqamSelect.onChange = [this] (const juce::String& value)
@@ -135,7 +139,7 @@ MaqamSelectorComponent::MaqamSelectorComponent()
     };
     addAndMakeVisible (maqamSelect);
 
-    transpositionSelect.setPlaceholder (juce::CharPointer_UTF8 ("Transposition\xe2\x80\xa6"));
+    transpositionSelect.setPlaceholder ("Tonic");
     transpositionSelect.setSearchable (true);
     transpositionSelect.setAccentColour (Theme::goldMaqam);
     transpositionSelect.onChange = [this] (const juce::String& value)
@@ -152,6 +156,11 @@ void MaqamSelectorComponent::setCacheStatus (bool hasMaqamList)
     // Re-set maqam list to update suffixes
     setMaqamList (maqamList);
 }
+
+void MaqamSelectorComponent::setMaqamPlaceholder (const juce::String& text)        { maqamSelect.setPlaceholder (text); }
+void MaqamSelectorComponent::setTranspositionPlaceholder (const juce::String& text) { transpositionSelect.setPlaceholder (text); }
+void MaqamSelectorComponent::setMaqamEnabled (bool enabled)                         { maqamSelect.setEnabled (enabled); }
+void MaqamSelectorComponent::setTranspositionEnabled (bool enabled)                 { transpositionSelect.setEnabled (enabled); }
 
 void MaqamSelectorComponent::setMaqamList (const std::vector<MaqamListEntry>& list)
 {
