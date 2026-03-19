@@ -145,7 +145,8 @@ sig0 = p.add("sig~ 0.",
 vst = p.add("vst~",
     numinlets=2, numoutlets=8,
     outlettype=["signal", "signal", "", "list", "int", "", "", ""],
-    patching_rect=[450, 295, 200, 22])
+    patching_rect=[450, 295, 200, 22],
+    ignoreclick=1)
 
 open_msg = p.add_box(Box(
     id=p.get_id(), maxclass="message",
