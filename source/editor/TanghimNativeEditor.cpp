@@ -487,6 +487,12 @@ void TanghimNativeEditor::syncFullState()
     }
     presetBar.setPresets (processor.getPresets());
     presetBar.setActivePresetIndex (processor.getCurrentActivePresetIdx());
+    {
+        std::array<int, kNumMaqamPresets> notes;
+        for (int i = 0; i < kNumMaqamPresets; ++i)
+            notes[(size_t) i] = processor.getMidiPresetNote (i);
+        presetBar.setMidiPresetNotes (notes);
+    }
 
     // Range scroller
     rangeScroller.setVisibleCount (noteSliderBank.getVisibleSliderCount());
