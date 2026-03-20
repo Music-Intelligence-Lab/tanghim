@@ -114,12 +114,12 @@ void DataUpdateChecker::checkForUpdates (
         });
 }
 
-void DataUpdateChecker::checkOnly (
+bool DataUpdateChecker::checkOnly (
     std::function<void (std::vector<juce::String>)> onStaleFound,
     std::function<void()>                            onAllCurrent,
     std::function<void (juce::String)>               onError)
 {
-    if (checking.exchange (true)) return; // already running
+    if (checking.exchange (true)) return false; // already running
 
     auto weak = alive;
     client.fetchTuningSystems (
@@ -163,6 +163,7 @@ void DataUpdateChecker::checkOnly (
             if (! isAlive (weak)) return;
             if (onError) onError (err);
         });
+    return true;
 }
 
 void DataUpdateChecker::forceRefresh (

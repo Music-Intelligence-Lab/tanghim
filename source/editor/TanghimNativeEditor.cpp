@@ -361,22 +361,23 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
     syncMaqamList();
     syncMtsStatus();
 
-    // Auto-check for updates on load (only if we have cached data to compare against)
+    // Auto-check for stale API data once per processor instance (not every editor open).
+    // Same philosophy as skipping loadTuningSystem when tuning is already loaded.
     if (processor.getCurrentSystemId().isNotEmpty()
-        && processor.hasCachedTuningData (processor.getCurrentSystemId(), processor.getCurrentStartingNote()))
+        && processor.hasCachedTuningData (processor.getCurrentSystemId(), processor.getCurrentStartingNote())
+        && ! processor.hasAutoDataUpdateCheckCompleted())
     {
         processor.updateState.store (TanghimProcessor::UpdateState::checking);
-        processor.checkForDataUpdatesOnly (
-            [this] (auto staleIds)
+        const bool started = processor.checkForDataUpdatesOnly (
+            [this] (const std::vector<juce::String>&)
             {
-                if (staleIds.empty())
-                    processor.updateState.store (TanghimProcessor::UpdateState::upToDate);
-                else
-                    processor.updateState.store (TanghimProcessor::UpdateState::updatesAvailable);
+                // onStaleFound is only called when the list is non-empty
+                processor.updateState.store (TanghimProcessor::UpdateState::updatesAvailable);
             },
             [this] { processor.updateState.store (TanghimProcessor::UpdateState::upToDate); },
-            [this] (auto) { processor.updateState.store (TanghimProcessor::UpdateState::idle); }
-        );
+            [this] (auto) { processor.updateState.store (TanghimProcessor::UpdateState::idle); });
+        if (! started)
+            processor.updateState.store (TanghimProcessor::UpdateState::idle);
     }
 
     startTimerHz (30);
@@ -1287,17 +1288,14 @@ void TanghimNativeEditor::setupStatusBar()
         {
             // Manual check — check only, don't download yet
             processor.updateState.store (TanghimProcessor::UpdateState::checking);
-            processor.checkForDataUpdatesOnly (
-                [this] (auto staleIds)
-                {
-                    if (staleIds.empty())
-                        processor.updateState.store (TanghimProcessor::UpdateState::upToDate);
-                    else
+            if (! processor.checkForDataUpdatesOnly (
+                    [this] (const std::vector<juce::String>&)
+                    {
                         processor.updateState.store (TanghimProcessor::UpdateState::updatesAvailable);
-                },
-                [this] { processor.updateState.store (TanghimProcessor::UpdateState::upToDate); },
-                [this] (auto err) { processor.updateState.store (TanghimProcessor::UpdateState::error); }
-            );
+                    },
+                    [this] { processor.updateState.store (TanghimProcessor::UpdateState::upToDate); },
+                    [this] (auto err) { processor.updateState.store (TanghimProcessor::UpdateState::error); }))
+                processor.updateState.store (TanghimProcessor::UpdateState::idle);
         }
     };
 

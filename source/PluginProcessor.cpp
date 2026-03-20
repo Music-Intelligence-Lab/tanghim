@@ -1965,14 +1965,27 @@ void TanghimProcessor::checkForDataUpdates (
                                    std::move (onError));
 }
 
-void TanghimProcessor::checkForDataUpdatesOnly (
+bool TanghimProcessor::checkForDataUpdatesOnly (
     std::function<void (std::vector<juce::String>)> onStaleFound,
     std::function<void()>                            onAllCurrent,
     std::function<void (juce::String)>               onError)
 {
-    updateChecker.checkOnly (std::move (onStaleFound),
-                              std::move (onAllCurrent),
-                              std::move (onError));
+    return updateChecker.checkOnly (
+        [this, onStale = std::move (onStaleFound)] (std::vector<juce::String> staleIds) mutable
+        {
+            markAutoDataUpdateCheckCompleted();
+            if (onStale) onStale (std::move (staleIds));
+        },
+        [this, onAll = std::move (onAllCurrent)] () mutable
+        {
+            markAutoDataUpdateCheckCompleted();
+            if (onAll) onAll();
+        },
+        [this, onErr = std::move (onError)] (juce::String err) mutable
+        {
+            markAutoDataUpdateCheckCompleted();
+            if (onErr) onErr (std::move (err));
+        });
 }
 
 // ── Private helpers ───────────────────────────────────────────────────────────

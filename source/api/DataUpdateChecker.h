@@ -35,8 +35,9 @@ public:
         std::function<void (juce::String)>                                onError = {});
 
     /** Check which systems have newer versions, but do NOT re-fetch data.
-     *  Reports stale system IDs via onStaleFound. */
-    void checkOnly (
+     *  Reports stale system IDs via onStaleFound.
+     *  @return false if a check was already in progress (callbacks not invoked). */
+    bool checkOnly (
         std::function<void (std::vector<juce::String> staleSystemIds)> onStaleFound,
         std::function<void()>                                           onAllCurrent,
         std::function<void (juce::String)>                              onError = {});
