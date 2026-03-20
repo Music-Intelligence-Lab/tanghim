@@ -3,8 +3,11 @@
 #include <array>
 #include <vector>
 
+/** Preset bank size — matches the 4×2 UI grid and APVTS preset parameter. */
+inline constexpr int kNumMaqamPresets = 8;
+
 /**
- * One of the 16 user-configurable maqam preset buttons.
+ * One of the kNumMaqamPresets user-configurable maqam preset buttons.
  *
  * When assigned, stores the maqam identity and the exact slider positions
  * it implies, so pressing the button instantly snaps all 12 sliders.

@@ -13,10 +13,10 @@ class MaqamPresetBar : public juce::Component
 public:
     MaqamPresetBar();
 
-    void setPresets (const std::array<MaqamPreset, 16>& presets);
+    void setPresets (const std::array<MaqamPreset, kNumMaqamPresets>& presets);
     void setActivePresetIndex (int index);
     void setMidiLearnTarget (int presetIdx);
-    void setMidiPresetNotes (const std::array<int, 16>& notes);
+    void setMidiPresetNotes (const std::array<int, kNumMaqamPresets>& notes);
     void setPresetCompatible (const std::array<bool, 8>& compatible);
 
     // Callbacks
@@ -36,10 +36,10 @@ public:
 
 private:
     int  hoveredClearButton = -1;  // index of preset whose × is hovered, -1 = none
-    std::array<MaqamPreset, 16> presets;
+    std::array<MaqamPreset, kNumMaqamPresets> presets;
     int activePresetIndex = -1;
     int midiLearnTarget   = -1;
-    std::array<int, 16>  midiPresetNotes;
+    std::array<int, kNumMaqamPresets>  midiPresetNotes;
     std::array<bool, 8>  compatible;
 
     struct PresetButton

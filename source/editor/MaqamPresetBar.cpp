@@ -10,7 +10,7 @@ MaqamPresetBar::MaqamPresetBar()
     compatible.fill (true);
 }
 
-void MaqamPresetBar::setPresets (const std::array<MaqamPreset, 16>& p)
+void MaqamPresetBar::setPresets (const std::array<MaqamPreset, kNumMaqamPresets>& p)
 {
     presets = p;
     repaint();
@@ -28,7 +28,7 @@ void MaqamPresetBar::setMidiLearnTarget (int idx)
     repaint();
 }
 
-void MaqamPresetBar::setMidiPresetNotes (const std::array<int, 16>& notes)
+void MaqamPresetBar::setMidiPresetNotes (const std::array<int, kNumMaqamPresets>& notes)
 {
     midiPresetNotes = notes;
     repaint();

@@ -17,8 +17,8 @@
 
 // Number of chromatic slot parameters (slot_0 through slot_11)
 inline constexpr int kNumSlotParams = 12;
-// Number of preset choices ("None" + presets 1-8)
-inline constexpr int kNumPresetChoices = 9;
+// APVTS preset param: "None" + presets 1..kNumMaqamPresets
+inline constexpr int kNumPresetChoices = 1 + kNumMaqamPresets;
 
 /** Check whether a Processor is still alive (for use in callAsync lambdas). */
 inline bool isAlive (const std::weak_ptr<std::atomic<bool>>& w)
@@ -114,9 +114,11 @@ public:
     // ── State accessors ───────────────────────────────────────────────────────
     const std::vector<TuningSystem>&         getTuningSystems()        const;
     bool                                     hasCachedTuningData (const juce::String& systemId, const juce::String& startingNote) const;
+    /** True after loadTuningSystem has populated slots (safe to skip reload when reopening the editor). */
+    bool                                     hasTuningLoadedForCurrentSelection() const;
     const std::vector<MaqamListEntry>&       getMaqamList()            const;
     const ActiveTuningState&                 getActiveTuningState()    const;
-    const std::array<MaqamPreset, 16>&       getPresets()              const;
+    const std::array<MaqamPreset, kNumMaqamPresets>& getPresets()      const;
     juce::String                             getCurrentSystemId()      const;
     juce::String                             getCurrentStartingNote()  const;
     const std::vector<PitchClass>&           getCurrentPitchClasses()  const;
@@ -191,16 +193,16 @@ public:
     // ── MIDI note → preset triggering (MIDI Learn) ─────────────────────────────
     // Each preset can be mapped to a specific MIDI note (-1 = unmapped)
     // midiPresetChannel: 0 = any channel, 1-16 = specific channel
-    std::array<std::atomic<int>, 16> midiPresetNotes;  // Note per preset, -1 = unmapped
+    std::array<std::atomic<int>, kNumMaqamPresets> midiPresetNotes;  // Note per preset, -1 = unmapped
     std::atomic<int> midiPresetChannel { 0 };          // 0 = any channel
     std::atomic<int> pendingMidiPreset { -1 };         // Set by MIDI callback, consumed by editor timer
-    std::atomic<int> midiLearnTargetPreset { -1 };     // -1 = not learning, 0-15 = learning for preset
+    std::atomic<int> midiLearnTargetPreset { -1 };     // -1 = not learning, 0-7 = learning for preset
 
     void setMidiPresetNote (int presetIdx, int midiNote);
     int  getMidiPresetNote (int presetIdx) const;
     void setMidiPresetChannel (int channel);
     int  getMidiPresetChannel() const { return midiPresetChannel.load(); }
-    int  consumePendingMidiPreset();  // Returns preset index (0-15) or -1 if none
+    int  consumePendingMidiPreset();  // Returns preset index (0-7) or -1 if none
 
     // MIDI Learn mode
     void startMidiLearn (int presetIdx);
@@ -259,7 +261,7 @@ private:
     juce::String              currentSystemId;
     juce::String              currentStartingNote;
     ActiveTuningState         activeTuningState;
-    std::array<MaqamPreset, 16> presets;
+    std::array<MaqamPreset, kNumMaqamPresets> presets;
     std::vector<MaqamListEntry>      currentMaqamList;
     juce::String              currentMaqamDisplay;   // e.g. "maqām rāst"
     juce::String              currentTonicDisplay;   // e.g. "rāst" (or transposition tonic)

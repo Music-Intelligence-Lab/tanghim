@@ -152,7 +152,7 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
             syncMaqamList();
 
             // Re-apply preset if compatible (React: useEffect on maqamList)
-            if (presetToRestore >= 0 && presetToRestore < 8)
+            if (presetToRestore >= 0 && presetToRestore < kNumMaqamPresets)
             {
                 const auto& presets = processor.getPresets();
                 const auto& preset = presets[(size_t) presetToRestore];
@@ -338,13 +338,20 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
         maqamSelector.setCacheStatus (! processor.getMaqamList().empty());
     }
 
-    // Load the saved tuning system (like React's selectTuningSystem on mount)
-    // This triggers doLoad → notifyTuningChanged → syncFullState via callback
+    // Load tuning system on first editor open when the processor has ids/settings
+    // but no pitch-class data in slots yet. Do NOT call loadTuningSystem when
+    // tuning is already loaded — reopening the window would run loadTuningSystem
+    // again and clear maqam + active preset + slider state (same as a system switch).
     if (processor.getCurrentSystemId().isNotEmpty())
     {
-        processor.loadTuningSystem (processor.getCurrentSystemId(),
-                                    processor.getCurrentStartingNote(),
-                                    [this] { syncFullState(); });
+        if (processor.hasTuningLoadedForCurrentSelection())
+            syncFullState();
+        else if (processor.getSessionRecallInProgress())
+            syncFullState(); // DAW session is loading tuning async — avoid a second loadTuningSystem
+        else
+            processor.loadTuningSystem (processor.getCurrentSystemId(),
+                                        processor.getCurrentStartingNote(),
+                                        [this] { syncFullState(); });
     }
     else
     {
@@ -1014,7 +1021,7 @@ void TanghimNativeEditor::timerCallback()
     // ── MIDI-triggered preset (~30Hz) — same path as mouse click ────────
     {
         const int presetIdx = processor.consumePendingMidiPreset();
-        if (presetIdx >= 0 && presetIdx < 16)
+        if (presetIdx >= 0 && presetIdx < kNumMaqamPresets)
         {
             const auto& preset = processor.getPresets()[(size_t) presetIdx];
             if (preset.isAssigned)
@@ -1198,8 +1205,8 @@ void TanghimNativeEditor::timerCallback()
         presetBar.setMidiLearnTarget (processor.getMidiLearnTarget());
 
         // MIDI preset notes
-        std::array<int, 16> notes;
-        for (int i = 0; i < 16; ++i)
+        std::array<int, kNumMaqamPresets> notes;
+        for (int i = 0; i < kNumMaqamPresets; ++i)
             notes[(size_t) i] = processor.getMidiPresetNote (i);
         presetBar.setMidiPresetNotes (notes);
 

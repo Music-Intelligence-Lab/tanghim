@@ -164,7 +164,7 @@ When switching tuning systems, slider variant selection is matched by **PAO note
 ### Maqam Selector & Presets
 - `MaqamSelectorComponent`: two `SearchablePopup` dropdowns — maqam + transposition
 - Transposition labels: `"PAOname / IPN / solfège (qarār)"`, sorted by `(octave, pitchClassIndex)`
-- `MaqamPresetBar`: 8 displayed (4×2 grid), C++ has 16 slots. Store `degreeNames`, `centsOffsets`, optionally `tuningSystemId`+`startingNote`
+- `MaqamPresetBar`: 8 slots (4×2 grid). Store `degreeNames`, `centsOffsets`, optionally `tuningSystemId`+`startingNote`
 - Modified presets: ` *` suffix, cyan thumbs, store tuning system for reload. Unmodified presets are portable
 - Preset deactivation: click active preset → clears maqam, resets sliders, centers on C3
 - Auto-preset activation: selecting a maqam+tonic from dropdown auto-activates matching unmodified preset (exact `maqamId` + `setIndex`, excludes modified)
@@ -313,7 +313,7 @@ Ableton doesn't support VST3 MIDI effects. Architecture: VST3 as data bridge (12
 |---|---|---|---|---|
 | `slot_0`–`slot_11` | Float | ±150.0 cents | 0.0 | Chromatic slot cents deviation |
 | `ref_freq` | Float | ±700.0 cents | 0.0 | Reference frequency offset |
-| `preset` | Choice | "None", "1"–"16" | 0 | Active preset index |
+| `preset` | Choice | "None", "1"–"8" | 0 | Active preset index |
 
 Bidirectional sync with UI. Gesture marking (`beginSliderGesture`/`endSliderGesture`) for DAW automation. Guard flag `updatingParamsFromCode` prevents feedback loops. Per-note overrides are UI-only (not APVTS).
 
@@ -323,7 +323,7 @@ MIDI notes mapped to presets for live maqam switching. Uses **dedicated MIDI inp
 
 - **Status bar controls**: MIDI Input device dropdown + Channel filter (1-16 or All)
 - **Interaction**: Shift+click preset → learn mode → play note → mapped. Click badge → clear
-- **State**: `midiPresetNotes[16]` (atomic ints), `midiPresetChannel`, `pendingMidiPreset` (consumed by 30Hz editor timer → `applyPreset()` + `emitTuningStateChanged()`)
+- **State**: `midiPresetNotes[8]` (atomic ints), `midiPresetChannel`, `pendingMidiPreset` (consumed by 30Hz editor timer → `applyPreset()` + `emitTuningStateChanged()`)
 - **Channel filtering**: `processBlock()` skips MIDI on preset channel (prevents oscillator double-trigger)
 - **Device persistence**: `setMidiPresetDevice()` always close+reopen (no idempotency check — stale pointers blocked reconnection). Stores both `midiPresetDeviceName` (for UI) and `midiPresetDeviceId` (OS-unique identifier for reliable matching). `setStateInformation()` only overrides device if non-empty (protects settings.json from empty session values)
 - **Stale connection detection**: `recheckMidiPresetDevice()` called on `midiDevicesChanged` — verifies device identifier/name still in available list, closes stale `MidiInput` if device disappeared. Timer then retries via `setMidiPresetDevice()` (tries identifier match first, falls back to name)

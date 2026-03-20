@@ -216,7 +216,7 @@ The reference frequency persists relatively when switching tuning systems or sta
 
 ## Presets
 
-The preset bar displays 8 slots (the plugin stores up to 16 internally). Each preset saves:
+The preset bar has 8 preset slots. Each preset saves:
 - The selected maqam and its degree positions
 - All 12 slider cent offsets
 - Optionally, the tuning system and starting note name (for modified presets)

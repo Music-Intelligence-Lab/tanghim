@@ -28,10 +28,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout TanghimProcessor::createPara
         juce::NormalisableRange<float> (-700.0f, 700.0f, 0.01f),
         0.0f));
 
-    // Preset param: "None" + presets 1-8
+    // Preset param: "None" + presets 1..kNumMaqamPresets (matches UI grid)
     juce::StringArray presetChoices;
     presetChoices.add ("None");
-    for (int i = 1; i <= 8; ++i)
+    for (int i = 1; i <= kNumMaqamPresets; ++i)
         presetChoices.add (juce::String (i));
 
     params.push_back (std::make_unique<juce::AudioParameterChoice> (
@@ -60,7 +60,7 @@ TanghimProcessor::TanghimProcessor()
         apvts.getParameter ("ref_freq"));
 
     // Initialize MIDI preset note mappings to -1 (unmapped)
-    for (int i = 0; i < 16; ++i)
+    for (int i = 0; i < kNumMaqamPresets; ++i)
         midiPresetNotes[i].store (-1, std::memory_order_relaxed);
 
     // Initialize heptatonic map to identity (delta 0 = no remapping)
@@ -457,7 +457,7 @@ void TanghimProcessor::getStateInformation (juce::MemoryBlock& dest)
 
     // Presets
     auto presetsNode = juce::ValueTree ("Presets");
-    for (int i = 0; i < 16; ++i)
+    for (int i = 0; i < kNumMaqamPresets; ++i)
     {
         auto n = juce::ValueTree ("P" + juce::String (i));
         const auto& p = presets[(size_t) i];
@@ -535,7 +535,7 @@ void TanghimProcessor::getStateInformation (juce::MemoryBlock& dest)
 
     // MIDI preset note mappings, channel, and device
     juce::String midiNotesStr;
-    for (int i = 0; i < 16; ++i)
+    for (int i = 0; i < kNumMaqamPresets; ++i)
     {
         if (i > 0) midiNotesStr += ",";
         midiNotesStr += juce::String (midiPresetNotes[(size_t) i].load());
@@ -574,7 +574,7 @@ void TanghimProcessor::setStateInformation (const void* data, int sizeInBytes)
 
     // Restore presets immediately (they're just data)
     auto presetsNode = state.getChildWithName ("Presets");
-    for (int i = 0; i < 16; ++i)
+    for (int i = 0; i < kNumMaqamPresets; ++i)
     {
         auto n = presetsNode.getChild (i);
         auto& p = presets[(size_t) i];
@@ -618,7 +618,8 @@ void TanghimProcessor::setStateInformation (const void* data, int sizeInBytes)
     // since loadTuningSystem() clears these)
     const juce::String savedMaqamId    = state.getProperty ("selectedMaqamId").toString();
     const int savedTransIdx            = (int) state.getProperty ("transpositionIndex", -1);
-    const int savedPresetIdx           = (int) state.getProperty ("activePresetIndex",  -1);
+    const int savedPresetIdx           = juce::jlimit (-1, kNumMaqamPresets - 1,
+                                                      (int) state.getProperty ("activePresetIndex",  -1));
     const double savedStartMidi        = (double) state.getProperty ("startMidi", 48.0);
 
     std::vector<juce::String> savedDegreeNames;
@@ -648,7 +649,7 @@ void TanghimProcessor::setStateInformation (const void* data, int sizeInBytes)
     {
         juce::StringArray notes;
         notes.addTokens (midiNotesProp.toString(), ",", "");
-        for (int i = 0; i < juce::jmin (16, notes.size()); ++i)
+        for (int i = 0; i < juce::jmin (kNumMaqamPresets, notes.size()); ++i)
             midiPresetNotes[(size_t) i].store (notes[i].getIntValue(), std::memory_order_relaxed);
     }
 
@@ -842,7 +843,7 @@ juce::String TanghimProcessor::buildStateJson() const
 
     // Presets (same structure as presets.json)
     juce::Array<juce::var> presArr;
-    for (int i = 0; i < 16; ++i)
+    for (int i = 0; i < kNumMaqamPresets; ++i)
     {
         const auto& p = presets[(size_t) i];
         if (! p.isAssigned)
@@ -912,7 +913,7 @@ void TanghimProcessor::restoreStateFromJson (const juce::String& json)
     // Restore presets immediately (just data)
     if (auto* presArr = root->getProperty ("presets").getArray())
     {
-        for (int i = 0; i < juce::jmin (16, presArr->size()); ++i)
+        for (int i = 0; i < juce::jmin (kNumMaqamPresets, presArr->size()); ++i)
         {
             const auto& item = (*presArr)[i];
             auto* obj = item.getDynamicObject();
@@ -982,7 +983,7 @@ void TanghimProcessor::restoreStateFromJson (const juce::String& json)
                     savedDegreeNames.push_back (d.toString());
     }
 
-    savedPresetIdx = (int) root->getProperty ("activePresetIndex");
+    savedPresetIdx = juce::jlimit (-1, kNumMaqamPresets - 1, (int) root->getProperty ("activePresetIndex"));
     savedStartMidi = (double) root->getProperty ("scrollPosition");
 
     // Restore reference freq, oscillator, hept
@@ -1440,7 +1441,7 @@ void TanghimProcessor::setNoteVariant (int midiNote, int variantIndex)
 
 void TanghimProcessor::applyPreset (int idx)
 {
-    if (idx < 0 || idx >= 16) return;
+    if (idx < 0 || idx >= kNumMaqamPresets) return;
     const auto& preset = presets[(size_t) idx];
     if (! preset.isAssigned) return;
 
@@ -1534,7 +1535,7 @@ void TanghimProcessor::assignPreset (int idx,
                                                const juce::String& tuningSystemId,
                                                const juce::String& startingNote)
 {
-    if (idx < 0 || idx >= 16) return;
+    if (idx < 0 || idx >= kNumMaqamPresets) return;
     auto& p              = presets[(size_t) idx];
     p.isAssigned         = true;
     p.maqamIdName        = maqamId;
@@ -1655,7 +1656,7 @@ void TanghimProcessor::applyDegreeIpnAndSolfege (const MaqamDegrees& degrees)
 
 void TanghimProcessor::clearPreset (int idx)
 {
-    if (idx < 0 || idx >= 16) return;
+    if (idx < 0 || idx >= kNumMaqamPresets) return;
     presets[(size_t) idx].clear();
 
     if (currentActivePresetIdx == idx)
@@ -1897,6 +1898,14 @@ bool TanghimProcessor::hasCachedTuningData (const juce::String& systemId,
     return dataCache.hasData (systemId, startingNote);
 }
 
+bool TanghimProcessor::hasTuningLoadedForCurrentSelection() const
+{
+    if (currentSystemId.isEmpty() || currentStartingNote.isEmpty())
+        return false;
+    // loadTuningSystem's doLoad fills every slot with variants from pitch-class data
+    return activeTuningState.slots[0].variantCount() > 0;
+}
+
 bool TanghimProcessor::hasCachedMaqamList (const juce::String& systemId,
                                             const juce::String& startingNote) const
 {
@@ -1924,7 +1933,7 @@ const ActiveTuningState& TanghimProcessor::getActiveTuningState() const
     return activeTuningState;
 }
 
-const std::array<MaqamPreset, 16>& TanghimProcessor::getPresets() const
+const std::array<MaqamPreset, kNumMaqamPresets>& TanghimProcessor::getPresets() const
 {
     return presets;
 }
@@ -2274,6 +2283,11 @@ void TanghimProcessor::parameterChanged (const juce::String& parameterID, float 
     if (updatingParamsFromCode)
         return;
 
+    // Session restore calls replaceState() before loadTuningSystem() finishes; preset/slot
+    // listeners would run against stale tuning data and can nest loadTuningSystem().
+    if (sessionRecallInProgress)
+        return;
+
     // Handle slot parameters (slot_0 through slot_11)
     // Mapping is tonic-relative: slot_0 = tonic, slot_1 = tonic+1, etc.
     if (parameterID.startsWith ("slot_"))
@@ -2343,10 +2357,10 @@ void TanghimProcessor::parameterChanged (const juce::String& parameterID, float 
         if (presetParam == nullptr)
             return;
 
-        const int choiceIdx = presetParam->getIndex(); // 0 = "None", 1-16 = presets 1-16
-        const int presetIdx = choiceIdx - 1;           // -1 = "None", 0-15 = presets 1-16
+        const int choiceIdx = presetParam->getIndex(); // 0 = "None", 1-8 = presets 1-8
+        const int presetIdx = choiceIdx - 1;           // -1 = "None", 0-7 = presets 1-8
 
-        if (presetIdx >= 0 && presetIdx < 16)
+        if (presetIdx >= 0 && presetIdx < kNumMaqamPresets)
         {
             const auto& preset = presets[(size_t) presetIdx];
             if (! preset.isAssigned)
@@ -2426,13 +2440,13 @@ void TanghimProcessor::syncPresetParamFromState()
     if (presetParam == nullptr)
         return;
 
-    // currentActivePresetIdx is -1 for "None", 0-15 for presets 1-16
-    // APVTS choice index: 0 = "None", 1-16 = presets 1-16
+    // currentActivePresetIdx is -1 for "None", 0-7 for presets 1-8
+    // APVTS choice index: 0 = "None", 1-8 = presets 1-8
     const int choiceIdx = currentActivePresetIdx + 1;
 
     updatingParamsFromCode = true;
     presetParam->setValueNotifyingHost (
-        presetParam->convertTo0to1 (static_cast<float> (juce::jlimit (0, 16, choiceIdx))));
+        presetParam->convertTo0to1 (static_cast<float> (juce::jlimit (0, kNumMaqamPresets, choiceIdx))));
     updatingParamsFromCode = false;
 }
 
@@ -2483,7 +2497,7 @@ void TanghimProcessor::setStartMidi (double startMidi)
 
 void TanghimProcessor::setMidiPresetNote (int presetIdx, int midiNote)
 {
-    if (presetIdx >= 0 && presetIdx < 16)
+    if (presetIdx >= 0 && presetIdx < kNumMaqamPresets)
     {
         midiPresetNotes[(size_t) presetIdx].store (juce::jlimit (-1, 127, midiNote), std::memory_order_relaxed);
         saveSettingsToDisk();
@@ -2492,7 +2506,7 @@ void TanghimProcessor::setMidiPresetNote (int presetIdx, int midiNote)
 
 int TanghimProcessor::getMidiPresetNote (int presetIdx) const
 {
-    if (presetIdx >= 0 && presetIdx < 16)
+    if (presetIdx >= 0 && presetIdx < kNumMaqamPresets)
         return midiPresetNotes[(size_t) presetIdx].load (std::memory_order_relaxed);
     return -1;
 }
@@ -2511,7 +2525,7 @@ int TanghimProcessor::consumePendingMidiPreset()
 
 void TanghimProcessor::startMidiLearn (int presetIdx)
 {
-    if (presetIdx >= 0 && presetIdx < 16)
+    if (presetIdx >= 0 && presetIdx < kNumMaqamPresets)
     {
         midiLearnTargetPreset.store (presetIdx, std::memory_order_relaxed);
         notifyTuningChanged();  // Update UI to show learning animation immediately
@@ -2526,7 +2540,7 @@ void TanghimProcessor::cancelMidiLearn()
 
 void TanghimProcessor::clearMidiPresetNote (int presetIdx)
 {
-    if (presetIdx >= 0 && presetIdx < 16)
+    if (presetIdx >= 0 && presetIdx < kNumMaqamPresets)
     {
         midiPresetNotes[(size_t) presetIdx].store (-1, std::memory_order_relaxed);
         saveSettingsToDisk();
@@ -2536,7 +2550,7 @@ void TanghimProcessor::clearMidiPresetNote (int presetIdx)
 
 void TanghimProcessor::clearAllMidiPresetNotes()
 {
-    for (int i = 0; i < 16; ++i)
+    for (int i = 0; i < kNumMaqamPresets; ++i)
         midiPresetNotes[(size_t) i].store (-1, std::memory_order_relaxed);
     saveSettingsToDisk();
 }
@@ -2674,7 +2688,7 @@ void TanghimProcessor::handleIncomingMidiMessage (juce::MidiInput* /*source*/,
 
     // Check if we're in MIDI learn mode
     const int learnTarget = midiLearnTargetPreset.load (std::memory_order_relaxed);
-    if (learnTarget >= 0 && learnTarget < 16)
+    if (learnTarget >= 0 && learnTarget < kNumMaqamPresets)
     {
         // Assign this note to the target preset
         midiPresetNotes[(size_t) learnTarget].store (note, std::memory_order_relaxed);
@@ -2692,7 +2706,7 @@ void TanghimProcessor::handleIncomingMidiMessage (juce::MidiInput* /*source*/,
     }
 
     // Check if this note is mapped to any preset
-    for (int i = 0; i < 16; ++i)
+    for (int i = 0; i < kNumMaqamPresets; ++i)
     {
         if (midiPresetNotes[(size_t) i].load (std::memory_order_relaxed) == note)
         {
@@ -2718,7 +2732,7 @@ void TanghimProcessor::saveSettingsToDisk() const
 
     // Save MIDI preset mappings
     juce::Array<juce::var> midiNotesArr;
-    for (int i = 0; i < 16; ++i)
+    for (int i = 0; i < kNumMaqamPresets; ++i)
         midiNotesArr.add (juce::var (midiPresetNotes[(size_t) i].load (std::memory_order_relaxed)));
     obj->setProperty ("midiPresetNotes", midiNotesArr);
     obj->setProperty ("midiPresetChannel", midiPresetChannel.load (std::memory_order_relaxed));
@@ -2812,7 +2826,7 @@ void TanghimProcessor::loadSettingsFromDisk()
         if (midiNotesProp.isArray())
         {
             auto* arr = midiNotesProp.getArray();
-            for (int i = 0; i < juce::jmin (16, arr->size()); ++i)
+            for (int i = 0; i < juce::jmin (kNumMaqamPresets, arr->size()); ++i)
                 midiPresetNotes[(size_t) i].store (static_cast<int> ((*arr)[i]), std::memory_order_relaxed);
         }
 
@@ -2844,7 +2858,7 @@ void TanghimProcessor::loadSettingsFromDisk()
 void TanghimProcessor::savePresetsToDisk() const
 {
     juce::Array<juce::var> arr;
-    for (int i = 0; i < 16; ++i)
+    for (int i = 0; i < kNumMaqamPresets; ++i)
     {
         const auto& p = presets[(size_t) i];
         if (! p.isAssigned)
@@ -2898,7 +2912,7 @@ void TanghimProcessor::loadPresetsFromDisk()
     auto parsed = juce::JSON::parse (file.loadFileAsString());
     if (auto* arr = parsed.getArray())
     {
-        for (int i = 0; i < juce::jmin (16, arr->size()); ++i)
+        for (int i = 0; i < juce::jmin (kNumMaqamPresets, arr->size()); ++i)
         {
             const auto& item = (*arr)[i];
             auto* obj = item.getDynamicObject();
