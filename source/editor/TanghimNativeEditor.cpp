@@ -494,6 +494,13 @@ void TanghimNativeEditor::syncFullState()
         presetBar.setMidiPresetNotes (notes);
     }
 
+    // MIDI drag button — active when a maqam is selected (same as ~2 Hz timer path)
+    {
+        const auto maqamId = processor.getCurrentMaqamId();
+        lastMaqamId = maqamId;
+        midiDragButton.setActive (maqamId.isNotEmpty());
+    }
+
     // Range scroller
     rangeScroller.setVisibleCount (noteSliderBank.getVisibleSliderCount());
     rangeScroller.setMaqamTonicMidi (maqamTonicMidi);
