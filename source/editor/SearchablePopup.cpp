@@ -41,10 +41,11 @@ SearchablePopup::SearchablePopup()
     setWantsKeyboardFocus (true);
 
     searchField.setFont (Theme::scaledFont (12.0f));
-    searchField.setColour (juce::TextEditor::backgroundColourId,    Theme::surface);
-    searchField.setColour (juce::TextEditor::outlineColourId,       Theme::border);
-    searchField.setColour (juce::TextEditor::textColourId,          Theme::text);
-    searchField.setColour (juce::TextEditor::focusedOutlineColourId, Theme::accent);
+    searchField.setColour (juce::TextEditor::backgroundColourId, Theme::surface);
+    searchField.setColour (juce::TextEditor::textColourId, Theme::text);
+    searchField.setColour (juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
+    searchField.setColour (juce::TextEditor::focusedOutlineColourId, juce::Colours::transparentBlack);
+    searchField.setColour (juce::TextEditor::shadowColourId, juce::Colours::transparentBlack);
     searchField.onTextChange = [this] { filterItems(); };
     searchField.setEscapeAndReturnKeysConsumed (false);
     searchField.addKeyListener (this);  // Intercept up/down/return/escape before TextEditor
