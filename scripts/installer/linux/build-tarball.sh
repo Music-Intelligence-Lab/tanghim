@@ -32,9 +32,17 @@ STAGE="${WORK_DIR}/Tanghim-${VERSION}-Linux"
 mkdir -p "${STAGE}/plugins"
 
 for item in "Tanghim.vst3" "Tanghim Receiver.vst3"; do
+    if [[ ! -d "${PLUGINS_DIR}/${item}" ]]; then
+        echo "error: missing ${PLUGINS_DIR}/${item}" >&2
+        exit 1
+    fi
     cp -r "${PLUGINS_DIR}/${item}" "${STAGE}/plugins/"
 done
 for item in "Tanghim.clap" "Tanghim Receiver.clap"; do
+    if [[ ! -f "${PLUGINS_DIR}/${item}" ]]; then
+        echo "error: missing ${PLUGINS_DIR}/${item}" >&2
+        exit 1
+    fi
     cp "${PLUGINS_DIR}/${item}" "${STAGE}/plugins/"
 done
 
@@ -47,4 +55,4 @@ tar -czf "${OUTPUT_TGZ}" -C "${WORK_DIR}" "Tanghim-${VERSION}-Linux"
 
 echo "Built ${OUTPUT_TGZ}"
 ls -lh "${OUTPUT_TGZ}"
-tar -tzf "${OUTPUT_TGZ}" | head -20
+tar -tzf "${OUTPUT_TGZ}"
