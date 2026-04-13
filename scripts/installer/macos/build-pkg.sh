@@ -31,6 +31,17 @@ mkdir -p "${OUTPUT_DIR}"
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "${WORK_DIR}"' EXIT
 
+# Restore executable bit on plugin Mach-O binaries — actions/upload-artifact
+# strips the +x bit from files when archiving a directory, so by the time the
+# package job downloads the artifact the binaries are 0644. Without +x, DAWs
+# silently skip the bundle during plugin scans. Re-apply before pkgbuild.
+restore_plugin_executable_bits() {
+    local bundle_root="$1"
+    find "${bundle_root}" -type d -name "MacOS" -print0 | while IFS= read -r -d '' macos_dir; do
+        find "${macos_dir}" -type f -exec chmod +x {} +
+    done
+}
+
 # ── Component 1: Transmitter (VST3 + AU + CLAP) ──────────────────────────────
 TRANSMITTER_ROOT="${WORK_DIR}/transmitter-root"
 mkdir -p "${TRANSMITTER_ROOT}/Library/Audio/Plug-Ins/VST3"
@@ -39,6 +50,7 @@ mkdir -p "${TRANSMITTER_ROOT}/Library/Audio/Plug-Ins/CLAP"
 cp -R "${PLUGINS_DIR}/Tanghim.vst3"       "${TRANSMITTER_ROOT}/Library/Audio/Plug-Ins/VST3/"
 cp -R "${PLUGINS_DIR}/Tanghim.component"  "${TRANSMITTER_ROOT}/Library/Audio/Plug-Ins/Components/"
 cp -R "${PLUGINS_DIR}/Tanghim.clap"       "${TRANSMITTER_ROOT}/Library/Audio/Plug-Ins/CLAP/"
+restore_plugin_executable_bits "${TRANSMITTER_ROOT}"
 
 pkgbuild \
     --identifier "com.khyamallami.tanghim.transmitter" \
@@ -54,6 +66,7 @@ mkdir -p "${RECEIVER_ROOT}/Library/Audio/Plug-Ins/CLAP"
 cp -R "${PLUGINS_DIR}/Tanghim Receiver.vst3"      "${RECEIVER_ROOT}/Library/Audio/Plug-Ins/VST3/"
 cp -R "${PLUGINS_DIR}/Tanghim Receiver.component" "${RECEIVER_ROOT}/Library/Audio/Plug-Ins/Components/"
 cp -R "${PLUGINS_DIR}/Tanghim Receiver.clap"      "${RECEIVER_ROOT}/Library/Audio/Plug-Ins/CLAP/"
+restore_plugin_executable_bits "${RECEIVER_ROOT}"
 
 pkgbuild \
     --identifier "com.khyamallami.tanghim.receiver" \

@@ -46,6 +46,10 @@ for item in "Tanghim.clap" "Tanghim Receiver.clap"; do
     cp "${PLUGINS_DIR}/${item}" "${STAGE}/plugins/"
 done
 
+# Restore executable bit — actions/upload-artifact strips it on archive.
+# VST3 on Linux uses Contents/x86_64-linux/*.so; CLAP is a single .so file.
+find "${STAGE}/plugins" -type f \( -name "*.so" -o -name "*.clap" \) -exec chmod +x {} +
+
 cp "${SCRIPT_DIR}/install.sh" "${STAGE}/install.sh"
 cp "${SCRIPT_DIR}/README.txt" "${STAGE}/README.txt"
 chmod +x "${STAGE}/install.sh"

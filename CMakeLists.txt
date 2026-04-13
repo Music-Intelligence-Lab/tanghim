@@ -18,6 +18,15 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ── macOS deployment target ──────────────────────────────────────────────────
+# Without this, CMake links against whatever SDK version the build machine
+# happens to have (macOS-latest CI runners use the newest SDK). Symbols
+# introduced in newer SDKs (e.g. MIDI 2.0 UMP in 15.0) then cause dlopen to
+# fail with "symbol not found" on older macOS. 11.0 matches JUCE 8's minimum.
+if(NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET OR CMAKE_OSX_DEPLOYMENT_TARGET STREQUAL "")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version" FORCE)
+endif()
+
 # ── Build timestamp (regenerated on every build) ─────────────────────────────
 set(TIMESTAMP_HEADER "${CMAKE_BINARY_DIR}/generated/BuildTimestamp.h")
 add_custom_target(GenerateBuildTimestamp ALL
