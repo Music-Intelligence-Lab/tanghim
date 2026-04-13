@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+    <title>Tanghim {VERSION}</title>
+    <organization>com.khyamallami</organization>
+    <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
+    <options customize="allow" require-scripts="false" hostArchitectures="{ARCH}"/>
+
+    <welcome language="en">
+        <![CDATA[
+Tanghim {VERSION}
+
+This installer will place the Tanghim (Transmitter) and Tanghim Receiver audio plug-ins (VST3, Audio Unit, CLAP) into your system plug-in folders.
+
+The Tanghim Receiver for Max for Live (M4L) is included as an optional component — enable it on the next screen if you use Ableton Live.
+
+The plug-ins are ad-hoc codesigned. Your DAW may warn about an unidentified developer the first time you scan — this is expected.
+        ]]>
+    </welcome>
+
+    <choices-outline>
+        <line choice="transmitter"/>
+        <line choice="receiver"/>
+        <line choice="m4l"/>
+    </choices-outline>
+
+    <choice id="transmitter" title="Tanghim (Transmitter)" description="VST3, Audio Unit, and CLAP versions of the main Tanghim plug-in." start_selected="true" start_enabled="false">
+        <pkg-ref id="com.khyamallami.tanghim.transmitter"/>
+    </choice>
+
+    <choice id="receiver" title="Tanghim Receiver" description="VST3, Audio Unit, and CLAP versions of the Receiver plug-in (pitch-bend / MPE output for non-MTS-ESP synths)." start_selected="true" start_enabled="false">
+        <pkg-ref id="com.khyamallami.tanghim.receiver"/>
+    </choice>
+
+    <choice id="m4l" title="Tanghim Receiver for Ableton Live (M4L)" description="Max for Live device for Ableton Live users. Installs to your user Ableton library." start_selected="true" start_enabled="true">
+        <pkg-ref id="com.khyamallami.tanghim.m4l"/>
+    </choice>
+
+    <pkg-ref id="com.khyamallami.tanghim.transmitter" version="{VERSION}">Transmitter.pkg</pkg-ref>
+    <pkg-ref id="com.khyamallami.tanghim.receiver" version="{VERSION}">Receiver.pkg</pkg-ref>
+    <pkg-ref id="com.khyamallami.tanghim.m4l" version="{VERSION}">M4L.pkg</pkg-ref>
+</installer-gui-script>
