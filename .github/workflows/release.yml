@@ -9,6 +9,9 @@ permissions:
   contents: write
 
 jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # 1. build: compile plugins, run tests, upload raw bundles per OS
+  # ────────────────────────────────────────────────────────────────────────────
   build:
     strategy:
       fail-fast: false
@@ -16,7 +19,7 @@ jobs:
         include:
           - os: macos-latest
             name: macOS
-            cmake_flags: '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
+            cmake_flags: '-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64'
           - os: windows-latest
             name: Windows
             cmake_flags: ''
@@ -26,6 +29,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     name: Build (${{ matrix.name }})
+    timeout-minutes: 30
 
     steps:
       - name: Checkout with submodules
@@ -33,41 +37,37 @@ jobs:
         with:
           submodules: recursive
 
-      # ── Linux dependencies (JUCE requires these) ──────────────────────────
+      - name: Extract version from tag
+        id: version
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Building version ${version}"
+
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libasound2-dev \
-            libjack-jackd2-dev \
-            ladspa-sdk \
-            libcurl4-openssl-dev \
-            libfreetype6-dev \
-            libx11-dev \
-            libxcomposite-dev \
-            libxcursor-dev \
-            libxext-dev \
-            libxinerama-dev \
-            libxrandr-dev \
-            libxrender-dev \
-            libgtk-3-dev \
-            libglu1-mesa-dev \
-            mesa-common-dev
+            libasound2-dev libjack-jackd2-dev ladspa-sdk libcurl4-openssl-dev \
+            libfreetype6-dev libx11-dev libxcomposite-dev libxcursor-dev \
+            libxext-dev libxinerama-dev libxrandr-dev libxrender-dev \
+            libgtk-3-dev libglu1-mesa-dev mesa-common-dev
 
-      # ── Build C++ plugins ────────────────────────────────────────────────
       - name: Configure CMake
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_flags }}
+        run: >
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          -DTANGHIM_EXPECTED_VERSION=${{ steps.version.outputs.version }}
+          ${{ matrix.cmake_flags }}
 
       - name: Build
         run: cmake --build build --config Release
 
-      # ── Run tests ─────────────────────────────────────────────────────────
       - name: Test
         working-directory: build
         run: ctest --output-on-failure -C Release
 
-      # ── macOS: codesign ───────────────────────────────────────────────────
       - name: Codesign (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -78,78 +78,151 @@ jobs:
           codesign --force --deep --sign - "build/TanghimReceiver_artefacts/Release/AU/Tanghim Receiver.component"
           codesign --force --deep --sign - "build/TanghimReceiver_artefacts/Release/CLAP/Tanghim Receiver.clap"
 
-      # ── Package artifacts ─────────────────────────────────────────────────
-      - name: Package (macOS)
+      # ── Stage plugins into a single directory per OS for upload ───────────
+      - name: Stage plugins (macOS)
         if: runner.os == 'macOS'
         run: |
-          cd build/Tanghim_artefacts/Release/VST3 && zip -r /tmp/Tanghim-VST3-macOS.zip Tanghim.vst3 && cd -
-          cd build/Tanghim_artefacts/Release/AU && zip -r /tmp/Tanghim-AU-macOS.zip Tanghim.component && cd -
-          cd build/Tanghim_artefacts/Release/CLAP && zip -r /tmp/Tanghim-CLAP-macOS.zip Tanghim.clap && cd -
-          cd "build/TanghimReceiver_artefacts/Release/VST3" && zip -r /tmp/Tanghim-Receiver-VST3-macOS.zip "Tanghim Receiver.vst3" && cd -
-          cd "build/TanghimReceiver_artefacts/Release/AU" && zip -r /tmp/Tanghim-Receiver-AU-macOS.zip "Tanghim Receiver.component" && cd -
-          cd "build/TanghimReceiver_artefacts/Release/CLAP" && zip -r /tmp/Tanghim-Receiver-CLAP-macOS.zip "Tanghim Receiver.clap" && cd -
-          cd m4l && zip -r /tmp/Tanghim-Receiver-M4L.zip "Tanghim Receiver.amxd" && cd -
+          mkdir -p staged-plugins
+          cp -R build/Tanghim_artefacts/Release/VST3/Tanghim.vst3       staged-plugins/
+          cp -R build/Tanghim_artefacts/Release/AU/Tanghim.component    staged-plugins/
+          cp -R build/Tanghim_artefacts/Release/CLAP/Tanghim.clap       staged-plugins/
+          cp -R "build/TanghimReceiver_artefacts/Release/VST3/Tanghim Receiver.vst3"      staged-plugins/
+          cp -R "build/TanghimReceiver_artefacts/Release/AU/Tanghim Receiver.component"   staged-plugins/
+          cp -R "build/TanghimReceiver_artefacts/Release/CLAP/Tanghim Receiver.clap"      staged-plugins/
+          cp "m4l/Tanghim Receiver.amxd" staged-plugins/
 
-      - name: Package (Windows)
+      - name: Stage plugins (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Compress-Archive -Path "build/Tanghim_artefacts/Release/VST3/Tanghim.vst3" -DestinationPath "${{ runner.temp }}/Tanghim-VST3-Windows.zip"
-          Compress-Archive -Path "build/Tanghim_artefacts/Release/CLAP/Tanghim.clap" -DestinationPath "${{ runner.temp }}/Tanghim-CLAP-Windows.zip"
-          Compress-Archive -Path "build/TanghimReceiver_artefacts/Release/VST3/Tanghim Receiver.vst3" -DestinationPath "${{ runner.temp }}/Tanghim-Receiver-VST3-Windows.zip"
-          Compress-Archive -Path "build/TanghimReceiver_artefacts/Release/CLAP/Tanghim Receiver.clap" -DestinationPath "${{ runner.temp }}/Tanghim-Receiver-CLAP-Windows.zip"
+          New-Item -ItemType Directory -Path staged-plugins -Force | Out-Null
+          Copy-Item -Recurse "build/Tanghim_artefacts/Release/VST3/Tanghim.vst3"                     "staged-plugins/"
+          Copy-Item         "build/Tanghim_artefacts/Release/CLAP/Tanghim.clap"                      "staged-plugins/"
+          Copy-Item -Recurse "build/TanghimReceiver_artefacts/Release/VST3/Tanghim Receiver.vst3"    "staged-plugins/"
+          Copy-Item         "build/TanghimReceiver_artefacts/Release/CLAP/Tanghim Receiver.clap"     "staged-plugins/"
+          Copy-Item         "m4l/Tanghim Receiver.amxd" "staged-plugins/"
 
-      - name: Package (Linux)
+      - name: Stage plugins (Linux)
         if: runner.os == 'Linux'
         run: |
-          cd build/Tanghim_artefacts/Release/VST3 && zip -r /tmp/Tanghim-VST3-Linux.zip Tanghim.vst3 && cd -
-          cd build/Tanghim_artefacts/Release/CLAP && zip -r /tmp/Tanghim-CLAP-Linux.zip Tanghim.clap && cd -
-          cd "build/TanghimReceiver_artefacts/Release/VST3" && zip -r /tmp/Tanghim-Receiver-VST3-Linux.zip "Tanghim Receiver.vst3" && cd -
-          cd "build/TanghimReceiver_artefacts/Release/CLAP" && zip -r /tmp/Tanghim-Receiver-CLAP-Linux.zip "Tanghim Receiver.clap" && cd -
+          mkdir -p staged-plugins
+          cp -r build/Tanghim_artefacts/Release/VST3/Tanghim.vst3   staged-plugins/
+          cp    build/Tanghim_artefacts/Release/CLAP/Tanghim.clap   staged-plugins/
+          cp -r "build/TanghimReceiver_artefacts/Release/VST3/Tanghim Receiver.vst3"  staged-plugins/
+          cp    "build/TanghimReceiver_artefacts/Release/CLAP/Tanghim Receiver.clap"  staged-plugins/
 
-      # ── Upload artifacts for release job ──────────────────────────────────
-      - name: Upload artifacts (macOS)
-        if: runner.os == 'macOS'
+      - name: Upload staged plugins
         uses: actions/upload-artifact@v4
         with:
-          name: artifacts-macOS
-          path: |
-            /tmp/Tanghim-VST3-macOS.zip
-            /tmp/Tanghim-AU-macOS.zip
-            /tmp/Tanghim-CLAP-macOS.zip
-            /tmp/Tanghim-Receiver-VST3-macOS.zip
-            /tmp/Tanghim-Receiver-AU-macOS.zip
-            /tmp/Tanghim-Receiver-CLAP-macOS.zip
-            /tmp/Tanghim-Receiver-M4L.zip
+          name: plugins-${{ matrix.name }}
+          path: staged-plugins
+          if-no-files-found: error
 
-      - name: Upload artifacts (Windows)
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: artifacts-Windows
-          path: |
-            ${{ runner.temp }}/Tanghim-VST3-Windows.zip
-            ${{ runner.temp }}/Tanghim-CLAP-Windows.zip
-            ${{ runner.temp }}/Tanghim-Receiver-VST3-Windows.zip
-            ${{ runner.temp }}/Tanghim-Receiver-CLAP-Windows.zip
-
-      - name: Upload artifacts (Linux)
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: artifacts-Linux
-          path: |
-            /tmp/Tanghim-VST3-Linux.zip
-            /tmp/Tanghim-CLAP-Linux.zip
-            /tmp/Tanghim-Receiver-VST3-Linux.zip
-            /tmp/Tanghim-Receiver-CLAP-Linux.zip
-
-  release:
+  # ────────────────────────────────────────────────────────────────────────────
+  # 2. package: turn raw plugins into per-OS installers
+  # ────────────────────────────────────────────────────────────────────────────
+  package:
     needs: build
-    runs-on: ubuntu-latest
-    name: Create Release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            name: macOS
+          - os: windows-latest
+            name: Windows
+          - os: ubuntu-latest
+            name: Linux
+
+    runs-on: ${{ matrix.os }}
+    name: Package (${{ matrix.name }})
+    timeout-minutes: 15
 
     steps:
+      - name: Checkout (for installer scripts)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Extract version from tag
+        id: version
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Download staged plugins
+        uses: actions/download-artifact@v4
+        with:
+          name: plugins-${{ matrix.name }}
+          path: staged-plugins
+
+      - name: Build installer (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p installer-out
+          ./scripts/installer/macos/build-pkg.sh \
+            "${{ steps.version.outputs.version }}" \
+            "$(pwd)/staged-plugins" \
+            "$(pwd)/installer-out"
+
+      - name: Install Inno Setup (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: choco install innosetup --version=6.2.2 --no-progress -y
+
+      - name: Build installer (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path installer-out -Force | Out-Null
+          $pluginsAbs = (Resolve-Path "staged-plugins").Path
+          $outAbs = (Resolve-Path "installer-out").Path
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            "/DMyAppVersion=${{ steps.version.outputs.version }}" `
+            "/DPluginsDir=$pluginsAbs" `
+            "/DOutputDir=$outAbs" `
+            "scripts\installer\windows\tanghim.iss"
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE" }
+
+      - name: Build installer (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p installer-out
+          ./scripts/installer/linux/build-tarball.sh \
+            "${{ steps.version.outputs.version }}" \
+            "$(pwd)/staged-plugins" \
+            "$(pwd)/installer-out"
+
+      - name: Verify installer produced
+        shell: bash
+        run: |
+          ls -lh installer-out/
+          count=$(find installer-out -maxdepth 1 -type f | wc -l | tr -d ' ')
+          if [[ "$count" -lt 1 ]]; then
+            echo "error: no installer produced" >&2
+            exit 1
+          fi
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.name }}
+          path: installer-out/*
+          if-no-files-found: error
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 3. release: delete old releases, publish the three installers
+  # ────────────────────────────────────────────────────────────────────────────
+  release:
+    needs: package
+    runs-on: ubuntu-latest
+    name: Create Release
+    timeout-minutes: 10
+
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
       - name: Delete all previous releases
         run: |
           gh release list --json tagName -q '.[].tagName' | while read -r tag; do
@@ -160,13 +233,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
 
-      - name: Download all artifacts
+      - name: Download all installers
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+          pattern: installer-*
           merge-multiple: true
 
-      - name: List artifacts
+      - name: List installers
         run: find artifacts -type f | sort
 
       - name: Create GitHub Release
@@ -177,34 +251,23 @@ jobs:
           body: |
             ## Downloads
 
-            ### Tanghim (Transmitter)
-            | Format | macOS (Universal) | Windows | Linux |
-            |--------|-------------------|---------|-------|
-            | VST3   | [Download](Tanghim-VST3-macOS.zip) | [Download](Tanghim-VST3-Windows.zip) | [Download](Tanghim-VST3-Linux.zip) |
-            | AU     | [Download](Tanghim-AU-macOS.zip) | — | — |
-            | CLAP   | [Download](Tanghim-CLAP-macOS.zip) | [Download](Tanghim-CLAP-Windows.zip) | [Download](Tanghim-CLAP-Linux.zip) |
-
-            ### Tanghim Receiver (MIDI Effect)
-            | Format | macOS (Universal) | Windows | Linux |
-            |--------|-------------------|---------|-------|
-            | VST3   | [Download](Tanghim-Receiver-VST3-macOS.zip) | [Download](Tanghim-Receiver-VST3-Windows.zip) | [Download](Tanghim-Receiver-VST3-Linux.zip) |
-            | AU     | [Download](Tanghim-Receiver-AU-macOS.zip) | — | — |
-            | CLAP   | [Download](Tanghim-Receiver-CLAP-macOS.zip) | [Download](Tanghim-Receiver-CLAP-Windows.zip) | [Download](Tanghim-Receiver-CLAP-Linux.zip) |
-
-            ### Ableton Live (Max for Live)
-            | | |
+            | Platform | Installer |
             |---|---|
-            | M4L Receiver | [Download](Tanghim-Receiver-M4L.zip) |
+            | macOS (Universal) | Tanghim-${{ steps.version.outputs.version }}-macOS.pkg |
+            | Windows (x64) | Tanghim-${{ steps.version.outputs.version }}-Windows.exe |
+            | Linux (x64) | Tanghim-${{ steps.version.outputs.version }}-Linux.tar.gz |
 
-            ### Installation paths
-            - **macOS VST3**: `~/Library/Audio/Plug-Ins/VST3/`
-            - **macOS AU**: `~/Library/Audio/Plug-Ins/Components/`
-            - **macOS CLAP**: `~/Library/Audio/Plug-Ins/CLAP/`
-            - **Windows VST3**: `C:\Program Files\Common Files\VST3\`
-            - **Windows CLAP**: `C:\Program Files\Common Files\CLAP\`
-            - **Linux VST3**: `~/.vst3/`
-            - **Linux CLAP**: `~/.clap/`
-            - **M4L**: `~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim/`
+            ### Installation
 
-            > **Ableton Live users**: Ableton doesn't support VST3 MIDI effects natively. Use the **M4L Receiver** for pitch bend output, or rely on **MTS-ESP** for synths that support it.
+            - **macOS:** Double-click the `.pkg`. On first plug-in launch you may need to right-click the plug-in file in Finder → Open to bypass Gatekeeper (installer is ad-hoc signed, not notarized).
+            - **Windows:** Double-click the `.exe`. Admin rights required (installs to `Program Files`).
+            - **Linux:** `tar xzf Tanghim-${{ steps.version.outputs.version }}-Linux.tar.gz && cd Tanghim-${{ steps.version.outputs.version }}-Linux && ./install.sh`
+
+            ### What's included
+
+            - Tanghim (Transmitter) — VST3, AU (macOS only), CLAP
+            - Tanghim Receiver — VST3, AU (macOS only), CLAP
+            - Tanghim Receiver for Ableton Live (M4L) — macOS and Windows installers, optional component
+
+            > **Ableton Live users:** Ableton doesn't support VST3 MIDI effects. Enable the M4L component during installation, or use MTS-ESP-capable synths.
           files: artifacts/*
