@@ -44,7 +44,7 @@ WizardStyle=modern
 [Components]
 Name: "transmitter"; Description: "Tanghim (Transmitter) — VST3 + CLAP"; Types: full custom; Flags: fixed
 Name: "receiver";    Description: "Tanghim Receiver — VST3 + CLAP";      Types: full custom; Flags: fixed
-Name: "m4l";         Description: "Tanghim Receiver for Ableton Live (M4L)"; Types: full
+Name: "m4l";         Description: "Tanghim Receiver for Ableton Live (M4L)"
 
 [Files]
 ; Transmitter — system plugin folders
@@ -61,9 +61,10 @@ Source: "{#PluginsDir}\Tanghim Receiver.amxd"; DestDir: "{app}\m4l-staging"; Fla
 [Run]
 ; Copy the staged .amxd into the invoking (non-admin) user's Ableton library.
 ; runasoriginaluser drops elevation so %USERPROFILE% resolves to the real user,
-; not the admin that UAC elevated to.
+; not the admin that UAC elevated to. waituntilterminated + "|| exit /b 1" makes
+; a copy failure propagate to Inno Setup instead of being silently swallowed.
 Filename: "{cmd}"; \
-  Parameters: "/c mkdir ""%USERPROFILE%\Documents\Ableton\User Library\Presets\MIDI Effects\Max MIDI Effect\Tanghim"" & copy /Y ""{app}\m4l-staging\Tanghim Receiver.amxd"" ""%USERPROFILE%\Documents\Ableton\User Library\Presets\MIDI Effects\Max MIDI Effect\Tanghim\Tanghim Receiver.amxd"""; \
-  Flags: runhidden runasoriginaluser; \
+  Parameters: "/c mkdir ""%USERPROFILE%\Documents\Ableton\User Library\Presets\MIDI Effects\Max MIDI Effect\Tanghim"" 2>nul & copy /Y ""{app}\m4l-staging\Tanghim Receiver.amxd"" ""%USERPROFILE%\Documents\Ableton\User Library\Presets\MIDI Effects\Max MIDI Effect\Tanghim\Tanghim Receiver.amxd"" || exit /b 1"; \
+  Flags: runhidden runasoriginaluser waituntilterminated; \
   Components: m4l; \
   StatusMsg: "Installing Max for Live device…"
