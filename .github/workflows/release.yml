@@ -165,11 +165,6 @@ jobs:
             "$(pwd)/staged-plugins" \
             "$(pwd)/installer-out"
 
-      - name: Install Inno Setup (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: choco install innosetup --version=6.2.2 --no-progress -y
-
       - name: Build installer (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
