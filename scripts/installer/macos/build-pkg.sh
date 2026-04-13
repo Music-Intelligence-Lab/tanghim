@@ -77,7 +77,7 @@ pkgbuild \
 
 # ── Distribution: render distribution.xml with substitutions ─────────────────
 DIST_XML="${WORK_DIR}/distribution.xml"
-sed -e "s/{VERSION}/${VERSION}/g" -e "s/{ARCH}/x86_64,arm64/g" \
+sed -e "s|{VERSION}|${VERSION}|g" -e "s|{ARCH}|x86_64 arm64|g" \
     "${SCRIPT_DIR}/distribution.xml" > "${DIST_XML}"
 
 # ── Build the distribution package ───────────────────────────────────────────
