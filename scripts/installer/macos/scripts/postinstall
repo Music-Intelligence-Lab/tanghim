@@ -23,6 +23,11 @@ if [[ -z "${CONSOLE_USER}" || "${CONSOLE_USER}" == "root" ]]; then
 fi
 
 USER_HOME="$(dscl . -read "/Users/${CONSOLE_USER}" NFSHomeDirectory | awk '{print $2}')"
+if [[ -z "${USER_HOME}" ]]; then
+    echo "postinstall: could not read home directory for user '${CONSOLE_USER}'" >&2
+    exit 1
+fi
+
 DEST_DIR="${USER_HOME}/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim"
 
 mkdir -p "${DEST_DIR}"
@@ -30,6 +35,5 @@ cp -f "${STAGED_FILE}" "${DEST_DIR}/${AMXD_NAME}"
 chown -R "${CONSOLE_USER}" "${USER_HOME}/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim"
 
 rm -f "${STAGED_FILE}"
-rmdir "${STAGING_DIR}" 2>/dev/null || true
 
 exit 0
