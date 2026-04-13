@@ -1,0 +1,35 @@
+#!/bin/bash
+# Moves the staged Tanghim Receiver.amxd from the package payload location
+# (/tmp/tanghim-m4l-staging) to the console user's Ableton library.
+#
+# Invoked by productbuild when the M4L component is selected.
+# productbuild runs this as root, so we detect the real console user via stat.
+
+set -euo pipefail
+
+STAGING_DIR="/tmp/tanghim-m4l-staging"
+AMXD_NAME="Tanghim Receiver.amxd"
+STAGED_FILE="${STAGING_DIR}/${AMXD_NAME}"
+
+if [[ ! -f "${STAGED_FILE}" ]]; then
+    echo "postinstall: staged M4L file not found at ${STAGED_FILE}" >&2
+    exit 1
+fi
+
+CONSOLE_USER="$(stat -f '%Su' /dev/console)"
+if [[ -z "${CONSOLE_USER}" || "${CONSOLE_USER}" == "root" ]]; then
+    echo "postinstall: could not determine console user (got '${CONSOLE_USER}')" >&2
+    exit 1
+fi
+
+USER_HOME="$(dscl . -read "/Users/${CONSOLE_USER}" NFSHomeDirectory | awk '{print $2}')"
+DEST_DIR="${USER_HOME}/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim"
+
+mkdir -p "${DEST_DIR}"
+cp -f "${STAGED_FILE}" "${DEST_DIR}/${AMXD_NAME}"
+chown -R "${CONSOLE_USER}" "${USER_HOME}/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim"
+
+rm -f "${STAGED_FILE}"
+rmdir "${STAGING_DIR}" 2>/dev/null || true
+
+exit 0
