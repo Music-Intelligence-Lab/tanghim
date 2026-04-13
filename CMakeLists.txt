@@ -1,6 +1,20 @@
 cmake_minimum_required(VERSION 3.25)
 project(Tanghim VERSION 0.9.0)
 
+# ── Version-consistency guard ─────────────────────────────────────────────────
+# When the workflow builds a tagged release it passes -DTANGHIM_EXPECTED_VERSION=<version>
+# (the git tag with the leading 'v' stripped). If the value doesn't match PROJECT_VERSION,
+# the build fails early — preventing releases where the installer filename and the plugin's
+# internal version disagree. Local builds that don't set this option skip the check.
+if(DEFINED TANGHIM_EXPECTED_VERSION AND NOT TANGHIM_EXPECTED_VERSION STREQUAL "")
+    if(NOT PROJECT_VERSION VERSION_EQUAL TANGHIM_EXPECTED_VERSION)
+        message(FATAL_ERROR
+            "Version mismatch: git tag says ${TANGHIM_EXPECTED_VERSION}, "
+            "CMakeLists.txt says ${PROJECT_VERSION}. "
+            "Bump the project() version or fix the tag.")
+    endif()
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
