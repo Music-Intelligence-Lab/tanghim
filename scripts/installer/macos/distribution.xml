@@ -3,7 +3,7 @@
     <title>Tanghim {VERSION}</title>
     <organization>com.khyamallami</organization>
     <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
-    <options customize="allow" require-scripts="false" hostArchitectures="{ARCH}"/>
+    <options customize="allow" require-scripts="false"/>
 
     <welcome language="en">
         <![CDATA[
