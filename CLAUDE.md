@@ -303,9 +303,11 @@ Ableton doesn't support VST3 MIDI effects. Architecture: VST3 as data bridge (12
 - **midiparse outlet 5**: 7-bit (0-127), NOT 14-bit. Convert: `val << 7`
 - **`vst~` ignoreclick**: The `vst~` object must have `ignoreclick 1` — without it, clicking anywhere on the M4L device (even blank background) steals keyboard focus from Ableton, disabling computer keyboard MIDI input. Native Ableton devices don't have this issue because they use Ableton's own UI framework, not Max's
 - **JS default initialization**: pattr `@default` may not output on first load (no pattrstorage state). Explicit message box sends `set_mode 0, set_mpe_bend_range 48, set_mono_bend_range 2` to JS on loadbang delay
+- **Parameter-poll rate is bounded by MIDI timing**: `metro N → uzi 128 → get` produces 128/N msgs/sec on Max's scheduler thread, which is the same thread that schedules incoming Note Ons. At `metro 100` (1280 msgs/sec) MIDI gets audible per-note timing jitter. **Use `metro 1000`** — tuning latency is ~1s but imperceptible for human-tempo maqam selection. → [diary 2026-05-05](diary/2026-05-05.md)
+- **MPE channel allocation in JS uses per-slot state**: `channelNote[i]` / `channelActive[i]` arrays, not a `noteToChannel[pitch]` dictionary. Same-pitch overlap (e.g. arpeggios) would otherwise leak channel slots and trigger voice-stealing on still-sounding notes. Mirrors the C++ `MpePitchBendProcessor` design.
 - Patch generated via py2max: `python3 m4l/generate_patch.py`
 - Install: `~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim/`
-- → [diary 2026-02-20](diary/2026-02-20.md) (comprehensive M4L architecture guide), [diary 2026-02-22](diary/2026-02-22.md) (PB combining)
+- → [diary 2026-02-20](diary/2026-02-20.md) (comprehensive M4L architecture guide), [diary 2026-02-22](diary/2026-02-22.md) (PB combining), [diary 2026-05-05](diary/2026-05-05.md) (poll-rate timing fix + MPE allocation fix)
 
 ## APVTS Parameters
 

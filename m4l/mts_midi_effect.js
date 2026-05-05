@@ -20,9 +20,11 @@ var monoBendRange = 2;   // semitones (default Mono PB)
 var mode = 0;            // 0 = MPE, 1 = Mono PB (matches live.tab index)
 
 // MPE channel allocation (channels 2-16)
-var noteToChannel = {};  // note → channel
-var channelInUse = new Array(15);  // index 0-14 → channels 2-16
-for (var i = 0; i < 15; i++) channelInUse[i] = false;
+// Per-channel state so overlapping same-pitch notes get distinct channels and
+// Note Off releases the right slot. Indices 0-14 map to MIDI channels 2-16.
+var channelNote = new Array(15);   // note number on slot, or -1 if free
+var channelActive = new Array(15); // true if slot has a sounding note
+for (var i = 0; i < 15; i++) { channelNote[i] = -1; channelActive[i] = false; }
 var nextCh = 0;
 
 // Mono PB note stack (last-note priority with recall)
@@ -63,13 +65,13 @@ function list() {
 
 function updateActivePitchBend(note, cents) {
     if (mode === 0) {
-        // MPE: check if this note is active on a member channel
-        var ch = noteToChannel[note];
-        if (ch !== undefined) {
-            var bv = calcBend(cents);
-            var lsb = bv & 0x7F;
-            var msb = (bv >> 7) & 0x7F;
-            outlet(0, 0xE0 + ch - 1, lsb, msb);
+        // MPE: update bend on every member channel currently sounding this note
+        var bv = calcBend(cents);
+        var lsb = bv & 0x7F;
+        var msb = (bv >> 7) & 0x7F;
+        for (var i = 0; i < 15; i++) {
+            if (channelActive[i] && channelNote[i] === note)
+                outlet(0, 0xE0 + (i + 2) - 1, lsb, msb);
         }
     } else {
         // Mono PB: check if this is the currently held note
@@ -84,10 +86,10 @@ function updateActivePitchBend(note, cents) {
 function set_mode(m) {
     // Force Note Off for all active notes in CURRENT mode before switching
     if (mode === 0) {
-        // Currently MPE: send Note Off on each allocated channel
-        for (var pitch in noteToChannel) {
-            var ch = noteToChannel[pitch];
-            outlet(0, 0x80 + ch - 1, parseInt(pitch), 64);
+        // Currently MPE: send Note Off on each sounding member channel
+        for (var i = 0; i < 15; i++) {
+            if (channelActive[i])
+                outlet(0, 0x80 + (i + 2) - 1, channelNote[i], 64);
         }
     } else {
         // Currently Mono PB: send Note Off for the active note (allows release tail)
@@ -99,8 +101,7 @@ function set_mode(m) {
 
     mode = m;
     // Reset state
-    noteToChannel = {};
-    for (var i = 0; i < 15; i++) channelInUse[i] = false;
+    for (var i = 0; i < 15; i++) { channelNote[i] = -1; channelActive[i] = false; }
     nextCh = 0;
     monoNoteStack = [];
     userPitchBend = 8192;
@@ -200,24 +201,23 @@ function processMonoPB(pitch, vel) {
 
 function processMPE(pitch, vel) {
     if (vel > 0) {
-        // Allocate a free member channel (2-16), round-robin with in-use check
-        var ch = -1;
+        // Allocate a free member channel (2-16), round-robin
+        var idx = -1;
         for (var i = 0; i < 15; i++) {
-            var idx = (nextCh + i) % 15;
-            if (!channelInUse[idx]) {
-                ch = idx + 2;
-                nextCh = (idx + 1) % 15;
-                channelInUse[idx] = true;
-                break;
-            }
+            var k = (nextCh + i) % 15;
+            if (!channelActive[k]) { idx = k; break; }
         }
-        if (ch === -1) {
-            // All 15 channels in use — steal oldest (round-robin position)
-            ch = nextCh + 2;
-            channelInUse[nextCh] = true;
-            nextCh = (nextCh + 1) % 15;
+        if (idx === -1) {
+            // All 15 channels sounding — steal the round-robin slot.
+            // Send Note Off for the stolen note so the synth releases that voice.
+            idx = nextCh;
+            outlet(0, 0x80 + (idx + 2) - 1, channelNote[idx], 64);
         }
-        noteToChannel[pitch] = ch;
+
+        channelNote[idx] = pitch;
+        channelActive[idx] = true;
+        nextCh = (idx + 1) % 15;
+        var ch = idx + 2;
 
         var cents = (pitch >= 0 && pitch < 128) ? table[pitch] : 0;
         var bv = calcBend(cents);
@@ -227,12 +227,16 @@ function processMPE(pitch, vel) {
         outlet(0, 0xE0 + ch - 1, lsb, msb);   // PB on member channel
         outlet(0, 0x90 + ch - 1, pitch, vel);  // Note On on member channel
     } else {
-        var ch = noteToChannel[pitch];
-        if (ch !== undefined) {
-            outlet(0, 0x80 + ch - 1, pitch, 64);  // Note Off
-            // Don't reset PB — synth release tail should stay at correct pitch.
-            channelInUse[ch - 2] = false;
-            delete noteToChannel[pitch];
+        // Find the oldest sounding instance of this pitch and release it.
+        // FIFO order matches Note On arrival because we walk slots from index 0.
+        for (var i = 0; i < 15; i++) {
+            if (channelActive[i] && channelNote[i] === pitch) {
+                outlet(0, 0x80 + (i + 2) - 1, pitch, 64);
+                channelActive[i] = false;
+                channelNote[i] = -1;
+                // Don't reset PB — synth release tail should stay at correct pitch.
+                return;
+            }
         }
     }
 }

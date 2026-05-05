@@ -321,7 +321,7 @@
 						72,
 						22
 					],
-					"text": "metro 100",
+					"text": "metro 1000",
 					"outlettype": [
 						"bang"
 					]

@@ -122,7 +122,13 @@ delay_metro = p.add("delay 750",
     numinlets=2, numoutlets=1, outlettype=["bang"],
     patching_rect=[560, 115, 72, 22])
 
-metro = p.add("metro 100",
+# Poll every 1 second (not 100 ms) — at 100 ms the uzi-128 fan-out floods
+# the Max scheduler thread with 1280 inlet-1 events/sec into the JS object,
+# which causes audible MIDI timing jitter when MPE same-pitch notes repeat
+# faster than ~8 Hz (each Note On's scheduling competes with the polling
+# burst). 1 Hz is fine: tuning latency = ~1s, imperceptible for human-tempo
+# maqam selection. → diary 2026-05-05
+metro = p.add("metro 1000",
     numinlets=2, numoutlets=1, outlettype=["bang"],
     patching_rect=[560, 150, 72, 22])
 
