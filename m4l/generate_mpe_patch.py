@@ -153,12 +153,22 @@ cents_expr = p.add("expr $f1 * 100.",
 p.add_line(mtof, cents_expr, outlet=2, inlet=0)
 
 
-# Stash latest cents value via [send] for downstream PB computation.
-# By the time poly emits voice#, cents has been updated for the new note.
-cents_send = p.add("send cents",
-    numinlets=1, numoutlets=0,
-    patching_rect=[380, 165, 80, 22])
-p.add_line(cents_expr, cents_send)
+# Silent storage of latest cents value via [int].right inlet.
+#
+# We deliberately do NOT use [send cents] → [receive cents] here because
+# receive auto-triggers downstream pb_expr → xbendout, causing a race:
+# every mtof query (Note On AND retune) would emit PB on whatever
+# channel xbendout.1 was last set to, BEFORE the current note's channel
+# is established. Symptom: tuning of previously-held notes shifts every
+# time a new note is added.
+#
+# Instead, we silently store the cents value here and explicitly bang
+# this [int] from the Note On chain (emit_trig.2) and the retune chain
+# only when the correct xbendout channel has been established.
+cents_store = p.add("int",
+    numinlets=2, numoutlets=1, outlettype=["int"],
+    patching_rect=[380, 165, 60, 22])
+p.add_line(cents_expr, cents_store, outlet=0, inlet=1)  # silent store
 
 # ═══════════════════════════════════════════════════════════════════════
 # Wire (pitch, velocity) directly to [poly 15 1] — no [pack] in between.
@@ -257,15 +267,50 @@ plus1 = p.add("+ 1",
 p.add_line(poly, plus1, outlet=0, inlet=0)
 
 # Trigger to fan out channel + bangs in correct order.
-# [t b b i i]: outlets fire right-to-left.
-#   outlet 3 (rightmost, int): channel for xbendout.1   — fires FIRST
-#   outlet 2 (int):             channel for noteout.2   — fires second
-#   outlet 1 (bang):            triggers pb_expr → xbendout.0 PB emit
-#   outlet 0 (leftmost, bang):  triggers stored pitch → noteout.0 Note On — fires LAST
-emit_trig = p.add("t b b i i",
-    numinlets=1, numoutlets=4, outlettype=["bang", "bang", "int", "int"],
+# [t b b b i i]: outlets fire right-to-left.
+#   outlet 4 (rightmost, int): channel for xbendout.1   — fires FIRST
+#   outlet 3 (int):             channel for noteout.2   — fires second
+#   outlet 2 (bang):            triggers pb_expr → xbendout.0 PB emit
+#   outlet 1 (bang):            triggers stored pitch → noteout.0 Note On
+#   outlet 0 (leftmost, bang):  triggers held-coll update — fires LAST
+emit_trig = p.add("t b b b i i",
+    numinlets=1, numoutlets=5,
+    outlettype=["bang", "bang", "bang", "int", "int"],
     patching_rect=[100, 270, 100, 22])
 p.add_line(plus1, emit_trig, outlet=0, inlet=0)
+
+# Silent stores for held-note tracking (Stage 2b).
+# Velocity, channel, and pitch are captured silently from poly so the
+# coll-update logic (driven by emit_trig.0) can read them after Note
+# On/Off has already been emitted.
+vel_store = p.add("int",
+    numinlets=2, numoutlets=1, outlettype=["int"],
+    patching_rect=[260, 305, 60, 22])
+p.add_line(poly, vel_store, outlet=2, inlet=1)  # silent store of velocity
+
+# Two separate chan_stores so the store and remove paths don't trigger
+# each other when banged. Both fed silently from +1 (channel from poly).
+chan_store_for_remove = p.add("int",
+    numinlets=2, numoutlets=1, outlettype=["int"],
+    patching_rect=[200, 305, 60, 22])
+p.add_line(plus1, chan_store_for_remove, outlet=0, inlet=1)
+
+chan_store_for_store = p.add("int",
+    numinlets=2, numoutlets=1, outlettype=["int"],
+    patching_rect=[140, 305, 60, 22])
+p.add_line(plus1, chan_store_for_store, outlet=0, inlet=1)
+
+# Two pitch storages so the remove and store paths can each bang their
+# own [int] without firing the other path's downstream chain.
+pitch_for_remove = p.add("int",
+    numinlets=2, numoutlets=1, outlettype=["int"],
+    patching_rect=[330, 305, 60, 22])
+p.add_line(poly, pitch_for_remove, outlet=1, inlet=1)  # silent store
+
+pitch_for_store = p.add("int",
+    numinlets=2, numoutlets=1, outlettype=["int"],
+    patching_rect=[400, 305, 60, 22])
+p.add_line(poly, pitch_for_store, outlet=1, inlet=1)  # silent store
 
 # Pitch storage — silent until banged.
 # [int]: right inlet (1) stores without output; left inlet (0) bangs to output.
@@ -279,13 +324,12 @@ p.add_line(poly, pitch_store, outlet=1, inlet=1)  # store pitch silently
 # Compute 14-bit pitch bend from cents and pbRange.
 #   pb14 = clamp(int(8192 + (cents / (pbRange * 100.0)) * 8191), 0, 16383)
 #
-# Triggered by [emit_trig] outlet 1 (bang). The bang re-emits stored
-# cents from [receive cents], which flows through the expr chain.
+# pb_expr is triggered ONLY by explicit bangs to cents_store.left
+# (which outputs the silently-stored cents into pb_expr's $f1 inlet).
+# This decoupling prevents pb_expr from auto-firing every time mtof
+# updates cents — see cents_store comment for the race-condition
+# rationale.
 # ═══════════════════════════════════════════════════════════════════════
-
-cents_recv = p.add("receive cents",
-    numinlets=0, numoutlets=1, outlettype=[""],
-    patching_rect=[290, 305, 80, 22])
 
 pbrange_recv = p.add("receive pbRange",
     numinlets=0, numoutlets=1, outlettype=[""],
@@ -294,8 +338,8 @@ pbrange_recv = p.add("receive pbRange",
 pb_expr = p.add("expr int(8192 + ($f1 / ($f2 * 100.)) * 8191)",
     numinlets=2, numoutlets=1, outlettype=[""],
     patching_rect=[290, 340, 280, 22])
-p.add_line(cents_recv, pb_expr, outlet=0, inlet=0)
-p.add_line(pbrange_recv, pb_expr, outlet=0, inlet=1)
+p.add_line(cents_store, pb_expr, outlet=0, inlet=0)  # cents (when banged)
+p.add_line(pbrange_recv, pb_expr, outlet=0, inlet=1)  # pbRange (auto-stored)
 
 pb_clip = p.add("clip 0 16383",
     numinlets=3, numoutlets=1, outlettype=[""],
@@ -320,7 +364,7 @@ xbendout = p.add("xbendout",
     numinlets=2, numoutlets=1, outlettype=["int"],
     patching_rect=[290, 415, 80, 22])
 p.add_line(pb_clip, xbendout, outlet=0, inlet=0)
-p.add_line(emit_trig, xbendout, outlet=3, inlet=1)  # channel set first (rightmost int)
+p.add_line(emit_trig, xbendout, outlet=4, inlet=1)  # channel set first (rightmost int)
 
 # Route formatted PB bytes to MIDI output.
 midiout_pb = p.add("midiout",
@@ -328,10 +372,10 @@ midiout_pb = p.add("midiout",
     patching_rect=[290, 450, 80, 22])
 p.add_line(xbendout, midiout_pb, outlet=0, inlet=0)
 
-# Bang from emit_trig.1 → pb_expr (bang causes [expr] to recompute + output
-# using stored $f1=cents and $i2=pbRange). Cannot bang [receive] — it has no
-# inlet; receives are addressed by name only.
-p.add_line(emit_trig, pb_expr, outlet=1, inlet=0)
+# Bang from emit_trig.2 → cents_store.left → outputs stored cents → pb_expr
+# (which triggers compute + output using current $f2=pbRange) → pb_clip →
+# xbendout.0 (PB emits on the channel just set by emit_trig.4).
+p.add_line(emit_trig, cents_store, outlet=2, inlet=0)
 
 # ═══════════════════════════════════════════════════════════════════════
 # noteout: pitch + velocity + channel.
@@ -350,9 +394,213 @@ noteout = p.add("noteout",
     patching_rect=[20, 345, 90, 22])
 
 p.add_line(poly, noteout, outlet=2, inlet=1)              # velocity (silent — poly.2 = vel)
-p.add_line(emit_trig, noteout, outlet=2, inlet=2)         # channel (silent, second int)
-p.add_line(emit_trig, pitch_store, outlet=0, inlet=0)     # bang (leftmost) stored pitch
+p.add_line(emit_trig, noteout, outlet=3, inlet=2)         # channel (silent, second int)
+p.add_line(emit_trig, pitch_store, outlet=1, inlet=0)     # bang stored pitch
 p.add_line(pitch_store, noteout, outlet=0, inlet=0)       # pitch (triggers Note On)
+
+# ═══════════════════════════════════════════════════════════════════════
+# Held-note tracking (Stage 2b — v2)
+#
+# coll key/value scheme: KEY = MPE channel (2..16), VALUE = pitch.
+# Why channel-as-key (not pitch-as-key): coll's `dump` emits ALL data
+# first then ALL addresses (NOT per-entry interleaved). To iterate
+# per-entry, we send sequential channel ints (2..16) via [uzi] and let
+# coll respond per-lookup with (data, address) in proper order.
+#
+# emit_trig.0 (leftmost bang, fires LAST after Note On/Off is emitted)
+# drives the coll-update logic. Read velocity from vel_store; branch:
+#   - Vel == 0 → bang chan_store → "remove <channel>" → coll
+#   - Vel >  0 → trigger [t b b] → bang chan (pak.left, triggers) and
+#                  bang pitch (pak.right, silent) → "<channel> <pitch>"
+#                  → coll stores pitch at key=channel
+# ═══════════════════════════════════════════════════════════════════════
+
+held_coll = p.add("coll heldByChannel @embed 1",
+    patching_rect=[450, 250, 200, 22],
+    varname="heldByChannel")
+
+# Bang vel_store from emit_trig.0 → output velocity → branch
+p.add_line(emit_trig, vel_store, outlet=0, inlet=0)  # bang triggers output
+
+# select 0: matched → bang on outlet 0; unmatched → int passes through outlet 1
+vel_branch = p.add("select 0",
+    numinlets=1, numoutlets=2, outlettype=["bang", "int"],
+    patching_rect=[260, 345, 80, 22])
+p.add_line(vel_store, vel_branch, outlet=0, inlet=0)
+
+# REMOVE PATH (vel == 0): bang chan_store_for_remove → "remove <channel>" → coll
+p.add_line(vel_branch, chan_store_for_remove, outlet=0, inlet=0)  # bang
+prepend_remove = p.add("prepend remove",
+    numinlets=1, numoutlets=1, outlettype=[""],
+    patching_rect=[330, 380, 130, 22])
+p.add_line(chan_store_for_remove, prepend_remove, outlet=0, inlet=0)
+p.add_line(prepend_remove, held_coll, outlet=0, inlet=0)
+
+# STORE PATH (vel > 0): vel int triggers [t b b]
+#   .1 (right, fires first): bang pitch_for_store → output pitch → pak.right (silent)
+#   .0 (left, fires second): bang chan_store → output channel → pak.left (triggers)
+# pak emits "<channel> <pitch>" → coll stores pitch at key=channel.
+store_trig = p.add("t b b",
+    numinlets=1, numoutlets=2, outlettype=["bang", "bang"],
+    patching_rect=[480, 345, 80, 22])
+p.add_line(vel_branch, store_trig, outlet=1, inlet=0)  # vel passes through as bang
+
+store_pak = p.add("pack 0 0",
+    numinlets=2, numoutlets=1, outlettype=[""],
+    patching_rect=[480, 415, 80, 22])
+# t.1 fires first: bang pitch_for_store → pak.1 (silent right inlet)
+p.add_line(store_trig, pitch_for_store, outlet=1, inlet=0)
+p.add_line(pitch_for_store, store_pak, outlet=0, inlet=1)
+# t.0 fires second: bang chan_store_for_store → pak.0 (triggers output as channel)
+p.add_line(store_trig, chan_store_for_store, outlet=0, inlet=0)
+p.add_line(chan_store_for_store, store_pak, outlet=0, inlet=0)
+p.add_line(store_pak, held_coll, outlet=0, inlet=0)
+
+# DIAGNOSTIC: confirm store path actually emits to coll on Note On
+store_print = p.add("print store_to_coll",
+    numinlets=1, numoutlets=0,
+    patching_rect=[600, 450, 180, 22])
+p.add_line(store_pak, store_print, outlet=0, inlet=0)
+
+# DIAGNOSTIC: confirm remove path on Note Off
+remove_print = p.add("print remove_to_coll",
+    numinlets=1, numoutlets=0,
+    patching_rect=[600, 480, 180, 22])
+p.add_line(prepend_remove, remove_print, outlet=0, inlet=0)
+
+# ═══════════════════════════════════════════════════════════════════════
+# Held-note retune (Stage 2b — v2)
+#
+# Iterate via [uzi 15] which emits 1..15. Add 1 → channels 2..16.
+# Each int → coll left inlet → coll looks up entry at that key:
+#   - If entry exists: outputs value (pitch) on outlet 0, then key
+#     (channel) on outlet 1 — PER-LOOKUP, properly interleaved.
+#   - If no entry at that key: emits nothing (silent skip).
+#
+# Per-entry retune wiring:
+#   - coll outlet 0 (data = pitch) → mtof.0 (mtof.2 silently updates
+#                                    cents_store)
+#   - coll outlet 1 (address = channel) → [t b i]:
+#       outlet 1 (i, fires first):  channel → xbendout.1 (set)
+#       outlet 0 (b, fires second): bang cents_store → PB emit on the
+#                                   just-set channel
+# ═══════════════════════════════════════════════════════════════════════
+
+# Held-note retune polled at 20 Hz (metro 50). Each held note costs
+# ~12 scheduler messages per tick (coll dump + mtof query + PB emit
+# chain). At 8 held notes × 20 Hz × 12 = 1920 msg/sec which approaches
+# the jitter threshold; at 4 notes × 20 Hz × 12 = 960 msg/sec we're
+# safely below. Lowering further is possible if needed (e.g. metro 33
+# for 30 Hz) but we'd want empirical jitter testing.
+# Held-note retune polled at 20 Hz (metro 50). Each metro tick triggers
+# [uzi 15] which emits 15 sequential bangs/ints (1..15), each gated through
+# [+ 1] into channels (2..16). Each channel is sent to coll as a key
+# lookup; coll responds per-lookup if entry exists.
+retune_metro = p.add("metro 50",
+    numinlets=2, numoutlets=1, outlettype=["bang"],
+    patching_rect=[700, 60, 80, 22])
+
+# DIAGNOSTIC: confirm metro is firing
+metro_print = p.add("print metro_tick",
+    numinlets=1, numoutlets=0,
+    patching_rect=[820, 60, 140, 22])
+p.add_line(retune_metro, metro_print, outlet=0, inlet=0)
+
+# DIAGNOSTIC: confirm uzi is firing
+uzi_print = p.add("print uzi_out",
+    numinlets=1, numoutlets=0,
+    patching_rect=[820, 90, 140, 22])
+
+# DIAGNOSTIC: confirm +1 is firing (channels 2..16)
+plus1_print = p.add("print uzi_chan",
+    numinlets=1, numoutlets=0,
+    patching_rect=[820, 120, 140, 22])
+
+# DIAGNOSTIC: confirm coll receives lookups
+coll_in_print = p.add("print coll_lookup_key",
+    numinlets=1, numoutlets=0,
+    patching_rect=[820, 150, 180, 22])
+
+# Always-on: loadbang triggers a "1" message that starts the metro.
+retune_loadbang = p.add("loadbang",
+    numinlets=1, numoutlets=1, outlettype=["bang"],
+    patching_rect=[700, 5, 70, 22])
+retune_start = p.add_box(Box(
+    id=p.get_id(), maxclass="message",
+    patching_rect=[700, 30, 30, 22],
+    text="1",
+))
+p.add_line(retune_loadbang, retune_start, outlet=0, inlet=0)
+p.add_line(retune_start, retune_metro, outlet=0, inlet=0)
+
+# Metro → [uzi 15] → emits 15 bangs per tick (outlet 0)
+# Empirically verified: uzi's other outlets in this Max version don't
+# emit the count integer reliably. So we drive a [counter 0 2 16]
+# from uzi's bang stream — each bang increments and outputs 2..16.
+retune_uzi = p.add("uzi 15",
+    patching_rect=[700, 90, 60, 22])
+p.add_line(retune_metro, retune_uzi, outlet=0, inlet=0)
+
+# counter 0 2 16: direction=up (0), min=2, max=16. 15 bangs per metro
+# tick → outputs 2, 3, 4, ..., 16. Wraps cleanly each tick.
+retune_counter = p.add("counter 0 2 16",
+    patching_rect=[700, 120, 80, 22])
+p.add_line(retune_uzi, retune_counter, outlet=0, inlet=0)
+
+# Diagnostic prints (kept until live retune is verified)
+p.add_line(retune_uzi, uzi_print, outlet=0, inlet=0)
+p.add_line(retune_counter, plus1_print, outlet=0, inlet=0)
+
+# Channel storage for retune emission (the chain after coll lookup
+# doesn't get the channel from coll — outlet 1/address only emits on
+# bang/dump/next/prev/sub triggers, NOT on direct int-key lookup. So we
+# capture the channel here from the uzi+1 stream directly.)
+retune_chan = p.add("int",
+    numinlets=2, numoutlets=1, outlettype=["int"],
+    patching_rect=[450, 285, 60, 22])
+
+# Channel C → [t i i]:
+#   outlet 1 (rightmost, fires first):  C → retune_chan.right (silent set)
+#   outlet 0 (leftmost, fires second):  C → coll.0 (lookup — if entry exists,
+#                                       coll emits stored pitch on its outlet 0)
+retune_dispatch = p.add("t i i",
+    numinlets=1, numoutlets=2, outlettype=["int", "int"],
+    patching_rect=[700, 150, 60, 22])
+p.add_line(retune_counter, retune_dispatch, outlet=0, inlet=0)
+p.add_line(retune_dispatch, retune_chan, outlet=1, inlet=1)  # silent set first
+p.add_line(retune_dispatch, held_coll, outlet=0, inlet=0)     # lookup second
+p.add_line(retune_dispatch, coll_in_print, outlet=0, inlet=0)  # diagnostic
+
+# coll outlet 0 (pitch) ONLY emits when the lookup matches a stored entry.
+# This is our gate — emission chain runs only for held channels, not all 15.
+#
+# pitch → [t b i]:
+#   outlet 1 (i, fires first):  pitch → mtof.0 (silent cents_store update)
+#   outlet 0 (b, fires second) → final emit chain (channel set + PB emit)
+retune_emit_pitch = p.add("t b i",
+    numinlets=1, numoutlets=2, outlettype=["bang", "int"],
+    patching_rect=[450, 360, 60, 22])
+p.add_line(held_coll, retune_emit_pitch, outlet=0, inlet=0)
+# .1 (i, fires first): pitch → mtof.0
+p.add_line(retune_emit_pitch, mtof, outlet=1, inlet=0)
+
+# DIAGNOSTIC: confirm coll lookup returned a pitch (= held channel found)
+coll_print = p.add("print retune_coll_pitch",
+    numinlets=1, numoutlets=0,
+    patching_rect=[600, 360, 180, 22])
+p.add_line(held_coll, coll_print, outlet=0, inlet=0)
+
+# .0 (b, fires second) → [t b b] sub-sequencer:
+#   .1 (fires first):  bang retune_chan → outputs channel → xbendout.1 (set)
+#   .0 (fires second): bang cents_store → outputs cents → pb_expr → pb_clip
+#                      → xbendout.0 (PB emits on the just-set channel)
+retune_emit_final = p.add("t b b",
+    numinlets=1, numoutlets=2, outlettype=["bang", "bang"],
+    patching_rect=[450, 395, 80, 22])
+p.add_line(retune_emit_pitch, retune_emit_final, outlet=0, inlet=0)
+p.add_line(retune_emit_final, retune_chan, outlet=1, inlet=0)
+p.add_line(retune_chan, xbendout, outlet=0, inlet=1)
+p.add_line(retune_emit_final, cents_store, outlet=0, inlet=0)
 
 # ═══════════════════════════════════════════════════════════════════════
 # PB Range live.dial parameter (mirrors legacy device's MPE PB Range dial).
