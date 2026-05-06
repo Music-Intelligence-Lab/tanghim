@@ -50,20 +50,31 @@ PB_RANGE_DEFAULT = 48
 
 p = px.Patcher(OUTPUT_MAXPAT)
 p.openinpresentation = 1
-p.devicewidth = 200.0
+p.devicewidth = 135.4765625
 p.description = "MTS-ESP MPE Receiver"
 p.rect = Rect(100.0, 100.0, 900.0, 600.0)
 
 # ═══════════════════════════════════════════════════════════════════════
-# Title comment
+# Title block (mirrors legacy Tanghim Receiver UI):
+#   "تنغيم" (Cairo Black, large, centered)
+#   "Tanghim MPE Receiver" (Ableton Sans Medium, smaller, centered)
 # ═══════════════════════════════════════════════════════════════════════
 
-title = p.add_box(Box(
+title_arabic = p.add_box(Box(
     id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
-    patching_rect=[20, 20, 320, 22],
-    presentation=1, presentation_rect=[8.0, 6.0, 184.0, 22.0],
+    patching_rect=[45, 475, 292, 29],
+    presentation=1, presentation_rect=[-1.0, 2.0, 136.0, 29.0],
+    fontname="Cairo Black",
+    text="تنغيم",
+    textcolor=[0.0, 0.0, 0.0, 1.0],
+    textjustification=1,
+))
+
+title_latin = p.add_box(Box(
+    id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
+    patching_rect=[30, 460, 178, 21],
+    presentation=1, presentation_rect=[-0.5, 33.0, 133.0, 21.0],
     fontname="Ableton Sans Medium",
-    fontsize=14.0,
     text="Tanghim MPE Receiver",
     textcolor=[0.0, 0.0, 0.0, 1.0],
     textjustification=1,
@@ -141,11 +152,6 @@ cents_expr = p.add("expr $f1 * 100.",
     patching_rect=[260, 165, 110, 22])
 p.add_line(mtof, cents_expr, outlet=2, inlet=0)
 
-# DIAGNOSTIC: print mtof semitones to console — remove after verification.
-mtof_print = p.add("print mtof_semitones",
-    numinlets=1, numoutlets=0,
-    patching_rect=[400, 165, 160, 22])
-p.add_line(mtof, mtof_print, outlet=2, inlet=0)
 
 # Stash latest cents value via [send] for downstream PB computation.
 # By the time poly emits voice#, cents has been updated for the new note.
@@ -268,11 +274,6 @@ pb_clip = p.add("clip 0 16383",
     patching_rect=[290, 375, 120, 22])
 p.add_line(pb_expr, pb_clip)
 
-# DIAGNOSTIC: print PB value before xbendout — remove after verification.
-pb_print = p.add("print pb_value",
-    numinlets=1, numoutlets=0,
-    patching_rect=[440, 375, 140, 22])
-p.add_line(pb_clip, pb_print)
 
 # ═══════════════════════════════════════════════════════════════════════
 # xbendout: 14-bit pitch bend on the allocated MPE channel.
@@ -326,22 +327,23 @@ p.add_line(emit_trig, pitch_store, outlet=0, inlet=0)     # bang (leftmost) stor
 p.add_line(pitch_store, noteout, outlet=0, inlet=0)       # pitch (triggers Note On)
 
 # ═══════════════════════════════════════════════════════════════════════
-# PB Range live.numbox parameter
+# PB Range live.dial parameter (mirrors legacy device's MPE PB Range dial).
+# Centered horizontally in the 135.5px-wide device.
 # ═══════════════════════════════════════════════════════════════════════
 
 pbnum = p.add_box(Box(
-    id=p.get_id(), maxclass="live.numbox",
+    id=p.get_id(), maxclass="live.dial",
     numinlets=1, numoutlets=2,
     outlettype=["", "float"],
     parameter_enable=1,
-    patching_rect=[20, 400, 60, 22],
-    presentation=1, presentation_rect=[8.0, 36.0, 80.0, 22.0],
+    patching_rect=[180, 280, 27, 48],
+    presentation=1, presentation_rect=[37.75, 92.0, 60.0, 48.0],
     saved_attribute_attributes={
         "valueof": {
             "parameter_initial": [PB_RANGE_DEFAULT],
             "parameter_initial_enable": 1,
             "parameter_linknames": 1,
-            "parameter_longname": "PB Range",
+            "parameter_longname": "MPE PB Range",
             "parameter_mmax": 96.0,
             "parameter_mmin": 1.0,
             "parameter_shortname": "PB Range",
@@ -349,7 +351,7 @@ pbnum = p.add_box(Box(
             "parameter_unitstyle": 9,
         }
     },
-    varname="PB Range",
+    varname="MPE PB Range",
 ))
 
 pbrange_send = p.add("send pbRange",
@@ -367,7 +369,7 @@ with open(OUTPUT_MAXPAT) as f:
     data = json.load(f)
 
 patcher = data["patcher"]
-patcher["openrect"] = [0.0, 0.0, 200.0, 80.0]
+patcher["openrect"] = [0.0, 0.0, 135.4765625, 169.0]
 # is_mpe: 1 — without it Live collapses MPE output to channel 1.
 patcher["is_mpe"] = 1
 

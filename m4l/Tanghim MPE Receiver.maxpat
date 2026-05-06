@@ -38,7 +38,7 @@
 		"boxanimatetime": 200,
 		"enablehscroll": 1,
 		"enablevscroll": 1,
-		"devicewidth": 200.0,
+		"devicewidth": 135.4765625,
 		"description": "MTS-ESP MPE Receiver",
 		"digest": "",
 		"tags": "",
@@ -53,21 +53,20 @@
 					"numinlets": 1,
 					"numoutlets": 0,
 					"patching_rect": [
-						20,
-						20,
-						320,
-						22
+						45,
+						475,
+						292,
+						29
 					],
 					"presentation": 1,
 					"presentation_rect": [
-						8.0,
-						6.0,
-						184.0,
-						22.0
+						-1.0,
+						2.0,
+						136.0,
+						29.0
 					],
-					"fontname": "Ableton Sans Medium",
-					"fontsize": 14.0,
-					"text": "Tanghim MPE Receiver",
+					"fontname": "Cairo Black",
+					"text": "\u062a\u0646\u063a\u064a\u0645",
 					"textcolor": [
 						0.0,
 						0.0,
@@ -80,6 +79,36 @@
 			{
 				"box": {
 					"id": "obj-2",
+					"maxclass": "comment",
+					"numinlets": 1,
+					"numoutlets": 0,
+					"patching_rect": [
+						30,
+						460,
+						178,
+						21
+					],
+					"presentation": 1,
+					"presentation_rect": [
+						-0.5,
+						33.0,
+						133.0,
+						21.0
+					],
+					"fontname": "Ableton Sans Medium",
+					"text": "Tanghim MPE Receiver",
+					"textcolor": [
+						0.0,
+						0.0,
+						0.0,
+						1.0
+					],
+					"textjustification": 1
+				}
+			},
+			{
+				"box": {
+					"id": "obj-3",
 					"maxclass": "newobj",
 					"numinlets": 1,
 					"numoutlets": 1,
@@ -97,7 +126,7 @@
 			},
 			{
 				"box": {
-					"id": "obj-3",
+					"id": "obj-4",
 					"maxclass": "newobj",
 					"numinlets": 1,
 					"numoutlets": 8,
@@ -122,7 +151,7 @@
 			},
 			{
 				"box": {
-					"id": "obj-4",
+					"id": "obj-5",
 					"maxclass": "newobj",
 					"numinlets": 1,
 					"numoutlets": 2,
@@ -141,7 +170,7 @@
 			},
 			{
 				"box": {
-					"id": "obj-5",
+					"id": "obj-6",
 					"maxclass": "newobj",
 					"numinlets": 1,
 					"numoutlets": 2,
@@ -160,7 +189,7 @@
 			},
 			{
 				"box": {
-					"id": "obj-6",
+					"id": "obj-7",
 					"maxclass": "newobj",
 					"numinlets": 1,
 					"numoutlets": 4,
@@ -181,7 +210,7 @@
 			},
 			{
 				"box": {
-					"id": "obj-7",
+					"id": "obj-8",
 					"maxclass": "newobj",
 					"numinlets": 1,
 					"numoutlets": 1,
@@ -192,24 +221,6 @@
 						22
 					],
 					"text": "expr $f1 * 100.",
-					"outlettype": [
-						""
-					]
-				}
-			},
-			{
-				"box": {
-					"id": "obj-8",
-					"maxclass": "newobj",
-					"numinlets": 1,
-					"numoutlets": 1,
-					"patching_rect": [
-						400,
-						165,
-						160,
-						22
-					],
-					"text": "print mtof_semitones",
 					"outlettype": [
 						""
 					]
@@ -384,24 +395,6 @@
 				"box": {
 					"id": "obj-18",
 					"maxclass": "newobj",
-					"numinlets": 1,
-					"numoutlets": 1,
-					"patching_rect": [
-						440,
-						375,
-						140,
-						22
-					],
-					"text": "print pb_value",
-					"outlettype": [
-						""
-					]
-				}
-			},
-			{
-				"box": {
-					"id": "obj-19",
-					"maxclass": "newobj",
 					"numinlets": 2,
 					"numoutlets": 0,
 					"patching_rect": [
@@ -415,7 +408,7 @@
 			},
 			{
 				"box": {
-					"id": "obj-20",
+					"id": "obj-19",
 					"maxclass": "newobj",
 					"numinlets": 1,
 					"numoutlets": 1,
@@ -433,7 +426,7 @@
 			},
 			{
 				"box": {
-					"id": "obj-21",
+					"id": "obj-20",
 					"maxclass": "newobj",
 					"numinlets": 3,
 					"numoutlets": 0,
@@ -448,15 +441,15 @@
 			},
 			{
 				"box": {
-					"id": "obj-22",
-					"maxclass": "live.numbox",
+					"id": "obj-21",
+					"maxclass": "live.dial",
 					"numinlets": 1,
 					"numoutlets": 2,
 					"patching_rect": [
-						20,
-						400,
-						60,
-						22
+						180,
+						280,
+						27,
+						48
 					],
 					"outlettype": [
 						"",
@@ -465,10 +458,10 @@
 					"parameter_enable": 1,
 					"presentation": 1,
 					"presentation_rect": [
-						8.0,
-						36.0,
-						80.0,
-						22.0
+						37.75,
+						92.0,
+						60.0,
+						48.0
 					],
 					"saved_attribute_attributes": {
 						"valueof": {
@@ -477,7 +470,7 @@
 							],
 							"parameter_initial_enable": 1,
 							"parameter_linknames": 1,
-							"parameter_longname": "PB Range",
+							"parameter_longname": "MPE PB Range",
 							"parameter_mmax": 96.0,
 							"parameter_mmin": 1.0,
 							"parameter_shortname": "PB Range",
@@ -485,12 +478,12 @@
 							"parameter_unitstyle": 9
 						}
 					},
-					"varname": "PB Range"
+					"varname": "MPE PB Range"
 				}
 			},
 			{
 				"box": {
-					"id": "obj-23",
+					"id": "obj-22",
 					"maxclass": "newobj",
 					"numinlets": 1,
 					"numoutlets": 0,
@@ -508,18 +501,6 @@
 			{
 				"patchline": {
 					"source": [
-						"obj-2",
-						0
-					],
-					"destination": [
-						"obj-3",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
 						"obj-3",
 						0
 					],
@@ -545,19 +526,19 @@
 				"patchline": {
 					"source": [
 						"obj-5",
+						0
+					],
+					"destination": [
+						"obj-6",
+						0
+					]
+				}
+			},
+			{
+				"patchline": {
+					"source": [
+						"obj-6",
 						1
-					],
-					"destination": [
-						"obj-6",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
-						"obj-6",
-						2
 					],
 					"destination": [
 						"obj-7",
@@ -568,7 +549,7 @@
 			{
 				"patchline": {
 					"source": [
-						"obj-6",
+						"obj-7",
 						2
 					],
 					"destination": [
@@ -580,7 +561,7 @@
 			{
 				"patchline": {
 					"source": [
-						"obj-7",
+						"obj-8",
 						0
 					],
 					"destination": [
@@ -592,7 +573,7 @@
 			{
 				"patchline": {
 					"source": [
-						"obj-4",
+						"obj-5",
 						1
 					],
 					"destination": [
@@ -604,7 +585,7 @@
 			{
 				"patchline": {
 					"source": [
-						"obj-5",
+						"obj-6",
 						0
 					],
 					"destination": [
@@ -700,23 +681,11 @@
 			{
 				"patchline": {
 					"source": [
-						"obj-17",
-						0
-					],
-					"destination": [
-						"obj-19",
-						0
-					]
-				}
-			},
-			{
-				"patchline": {
-					"source": [
 						"obj-12",
 						3
 					],
 					"destination": [
-						"obj-19",
+						"obj-18",
 						1
 					]
 				}
@@ -724,11 +693,11 @@
 			{
 				"patchline": {
 					"source": [
-						"obj-19",
+						"obj-18",
 						0
 					],
 					"destination": [
-						"obj-20",
+						"obj-19",
 						0
 					]
 				}
@@ -752,7 +721,7 @@
 						2
 					],
 					"destination": [
-						"obj-21",
+						"obj-20",
 						1
 					]
 				}
@@ -764,7 +733,7 @@
 						2
 					],
 					"destination": [
-						"obj-21",
+						"obj-20",
 						2
 					]
 				}
@@ -788,7 +757,7 @@
 						0
 					],
 					"destination": [
-						"obj-21",
+						"obj-20",
 						0
 					]
 				}
@@ -796,11 +765,11 @@
 			{
 				"patchline": {
 					"source": [
-						"obj-22",
+						"obj-21",
 						0
 					],
 					"destination": [
-						"obj-23",
+						"obj-22",
 						0
 					]
 				}
@@ -811,8 +780,8 @@
 		"openrect": [
 			0.0,
 			0.0,
-			200.0,
-			80.0
+			135.4765625,
+			169.0
 		],
 		"is_mpe": 1,
 		"title": "Tanghim MPE Receiver",
