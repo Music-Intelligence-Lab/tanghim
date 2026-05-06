@@ -47,6 +47,7 @@ OUTPUT_MAXPAT = "m4l/Tanghim MPE Receiver.maxpat"
 OUTPUT_AMXD = "m4l/Tanghim MPE Receiver.amxd"
 
 PB_RANGE_DEFAULT = 48
+USER_PB_RANGE_DEFAULT = 2  # User wheel bends ±2 semitones by default
 
 p = px.Patcher(OUTPUT_MAXPAT)
 p.openinpresentation = 1
@@ -89,13 +90,20 @@ midiin = p.add("midiin",
     patching_rect=[20, 60, 100, 22])
 
 # midiparse outlets:
-#   0: notes (pitch),        1: notes (velocity)
-#   2: poly aftertouch,      3: control change,
-#   4: program change,       5: pitch bend (14-bit hires),
-#   6: channel aftertouch,   7: channel
-midiparse = p.add("midiparse @hires 1",
+#   0: notes (LIST: pitch, velocity)
+#   1: poly aftertouch
+#   2: control change
+#   3: program change
+#   4: channel aftertouch
+#   5: pitch bend  (with @hires 2: signed 14-bit int, -8192..8191)
+#   6: channel
+#
+# @hires 2 makes outlet 5 emit a signed PB offset directly (pb_value - 8192),
+# which we silently store as user_pb_offset and add to the microtuning PB
+# in pb_expr's $i3 input.
+midiparse = p.add("midiparse @hires 2",
     numinlets=1, numoutlets=8,
-    outlettype=["", "", "", "int", "int", "", "int", ""],
+    outlettype=["", "", "", "int", "int", "int", "int", ""],
     patching_rect=[20, 95, 300, 22])
 
 p.add_line(midiin, midiparse)
@@ -152,6 +160,24 @@ cents_expr = p.add("expr $f1 * 100.",
     patching_rect=[260, 165, 110, 22])
 p.add_line(mtof, cents_expr, outlet=2, inlet=0)
 
+
+# ═══════════════════════════════════════════════════════════════════════
+# User pitch-bend wheel combining (Stage 2c)
+#
+# midiparse @hires 2 outlet 5 emits the signed 14-bit PB offset (-8192..8191)
+# directly — i.e. the value (raw_pb - 8192). We silently store it in
+# user_pb_offset; pb_expr adds it to the microtuning PB before clipping.
+#
+# When the user's PB wheel changes while notes are held, we want immediate
+# retune (not waiting up to 50 ms for metro). [t i b] fans out:
+#   .1 (i, fires first): silent store offset
+#   .0 (b, fires second): bang uzi → triggers immediate retune iteration,
+#                          re-emitting combined PB on every held channel.
+# ═══════════════════════════════════════════════════════════════════════
+
+user_pb_offset = p.add("int",
+    numinlets=2, numoutlets=1, outlettype=["int"],
+    patching_rect=[440, 100, 60, 22])
 
 # Silent storage of latest cents value via [int].right inlet.
 #
@@ -335,16 +361,37 @@ pbrange_recv = p.add("receive pbRange",
     numinlets=0, numoutlets=1, outlettype=[""],
     patching_rect=[380, 305, 90, 22])
 
-pb_expr = p.add("expr int(8192 + ($f1 / ($f2 * 100.)) * 8191)",
-    numinlets=2, numoutlets=1, outlettype=[""],
-    patching_rect=[290, 340, 280, 22])
-p.add_line(cents_store, pb_expr, outlet=0, inlet=0)  # cents (when banged)
-p.add_line(pbrange_recv, pb_expr, outlet=0, inlet=1)  # pbRange (auto-stored)
+user_pbrange_recv = p.add("receive userPbRange",
+    numinlets=0, numoutlets=1, outlettype=[""],
+    patching_rect=[480, 305, 110, 22])
+
+# pb_expr: combined PB = microtuning + scaled user offset, then clipped.
+#
+#   $f1 = cents                     (banged via cents_store.left)
+#   $f2 = mpePbRange    (semitones) (silent via receive pbRange)
+#   $i3 = user_pb_offset (-8192..8191) (silent via user_pb_offset.0)
+#   $f4 = userPbRange   (semitones) (silent via receive userPbRange)
+#
+# Microtuning component: cents → PB units = (cents/100) / mpePbRange × 8191
+#   = ($f1 / ($f2 * 100.)) * 8191
+# User wheel component: scale user offset to userPbRange semitones, then
+# emit in mpePbRange's PB-unit scale (since synth interprets PB by mpePbRange):
+#   user_offset_pb_units = $i3 * ($f4 / $f2)
+# Combined PB (centered at 8192) = 8192 + microtuning + user_offset.
+pb_expr = p.add(
+    "expr int(8192 + ($f1 / ($f2 * 100.)) * 8191 + ($i3 * $f4 / $f2))",
+    numinlets=4, numoutlets=1, outlettype=[""],
+    patching_rect=[290, 340, 360, 22])
+p.add_line(cents_store, pb_expr, outlet=0, inlet=0)        # cents (banged)
+p.add_line(pbrange_recv, pb_expr, outlet=0, inlet=1)        # mpePbRange
+p.add_line(user_pb_offset, pb_expr, outlet=0, inlet=2)      # user offset
+p.add_line(user_pbrange_recv, pb_expr, outlet=0, inlet=3)   # userPbRange
 
 pb_clip = p.add("clip 0 16383",
     numinlets=3, numoutlets=1, outlettype=[""],
     patching_rect=[290, 375, 120, 22])
 p.add_line(pb_expr, pb_clip)
+
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -488,6 +535,28 @@ retune_metro = p.add("metro 50",
     numinlets=2, numoutlets=1, outlettype=["bang"],
     patching_rect=[700, 60, 80, 22])
 
+# User PB wheel arrival → fan out via [t b i]:
+#   outlet 1 (i, rightmost, fires FIRST): PB offset → user_pb_offset.right
+#                                         (silent store of latest offset)
+#   outlet 0 (b, leftmost, fires SECOND): bang → trigger immediate retune
+#                                         iteration so held notes pick up
+#                                         the new wheel position without
+#                                         waiting for the next metro tick.
+#
+# NOTE: trigger arg order is left-to-right, so [t b i] = outlet 0 is bang,
+# outlet 1 is int. Max fires right-to-left, so int fires before bang.
+user_pb_trig = p.add("t b i",
+    numinlets=1, numoutlets=2, outlettype=["bang", "int"],
+    patching_rect=[440, 60, 60, 22])
+p.add_line(midiparse, user_pb_trig, outlet=5, inlet=0)  # midiparse PB → trigger
+# user_pb_trig outlet 1 (int) → user_pb_offset.LEFT (inlet 0).
+# [int]'s left inlet stores AND outputs, so the value propagates to
+# pb_expr's $i3 inlet (silent store there). Right-inlet silent-store
+# wouldn't emit, leaving pb_expr's $i3 at its default 0.
+p.add_line(user_pb_trig, user_pb_offset, outlet=1, inlet=0)
+# outlet 0 (bang, fires second) wired below to retune_uzi.
+
+
 # Always-on: loadbang triggers a "1" message that starts the metro.
 retune_loadbang = p.add("loadbang",
     numinlets=1, numoutlets=1, outlettype=["bang"],
@@ -507,6 +576,11 @@ p.add_line(retune_start, retune_metro, outlet=0, inlet=0)
 retune_uzi = p.add("uzi 15",
     patching_rect=[700, 90, 60, 22])
 p.add_line(retune_metro, retune_uzi, outlet=0, inlet=0)
+
+# Bang uzi on user PB arrival for immediate retune of all held notes.
+# user_pb_trig outlet 0 is the bang (fires AFTER int has been silently
+# stored on user_pb_offset).
+p.add_line(user_pb_trig, retune_uzi, outlet=0, inlet=0)
 
 # counter 0 2 16: direction=up (0), min=2, max=16. 15 bangs per metro
 # tick → outputs 2, 3, 4, ..., 16. Wraps cleanly each tick.
@@ -561,17 +635,36 @@ p.add_line(retune_chan, xbendout, outlet=0, inlet=1)
 p.add_line(retune_emit_final, cents_store, outlet=0, inlet=0)
 
 # ═══════════════════════════════════════════════════════════════════════
-# PB Range live.dial parameter (mirrors legacy device's MPE PB Range dial).
-# Centered horizontally in the 135.5px-wide device.
+# Two live.dial parameters side-by-side:
+#   Left:  "MPE PB Range" (1..96, default 48) — controls cents→PB scale,
+#          must match the synth's PB range setting on each MPE channel.
+#   Right: "User PB Range" (1..96, default 2) — limits how far the user's
+#          PB wheel can bend the held note, additive to the microtuning.
+# Layout mirrors legacy device's two-dial pattern.
 # ═══════════════════════════════════════════════════════════════════════
 
+# Two-line label above the MPE dial.
+mpe_dial_label = p.add_box(Box(
+    id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
+    patching_rect=[180, 250, 60, 30],
+    presentation=1, presentation_rect=[6.0, 66.0, 60.0, 30.0],
+    fontname="Ableton Sans Medium",
+    fontsize=10.0,
+    text="MPE\nPB Range",
+    textcolor=[0.0, 0.0, 0.0, 1.0],
+    textjustification=1,
+))
+
+# parameter_shortname=" " (single space) suppresses the auto-rendered
+# label below the dial — the comment box above provides the visible
+# label instead.
 pbnum = p.add_box(Box(
     id=p.get_id(), maxclass="live.dial",
     numinlets=1, numoutlets=2,
     outlettype=["", "float"],
     parameter_enable=1,
     patching_rect=[180, 280, 27, 48],
-    presentation=1, presentation_rect=[37.75, 92.0, 60.0, 48.0],
+    presentation=1, presentation_rect=[6.0, 98.0, 60.0, 48.0],
     saved_attribute_attributes={
         "valueof": {
             "parameter_initial": [PB_RANGE_DEFAULT],
@@ -580,7 +673,7 @@ pbnum = p.add_box(Box(
             "parameter_longname": "MPE PB Range",
             "parameter_mmax": 96.0,
             "parameter_mmin": 1.0,
-            "parameter_shortname": "PB Range",
+            "parameter_shortname": " ",
             "parameter_type": 1,
             "parameter_unitstyle": 9,
         }
@@ -592,6 +685,46 @@ pbrange_send = p.add("send pbRange",
     numinlets=1, numoutlets=0,
     patching_rect=[20, 435, 90, 22])
 p.add_line(pbnum, pbrange_send)
+
+# Two-line label above the User PB dial.
+user_dial_label = p.add_box(Box(
+    id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
+    patching_rect=[260, 250, 67, 30],
+    presentation=1, presentation_rect=[62.125, 66.0, 66.5, 30.0],
+    fontname="Ableton Sans Medium",
+    fontsize=10.0,
+    text="Wheel/Synth\nPB Range",
+    textcolor=[0.0, 0.0, 0.0, 1.0],
+    textjustification=1,
+))
+
+user_pb_dial = p.add_box(Box(
+    id=p.get_id(), maxclass="live.dial",
+    numinlets=1, numoutlets=2,
+    outlettype=["", "float"],
+    parameter_enable=1,
+    patching_rect=[260, 280, 27, 48],
+    presentation=1, presentation_rect=[66.0, 98.0, 58.75, 48.0],
+    saved_attribute_attributes={
+        "valueof": {
+            "parameter_initial": [USER_PB_RANGE_DEFAULT],
+            "parameter_initial_enable": 1,
+            "parameter_linknames": 1,
+            "parameter_longname": "User PB Range",
+            "parameter_mmax": 96.0,
+            "parameter_mmin": 1.0,
+            "parameter_shortname": " ",
+            "parameter_type": 1,
+            "parameter_unitstyle": 9,
+        }
+    },
+    varname="User PB Range",
+))
+
+user_pbrange_send = p.add("send userPbRange",
+    numinlets=1, numoutlets=0,
+    patching_rect=[260, 435, 110, 22])
+p.add_line(user_pb_dial, user_pbrange_send)
 
 # ═══════════════════════════════════════════════════════════════════════
 # Save and post-process for M4L-specific patcher properties
