@@ -184,13 +184,41 @@ p.add_line(cents_expr, cents_send)
 # before pitch (0).
 # ═══════════════════════════════════════════════════════════════════════
 
+# ═══════════════════════════════════════════════════════════════════════
+# Filter-note routing: drop notes that mtof marks as filtered.
+#
+# mtof outlet 3 emits filter (1 = play, 0 = filtered). We multiply the
+# incoming velocity by filter so filtered Note Ons arrive at poly with
+# vel=0 (which poly treats as no-op / Note Off lookup).
+#
+# Order of operations (verified against Max's right-to-left evaluation):
+#   1. unpack outlet 1 (vel) fires first  → [* 1] right inlet (silent store)
+#   2. unpack outlet 0 (pitch) fires      → [t i i] → mtof query
+#   3. mtof outlet 3 (filter, rightmost)  → [* 1] left inlet (TRIGGERS,
+#                                              output = filter * vel)
+#   4. [* 1] output                       → poly inlet 1 (silent store)
+#   5. mtof outlet 2 (semitones)          → cents chain (PB)
+#   6. t i i outlet 0 (pitch)             → poly inlet 0 (triggers allocation
+#                                              with filtered vel)
+#
+# Note Off (incoming vel=0) → 0 * filter = 0 → poly frees voice by pitch.
+# Filtered Note On (vel=N, filter=0) → 0 → poly ignores.
+# Allowed Note On (vel=N, filter=1) → N → poly allocates.
+# ═══════════════════════════════════════════════════════════════════════
+
+vel_gate = p.add("* 1",
+    numinlets=2, numoutlets=1, outlettype=["int"],
+    patching_rect=[150, 200, 60, 22])
+p.add_line(note_unpack, vel_gate, outlet=1, inlet=1)  # vel → right (silent)
+p.add_line(mtof, vel_gate, outlet=3, inlet=0)         # filter → left (triggers)
+
 poly = p.add("poly 15 1",
     numinlets=2, numoutlets=4,
     outlettype=["int", "int", "int", ""],
     patching_rect=[20, 235, 100, 22])
 
-# Velocity (from unpack outlet 1, fires first) → poly inlet 1 (silent store).
-p.add_line(note_unpack, poly, outlet=1, inlet=1)
+# Filtered velocity → poly inlet 1 (silent store).
+p.add_line(vel_gate, poly, outlet=0, inlet=1)
 
 # Pitch (via trigger so mtof fires first) → poly inlet 0 (triggers allocation).
 p.add_line(note_trig, poly, outlet=0, inlet=0)
