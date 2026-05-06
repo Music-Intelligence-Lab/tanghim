@@ -456,18 +456,6 @@ p.add_line(store_trig, chan_store_for_store, outlet=0, inlet=0)
 p.add_line(chan_store_for_store, store_pak, outlet=0, inlet=0)
 p.add_line(store_pak, held_coll, outlet=0, inlet=0)
 
-# DIAGNOSTIC: confirm store path actually emits to coll on Note On
-store_print = p.add("print store_to_coll",
-    numinlets=1, numoutlets=0,
-    patching_rect=[600, 450, 180, 22])
-p.add_line(store_pak, store_print, outlet=0, inlet=0)
-
-# DIAGNOSTIC: confirm remove path on Note Off
-remove_print = p.add("print remove_to_coll",
-    numinlets=1, numoutlets=0,
-    patching_rect=[600, 480, 180, 22])
-p.add_line(prepend_remove, remove_print, outlet=0, inlet=0)
-
 # ═══════════════════════════════════════════════════════════════════════
 # Held-note retune (Stage 2b — v2)
 #
@@ -500,27 +488,6 @@ retune_metro = p.add("metro 50",
     numinlets=2, numoutlets=1, outlettype=["bang"],
     patching_rect=[700, 60, 80, 22])
 
-# DIAGNOSTIC: confirm metro is firing
-metro_print = p.add("print metro_tick",
-    numinlets=1, numoutlets=0,
-    patching_rect=[820, 60, 140, 22])
-p.add_line(retune_metro, metro_print, outlet=0, inlet=0)
-
-# DIAGNOSTIC: confirm uzi is firing
-uzi_print = p.add("print uzi_out",
-    numinlets=1, numoutlets=0,
-    patching_rect=[820, 90, 140, 22])
-
-# DIAGNOSTIC: confirm +1 is firing (channels 2..16)
-plus1_print = p.add("print uzi_chan",
-    numinlets=1, numoutlets=0,
-    patching_rect=[820, 120, 140, 22])
-
-# DIAGNOSTIC: confirm coll receives lookups
-coll_in_print = p.add("print coll_lookup_key",
-    numinlets=1, numoutlets=0,
-    patching_rect=[820, 150, 180, 22])
-
 # Always-on: loadbang triggers a "1" message that starts the metro.
 retune_loadbang = p.add("loadbang",
     numinlets=1, numoutlets=1, outlettype=["bang"],
@@ -547,9 +514,6 @@ retune_counter = p.add("counter 0 2 16",
     patching_rect=[700, 120, 80, 22])
 p.add_line(retune_uzi, retune_counter, outlet=0, inlet=0)
 
-# Diagnostic prints (kept until live retune is verified)
-p.add_line(retune_uzi, uzi_print, outlet=0, inlet=0)
-p.add_line(retune_counter, plus1_print, outlet=0, inlet=0)
 
 # Channel storage for retune emission (the chain after coll lookup
 # doesn't get the channel from coll — outlet 1/address only emits on
@@ -569,7 +533,6 @@ retune_dispatch = p.add("t i i",
 p.add_line(retune_counter, retune_dispatch, outlet=0, inlet=0)
 p.add_line(retune_dispatch, retune_chan, outlet=1, inlet=1)  # silent set first
 p.add_line(retune_dispatch, held_coll, outlet=0, inlet=0)     # lookup second
-p.add_line(retune_dispatch, coll_in_print, outlet=0, inlet=0)  # diagnostic
 
 # coll outlet 0 (pitch) ONLY emits when the lookup matches a stored entry.
 # This is our gate — emission chain runs only for held channels, not all 15.
@@ -584,11 +547,6 @@ p.add_line(held_coll, retune_emit_pitch, outlet=0, inlet=0)
 # .1 (i, fires first): pitch → mtof.0
 p.add_line(retune_emit_pitch, mtof, outlet=1, inlet=0)
 
-# DIAGNOSTIC: confirm coll lookup returned a pitch (= held channel found)
-coll_print = p.add("print retune_coll_pitch",
-    numinlets=1, numoutlets=0,
-    patching_rect=[600, 360, 180, 22])
-p.add_line(held_coll, coll_print, outlet=0, inlet=0)
 
 # .0 (b, fires second) → [t b b] sub-sequencer:
 #   .1 (fires first):  bang retune_chan → outputs channel → xbendout.1 (set)
