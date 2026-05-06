@@ -8,10 +8,15 @@ Usage: python3 m4l/generate_patch.py
 """
 
 import json
-import struct
+import os
+import sys
 import py2max as px
 from py2max import Box
 from py2max.core.common import Rect
+
+# Allow running as `python3 m4l/generate_patch.py` from repo root.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _patch_common import freeze_and_save
 
 OUTPUT_MAXPAT = "m4l/Tanghim Receiver.maxpat"
 OUTPUT_AMXD = "m4l/Tanghim Receiver.amxd"
@@ -459,74 +464,14 @@ with open(OUTPUT_MAXPAT, "w") as f:
     json.dump(data, f, indent="\t")
 print(f"Generated: {OUTPUT_MAXPAT}")
 
-# Write frozen .amxd (binary container with embedded JS for Ableton Live)
-# Format: ampf header + aaaameta(7) + ptch(mx@c + files + dlst directory)
-# Reverse-engineered from Ableton factory frozen devices (e.g. LFO.amxd)
+# Write frozen .amxd (binary container with embedded JS for Ableton Live).
+# The freeze logic — `ampf` header, `mmmmmeta` tag, `ptch` section, and
+# the `dlst` directory of `dire` entries — lives in `_patch_common.py` so
+# the upcoming MPE + Mono PB device generators can share it.
 JS_FILE = "m4l/mts_midi_effect.js"
+with open(JS_FILE, "rb") as f:
+    js_bytes = f.read()
 
-# Add dependency_cache so Max knows about the embedded JS file
-patcher["dependency_cache"] = [
-    {"name": "mts_midi_effect.js", "bootpath": ".", "type": "TEXT", "implicit": 1}
-]
-patcher["project"]["contents"]["code"] = {
-    "mts_midi_effect.js": {"kind": "javascript", "local": 1}
-}
-
-json_bytes = json.dumps(data, indent="\t").encode("utf-8") + b"\x00"
-js_bytes = open(JS_FILE, "rb").read()
-
-# File entries: (name, type_tag, content_bytes, flag)
-# flag=17 for main patch, flag=0 for dependencies
-files = [
-    ("Tanghim Receiver.amxd", b"JSON", json_bytes, 17),
-    ("mts_midi_effect.js",    b"TEXT", js_bytes,    0),
-]
-
-# Build dire entries for the dlst directory
-def build_dire(name, type_tag, size, offset, flag):
-    """Build a single dire entry with sub-fields (all big-endian)."""
-    # fnam: null-terminated filename padded to 4-byte alignment
-    name_bytes = name.encode("ascii") + b"\x00"
-    name_padded = name_bytes + b"\x00" * ((4 - len(name_bytes) % 4) % 4)
-    fnam_size = 8 + len(name_padded)  # tag(4) + size(4) + data
-
-    entry = b""
-    entry += b"type" + struct.pack(">I", 12) + type_tag  # 4-byte type padded
-    entry += b"fnam" + struct.pack(">I", fnam_size) + name_padded
-    entry += b"sz32" + struct.pack(">I", 12) + struct.pack(">I", size)
-    entry += b"of32" + struct.pack(">I", 12) + struct.pack(">I", offset)
-    entry += b"vers" + struct.pack(">I", 12) + struct.pack(">I", 0)
-    entry += b"flag" + struct.pack(">I", 12) + struct.pack(">I", flag)
-    entry += b"mdat" + struct.pack(">I", 12) + struct.pack(">I", 0)
-
-    return b"dire" + struct.pack(">I", 8 + len(entry)) + entry
-
-# Compute offsets (relative to mx@c tag start, first file at offset 16 after mx@c header)
-MX_HEADER_SIZE = 16  # mx@c(4) + size(4) + flags(4) + dlst_offset(4)
-offset = MX_HEADER_SIZE
-dire_entries = b""
-for name, type_tag, content, flag in files:
-    dire_entries += build_dire(name, type_tag, len(content), offset, flag)
-    offset += len(content)
-
-dlst_offset = offset  # offset of dlst from mx@c start
-dlst_body = dire_entries
-dlst = b"dlst" + struct.pack(">I", 8 + len(dlst_body)) + dlst_body
-
-# Assemble ptch content: mx@c header + file data + dlst
-mx_header = b"mx@c" + struct.pack(">I", MX_HEADER_SIZE) + struct.pack(">I", 0) + struct.pack(">I", dlst_offset)
-ptch_content = mx_header
-for _, _, content, _ in files:
-    ptch_content += content
-ptch_content += dlst
-
-with open(OUTPUT_AMXD, "wb") as f:
-    f.write(b"ampf")                              # magic
-    f.write(struct.pack("<I", 4))                  # version
-    f.write(b"mmmmmeta")                           # meta section tag (mmmmm = MIDI effect)
-    f.write(struct.pack("<I", 4))                  # meta data length
-    f.write(struct.pack("<I", 4))                  # meta value 4 = frozen MIDI effect
-    f.write(b"ptch")                               # patch section tag
-    f.write(struct.pack("<I", len(ptch_content)))  # patch data length
-    f.write(ptch_content)                          # mx@c + files + dlst
+freeze_and_save(p, OUTPUT_MAXPAT, OUTPUT_AMXD,
+                embedded_files=[("mts_midi_effect.js", js_bytes)])
 print(f"Generated: {OUTPUT_AMXD} (frozen, JS embedded)")
