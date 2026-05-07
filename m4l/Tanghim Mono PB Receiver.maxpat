@@ -38,7 +38,7 @@
 		"boxanimatetime": 200,
 		"enablehscroll": 1,
 		"enablevscroll": 1,
-		"devicewidth": 135.4765625,
+		"devicewidth": 90.0,
 		"description": "MTS-ESP Mono PB Receiver",
 		"digest": "",
 		"tags": "",
@@ -523,12 +523,12 @@
 					"presentation_rect": [
 						6.0,
 						66.0,
-						60.0,
+						78.0,
 						30.0
 					],
 					"fontname": "Ableton Sans Medium",
 					"fontsize": 10.0,
-					"text": "Synth\nPB Range",
+					"text": "PB Range",
 					"textcolor": [
 						0.0,
 						0.0,
@@ -559,7 +559,7 @@
 					"presentation_rect": [
 						6.0,
 						98.0,
-						60.0,
+						78.0,
 						48.0
 					],
 					"saved_attribute_attributes": {
@@ -569,7 +569,7 @@
 							],
 							"parameter_initial_enable": 1,
 							"parameter_linknames": 1,
-							"parameter_longname": "Synth PB Range",
+							"parameter_longname": "PB Range",
 							"parameter_mmax": 96.0,
 							"parameter_mmin": 1.0,
 							"parameter_shortname": " ",
@@ -577,7 +577,7 @@
 							"parameter_unitstyle": 9
 						}
 					},
-					"varname": "Synth PB Range"
+					"varname": "PB Range"
 				}
 			},
 			{
@@ -598,85 +598,12 @@
 			{
 				"box": {
 					"id": "obj-28",
-					"maxclass": "comment",
-					"numinlets": 1,
-					"numoutlets": 0,
-					"patching_rect": [
-						260,
-						250,
-						67,
-						30
-					],
-					"presentation": 1,
-					"presentation_rect": [
-						62.125,
-						66.0,
-						66.5,
-						30.0
-					],
-					"fontname": "Ableton Sans Medium",
-					"fontsize": 10.0,
-					"text": "Wheel\nPB Range",
-					"textcolor": [
-						0.0,
-						0.0,
-						0.0,
-						1.0
-					],
-					"textjustification": 1
-				}
-			},
-			{
-				"box": {
-					"id": "obj-29",
-					"maxclass": "live.dial",
-					"numinlets": 1,
-					"numoutlets": 2,
-					"patching_rect": [
-						260,
-						280,
-						27,
-						48
-					],
-					"outlettype": [
-						"",
-						"float"
-					],
-					"parameter_enable": 1,
-					"presentation": 1,
-					"presentation_rect": [
-						66.0,
-						98.0,
-						58.75,
-						48.0
-					],
-					"saved_attribute_attributes": {
-						"valueof": {
-							"parameter_initial": [
-								2
-							],
-							"parameter_initial_enable": 1,
-							"parameter_linknames": 1,
-							"parameter_longname": "User PB Range",
-							"parameter_mmax": 96.0,
-							"parameter_mmin": 1.0,
-							"parameter_shortname": " ",
-							"parameter_type": 1,
-							"parameter_unitstyle": 9
-						}
-					},
-					"varname": "User PB Range"
-				}
-			},
-			{
-				"box": {
-					"id": "obj-30",
 					"maxclass": "newobj",
 					"numinlets": 1,
 					"numoutlets": 0,
 					"patching_rect": [
-						260,
-						435,
+						20,
+						460,
 						110,
 						22
 					],
@@ -1036,11 +963,11 @@
 			{
 				"patchline": {
 					"source": [
-						"obj-29",
+						"obj-26",
 						0
 					],
 					"destination": [
-						"obj-30",
+						"obj-28",
 						0
 					]
 				}
@@ -1051,7 +978,7 @@
 		"openrect": [
 			0.0,
 			0.0,
-			135.4765625,
+			90.0,
 			169.0
 		],
 		"title": "Tanghim Mono PB Receiver",

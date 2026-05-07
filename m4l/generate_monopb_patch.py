@@ -27,11 +27,10 @@ OUTPUT_MAXPAT = "m4l/Tanghim Mono PB Receiver.maxpat"
 OUTPUT_AMXD = "m4l/Tanghim Mono PB Receiver.amxd"
 
 PB_RANGE_DEFAULT = 2
-USER_PB_RANGE_DEFAULT = 2
 
 p = px.Patcher(OUTPUT_MAXPAT)
 p.openinpresentation = 1
-p.devicewidth = 135.4765625
+p.devicewidth = 90.0
 p.description = "MTS-ESP Mono PB Receiver"
 p.rect = Rect(100.0, 100.0, 900.0, 600.0)
 
@@ -239,16 +238,16 @@ midiout_pb = p.add("midiout",
 p.add_line(xbendout, midiout_pb, outlet=0, inlet=0)
 
 # ═══════════════════════════════════════════════════════════════════════
-# UI dials  (identical to MPE patch, label changed to "Synth PB Range")
+# UI: single PB Range dial (synth + wheel share the same range on mono)
 # ═══════════════════════════════════════════════════════════════════════
 
-mpe_dial_label = p.add_box(Box(
+pb_dial_label = p.add_box(Box(
     id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
     patching_rect=[180, 250, 60, 30],
-    presentation=1, presentation_rect=[6.0, 66.0, 60.0, 30.0],
+    presentation=1, presentation_rect=[6.0, 66.0, 78.0, 30.0],
     fontname="Ableton Sans Medium",
     fontsize=10.0,
-    text="Synth\nPB Range",
+    text="PB Range",
     textcolor=[0.0, 0.0, 0.0, 1.0],
     textjustification=1,
 ))
@@ -259,13 +258,13 @@ pbnum = p.add_box(Box(
     outlettype=["", "float"],
     parameter_enable=1,
     patching_rect=[180, 280, 27, 48],
-    presentation=1, presentation_rect=[6.0, 98.0, 60.0, 48.0],
+    presentation=1, presentation_rect=[6.0, 98.0, 78.0, 48.0],
     saved_attribute_attributes={
         "valueof": {
             "parameter_initial": [PB_RANGE_DEFAULT],
             "parameter_initial_enable": 1,
             "parameter_linknames": 1,
-            "parameter_longname": "Synth PB Range",
+            "parameter_longname": "PB Range",
             "parameter_mmax": 96.0,
             "parameter_mmin": 1.0,
             "parameter_shortname": " ",
@@ -273,7 +272,7 @@ pbnum = p.add_box(Box(
             "parameter_unitstyle": 9,
         }
     },
-    varname="Synth PB Range",
+    varname="PB Range",
 ))
 
 pbrange_send = p.add("send pbRange",
@@ -281,44 +280,10 @@ pbrange_send = p.add("send pbRange",
     patching_rect=[20, 435, 90, 22])
 p.add_line(pbnum, pbrange_send)
 
-user_dial_label = p.add_box(Box(
-    id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
-    patching_rect=[260, 250, 67, 30],
-    presentation=1, presentation_rect=[62.125, 66.0, 66.5, 30.0],
-    fontname="Ableton Sans Medium",
-    fontsize=10.0,
-    text="Wheel\nPB Range",
-    textcolor=[0.0, 0.0, 0.0, 1.0],
-    textjustification=1,
-))
-
-user_pb_dial = p.add_box(Box(
-    id=p.get_id(), maxclass="live.dial",
-    numinlets=1, numoutlets=2,
-    outlettype=["", "float"],
-    parameter_enable=1,
-    patching_rect=[260, 280, 27, 48],
-    presentation=1, presentation_rect=[66.0, 98.0, 58.75, 48.0],
-    saved_attribute_attributes={
-        "valueof": {
-            "parameter_initial": [USER_PB_RANGE_DEFAULT],
-            "parameter_initial_enable": 1,
-            "parameter_linknames": 1,
-            "parameter_longname": "User PB Range",
-            "parameter_mmax": 96.0,
-            "parameter_mmin": 1.0,
-            "parameter_shortname": " ",
-            "parameter_type": 1,
-            "parameter_unitstyle": 9,
-        }
-    },
-    varname="User PB Range",
-))
-
 user_pbrange_send = p.add("send userPbRange",
     numinlets=1, numoutlets=0,
-    patching_rect=[260, 435, 110, 22])
-p.add_line(user_pb_dial, user_pbrange_send)
+    patching_rect=[20, 460, 110, 22])
+p.add_line(pbnum, user_pbrange_send)
 
 # ═══════════════════════════════════════════════════════════════════════
 # Save + post-process  (identical to MPE patch minus is_mpe flag)
@@ -330,7 +295,7 @@ with open(OUTPUT_MAXPAT) as f:
     data = json.load(f)
 
 patcher = data["patcher"]
-patcher["openrect"] = [0.0, 0.0, 135.4765625, 169.0]
+patcher["openrect"] = [0.0, 0.0, 90.0, 169.0]
 # NO is_mpe flag — mono PB emits on channel 1 only
 
 patcher["title"] = "Tanghim Mono PB Receiver"
