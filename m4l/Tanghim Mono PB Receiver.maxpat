@@ -95,7 +95,9 @@
 						100.0,
 						35.0
 					],
+					"presentation_linecount": 2,
 					"fontname": "Ableton Sans Medium",
+					"fontsize": 12.0,
 					"text": "Tanghim Mono PB Receiver",
 					"textcolor": [
 						0.0,
