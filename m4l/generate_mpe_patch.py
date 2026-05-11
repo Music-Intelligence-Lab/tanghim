@@ -51,7 +51,7 @@ USER_PB_RANGE_DEFAULT = 2  # User wheel bends ±2 semitones by default
 
 p = px.Patcher(OUTPUT_MAXPAT)
 p.openinpresentation = 1
-p.devicewidth = 135.4765625
+p.devicewidth = 139.4765625
 p.description = "MTS-ESP MPE Receiver"
 p.rect = Rect(100.0, 100.0, 900.0, 600.0)
 
@@ -64,7 +64,7 @@ p.rect = Rect(100.0, 100.0, 900.0, 600.0)
 title_arabic = p.add_box(Box(
     id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
     patching_rect=[45, 475, 292, 29],
-    presentation=1, presentation_rect=[-1.0, 2.0, 136.0, 29.0],
+    presentation=1, presentation_rect=[0.0, 0.0, 140.0, 29.0],
     fontname="Cairo Black",
     text="تنغيم",
     textcolor=[0.0, 0.0, 0.0, 1.0],
@@ -74,7 +74,7 @@ title_arabic = p.add_box(Box(
 title_latin = p.add_box(Box(
     id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
     patching_rect=[30, 460, 178, 21],
-    presentation=1, presentation_rect=[-0.5, 33.0, 133.0, 21.0],
+    presentation=1, presentation_rect=[0.0, 30.0, 140.0, 21.0],
     fontname="Ableton Sans Medium",
     text="Tanghim MPE Receiver",
     textcolor=[0.0, 0.0, 0.0, 1.0],
@@ -646,8 +646,8 @@ p.add_line(retune_emit_final, cents_store, outlet=0, inlet=0)
 # Two-line label above the MPE dial.
 mpe_dial_label = p.add_box(Box(
     id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
-    patching_rect=[180, 250, 60, 30],
-    presentation=1, presentation_rect=[6.0, 66.0, 60.0, 30.0],
+    patching_rect=[180, 250, 51, 30],
+    presentation=1, presentation_rect=[14.5, 64.0, 51.0, 30.0],
     fontname="Ableton Sans Medium",
     fontsize=10.0,
     text="MPE\nPB Range",
@@ -664,7 +664,7 @@ pbnum = p.add_box(Box(
     outlettype=["", "float"],
     parameter_enable=1,
     patching_rect=[180, 280, 27, 48],
-    presentation=1, presentation_rect=[6.0, 98.0, 60.0, 48.0],
+    presentation=1, presentation_rect=[10.0, 90.0, 60.0, 48.0],
     saved_attribute_attributes={
         "valueof": {
             "parameter_initial": [PB_RANGE_DEFAULT],
@@ -689,8 +689,8 @@ p.add_line(pbnum, pbrange_send)
 # Two-line label above the User PB dial.
 user_dial_label = p.add_box(Box(
     id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
-    patching_rect=[260, 250, 67, 30],
-    presentation=1, presentation_rect=[62.125, 66.0, 66.5, 30.0],
+    patching_rect=[260, 250, 70, 30],
+    presentation=1, presentation_rect=[65.0, 64.0, 70.0, 30.0],
     fontname="Ableton Sans Medium",
     fontsize=10.0,
     text="Wheel/Synth\nPB Range",
@@ -704,7 +704,7 @@ user_pb_dial = p.add_box(Box(
     outlettype=["", "float"],
     parameter_enable=1,
     patching_rect=[260, 280, 27, 48],
-    presentation=1, presentation_rect=[66.0, 98.0, 58.75, 48.0],
+    presentation=1, presentation_rect=[70.0, 90.0, 60.0, 48.0],
     saved_attribute_attributes={
         "valueof": {
             "parameter_initial": [USER_PB_RANGE_DEFAULT],

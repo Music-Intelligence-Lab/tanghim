@@ -38,7 +38,7 @@
 		"boxanimatetime": 200,
 		"enablehscroll": 1,
 		"enablevscroll": 1,
-		"devicewidth": 90.0,
+		"devicewidth": 99.0,
 		"description": "MTS-ESP Mono PB Receiver",
 		"digest": "",
 		"tags": "",
@@ -60,9 +60,9 @@
 					],
 					"presentation": 1,
 					"presentation_rect": [
-						-1.0,
-						2.0,
-						136.0,
+						0.0,
+						0.0,
+						100.0,
 						29.0
 					],
 					"fontname": "Cairo Black",
@@ -90,10 +90,10 @@
 					],
 					"presentation": 1,
 					"presentation_rect": [
-						-0.5,
-						33.0,
-						133.0,
-						21.0
+						0.0,
+						30.0,
+						100.0,
+						35.0
 					],
 					"fontname": "Ableton Sans Medium",
 					"text": "Tanghim Mono PB Receiver",
@@ -516,15 +516,15 @@
 					"patching_rect": [
 						180,
 						250,
-						60,
-						30
+						80,
+						18
 					],
 					"presentation": 1,
 					"presentation_rect": [
-						6.0,
-						66.0,
-						78.0,
-						30.0
+						10.0,
+						80.0,
+						80.0,
+						18.0
 					],
 					"fontname": "Ableton Sans Medium",
 					"fontsize": 10.0,
@@ -557,9 +557,9 @@
 					"parameter_enable": 1,
 					"presentation": 1,
 					"presentation_rect": [
-						6.0,
-						98.0,
-						78.0,
+						20.0,
+						90.0,
+						60.0,
 						48.0
 					],
 					"saved_attribute_attributes": {
@@ -978,7 +978,7 @@
 		"openrect": [
 			0.0,
 			0.0,
-			90.0,
+			99.0,
 			169.0
 		],
 		"title": "Tanghim Mono PB Receiver",

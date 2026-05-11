@@ -30,7 +30,7 @@ PB_RANGE_DEFAULT = 2
 
 p = px.Patcher(OUTPUT_MAXPAT)
 p.openinpresentation = 1
-p.devicewidth = 90.0
+p.devicewidth = 99.0
 p.description = "MTS-ESP Mono PB Receiver"
 p.rect = Rect(100.0, 100.0, 900.0, 600.0)
 
@@ -41,7 +41,7 @@ p.rect = Rect(100.0, 100.0, 900.0, 600.0)
 title_arabic = p.add_box(Box(
     id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
     patching_rect=[45, 475, 292, 29],
-    presentation=1, presentation_rect=[-1.0, 2.0, 136.0, 29.0],
+    presentation=1, presentation_rect=[0.0, 0.0, 100.0, 29.0],
     fontname="Cairo Black",
     text="تنغيم",
     textcolor=[0.0, 0.0, 0.0, 1.0],
@@ -51,7 +51,7 @@ title_arabic = p.add_box(Box(
 title_latin = p.add_box(Box(
     id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
     patching_rect=[30, 460, 178, 21],
-    presentation=1, presentation_rect=[-0.5, 33.0, 133.0, 21.0],
+    presentation=1, presentation_rect=[0.0, 30.0, 100.0, 35.0],
     fontname="Ableton Sans Medium",
     text="Tanghim Mono PB Receiver",
     textcolor=[0.0, 0.0, 0.0, 1.0],
@@ -243,8 +243,8 @@ p.add_line(xbendout, midiout_pb, outlet=0, inlet=0)
 
 pb_dial_label = p.add_box(Box(
     id=p.get_id(), maxclass="comment", numinlets=1, numoutlets=0,
-    patching_rect=[180, 250, 60, 30],
-    presentation=1, presentation_rect=[6.0, 66.0, 78.0, 30.0],
+    patching_rect=[180, 250, 80, 18],
+    presentation=1, presentation_rect=[10.0, 80.0, 80.0, 18.0],
     fontname="Ableton Sans Medium",
     fontsize=10.0,
     text="PB Range",
@@ -258,7 +258,7 @@ pbnum = p.add_box(Box(
     outlettype=["", "float"],
     parameter_enable=1,
     patching_rect=[180, 280, 27, 48],
-    presentation=1, presentation_rect=[6.0, 98.0, 78.0, 48.0],
+    presentation=1, presentation_rect=[20.0, 90.0, 60.0, 48.0],
     saved_attribute_attributes={
         "valueof": {
             "parameter_initial": [PB_RANGE_DEFAULT],
@@ -295,7 +295,7 @@ with open(OUTPUT_MAXPAT) as f:
     data = json.load(f)
 
 patcher = data["patcher"]
-patcher["openrect"] = [0.0, 0.0, 90.0, 169.0]
+patcher["openrect"] = [0.0, 0.0, 99.0, 169.0]
 # NO is_mpe flag — mono PB emits on channel 1 only
 
 patcher["title"] = "Tanghim Mono PB Receiver"

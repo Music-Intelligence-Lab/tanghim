@@ -38,7 +38,7 @@
 		"boxanimatetime": 200,
 		"enablehscroll": 1,
 		"enablevscroll": 1,
-		"devicewidth": 135.4765625,
+		"devicewidth": 139.4765625,
 		"description": "MTS-ESP MPE Receiver",
 		"digest": "",
 		"tags": "",
@@ -60,9 +60,9 @@
 					],
 					"presentation": 1,
 					"presentation_rect": [
-						-1.0,
-						2.0,
-						136.0,
+						0.0,
+						0.0,
+						140.0,
 						29.0
 					],
 					"fontname": "Cairo Black",
@@ -90,9 +90,9 @@
 					],
 					"presentation": 1,
 					"presentation_rect": [
-						-0.5,
-						33.0,
-						133.0,
+						0.0,
+						30.0,
+						140.0,
 						21.0
 					],
 					"fontname": "Ableton Sans Medium",
@@ -859,14 +859,14 @@
 					"patching_rect": [
 						180,
 						250,
-						60,
+						51,
 						30
 					],
 					"presentation": 1,
 					"presentation_rect": [
-						6.0,
-						66.0,
-						60.0,
+						14.5,
+						64.0,
+						51.0,
 						30.0
 					],
 					"fontname": "Ableton Sans Medium",
@@ -900,8 +900,8 @@
 					"parameter_enable": 1,
 					"presentation": 1,
 					"presentation_rect": [
-						6.0,
-						98.0,
+						10.0,
+						90.0,
 						60.0,
 						48.0
 					],
@@ -947,14 +947,14 @@
 					"patching_rect": [
 						260,
 						250,
-						67,
+						70,
 						30
 					],
 					"presentation": 1,
 					"presentation_rect": [
-						62.125,
-						66.0,
-						66.5,
+						65.0,
+						64.0,
+						70.0,
 						30.0
 					],
 					"fontname": "Ableton Sans Medium",
@@ -988,9 +988,9 @@
 					"parameter_enable": 1,
 					"presentation": 1,
 					"presentation_rect": [
-						66.0,
-						98.0,
-						58.75,
+						70.0,
+						90.0,
+						60.0,
 						48.0
 					],
 					"saved_attribute_attributes": {
