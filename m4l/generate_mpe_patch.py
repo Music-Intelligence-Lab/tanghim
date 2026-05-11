@@ -727,6 +727,15 @@ user_pbrange_send = p.add("send userPbRange",
 p.add_line(user_pb_dial, user_pbrange_send)
 
 # ═══════════════════════════════════════════════════════════════════════
+# Receiver registry — writes uuid.mpe on load so the Tanghim
+# Transmitter badge can count this device.
+# ═══════════════════════════════════════════════════════════════════════
+
+registry_js = p.add("js registry_mpe.js",
+    numinlets=0, numoutlets=0,
+    patching_rect=[600, 60, 160, 22])
+
+# ═══════════════════════════════════════════════════════════════════════
 # Save and post-process for M4L-specific patcher properties
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -787,6 +796,8 @@ with open(OUTPUT_MAXPAT, "w") as f:
     json.dump(data, f, indent="\t")
 print(f"Generated: {OUTPUT_MAXPAT}")
 
-# Freeze .amxd. No embedded JS dependencies — everything is native Max.
-freeze_and_save(p, OUTPUT_MAXPAT, OUTPUT_AMXD)
-print(f"Generated: {OUTPUT_AMXD} (frozen, no JS deps)")
+with open("m4l/registry_mpe.js", "rb") as f:
+    registry_js_bytes = f.read()
+freeze_and_save(p, OUTPUT_MAXPAT, OUTPUT_AMXD,
+                embedded_files=[("registry_mpe.js", registry_js_bytes)])
+print(f"Generated: {OUTPUT_AMXD} (frozen)")

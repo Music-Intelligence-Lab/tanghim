@@ -611,6 +611,24 @@
 					],
 					"text": "send userPbRange"
 				}
+			},
+			{
+				"box": {
+					"id": "obj-29",
+					"maxclass": "newobj",
+					"numinlets": 0,
+					"numoutlets": 1,
+					"patching_rect": [
+						600,
+						60,
+						160,
+						22
+					],
+					"text": "js registry_monopb.js",
+					"outlettype": [
+						""
+					]
+				}
 			}
 		],
 		"lines": [

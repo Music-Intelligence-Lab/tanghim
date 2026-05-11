@@ -288,6 +288,15 @@ user_pbrange_send = p.add("send userPbRange",
 p.add_line(pbnum, user_pbrange_send)
 
 # ═══════════════════════════════════════════════════════════════════════
+# Receiver registry — writes uuid.monopb on load so the Tanghim
+# Transmitter badge can count this device.
+# ═══════════════════════════════════════════════════════════════════════
+
+registry_js = p.add("js registry_monopb.js",
+    numinlets=0, numoutlets=0,
+    patching_rect=[600, 60, 160, 22])
+
+# ═══════════════════════════════════════════════════════════════════════
 # Save + post-process  (identical to MPE patch minus is_mpe flag)
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -342,5 +351,8 @@ with open(OUTPUT_MAXPAT, "w") as f:
     json.dump(data, f, indent="\t")
 print(f"Generated: {OUTPUT_MAXPAT}")
 
-freeze_and_save(p, OUTPUT_MAXPAT, OUTPUT_AMXD)
-print(f"Generated: {OUTPUT_AMXD} (frozen, no JS deps)")
+with open("m4l/registry_monopb.js", "rb") as f:
+    registry_js_bytes = f.read()
+freeze_and_save(p, OUTPUT_MAXPAT, OUTPUT_AMXD,
+                embedded_files=[("registry_monopb.js", registry_js_bytes)])
+print(f"Generated: {OUTPUT_AMXD} (frozen)")

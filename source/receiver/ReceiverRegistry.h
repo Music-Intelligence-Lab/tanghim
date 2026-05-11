@@ -80,8 +80,12 @@ public:
 
     // ── Scanner API (used by Transmitter) ─────────────────────────────────
 
-    /** Scan the registry directory and count non-stale receiver files. */
-    static ReceiverCounts scan (double staleCutoffSeconds = 5.0)
+    /** Scan the registry directory and count non-stale receiver files.
+     *  VST3 receivers heartbeat at 1 Hz so they stay fresh.
+     *  M4L receivers write once on load (no heartbeat), so the cutoff is
+     *  set to 300 s — long enough to survive normal use, short enough that
+     *  a crashed Ableton session clears within 5 minutes. */
+    static ReceiverCounts scan (double staleCutoffSeconds = 300.0)
     {
         ReceiverCounts counts;
         auto dir = getRegistryDir();
@@ -104,7 +108,7 @@ public:
     }
 
     /** Clean up stale files (crashed receivers that left orphaned files). */
-    static void cleanStale (double staleCutoffSeconds = 10.0)
+    static void cleanStale (double staleCutoffSeconds = 360.0)
     {
         auto dir = getRegistryDir();
         if (! dir.isDirectory()) return;
