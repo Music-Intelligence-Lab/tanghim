@@ -1,7 +1,6 @@
 // Tanghim Mono PB Receiver — receiver registry
-// loadbang: writes ~/Library/Tanghim/receivers/<uuid>.monopb, heartbeats every 30s.
-// freebang: overwrites file with "closed" for immediate removal from badge count.
-// Transmitter skips files whose first line is "closed"; cleanStale() removes them after 90s.
+// Heartbeats every 2s. Transmitter stale cutoff is 5s, so a deleted device
+// disappears from the badge count within ~5s. freebang is unreliable in M4L.
 
 inlets = 0;
 outlets = 0;
@@ -13,25 +12,20 @@ function loadbang() {
     var dir = "~/Library/Tanghim/receivers";
     var uuid = makeUUID();
     gPath = dir + "/" + uuid + ".monopb";
-    touch("open");
-    gTask = new Task(heartbeat, this);
-    gTask.interval = 30000;
+    touch();
+    gTask = new Task(touch, this);
+    gTask.interval = 2000;
     gTask.repeat();
 }
 
 function freebang() {
     if (gTask) { gTask.cancel(); gTask = null; }
-    if (gPath) touch("closed");
 }
 
-function heartbeat() {
-    if (gPath) touch("open");
-}
-
-function touch(content) {
+function touch() {
     var f = new File(gPath, "write");
     if (f.isopen) {
-        f.writeline(content);
+        f.writeline("open");
         f.close();
     } else {
         post("Tanghim registry: could not write " + gPath + "\n");
