@@ -1241,7 +1241,7 @@ void TanghimNativeEditor::timerCallback()
             if (++staleCleanupCounter >= 12)
             {
                 staleCleanupCounter = 0;
-                ReceiverRegistry::cleanStale (10.0);
+                ReceiverRegistry::cleanStale();
             }
         }
     }
