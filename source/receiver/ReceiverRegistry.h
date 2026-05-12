@@ -80,12 +80,12 @@ public:
 
     // ── Scanner API (used by Transmitter) ─────────────────────────────────
 
-    /** Scan the registry directory and count non-stale receiver files.
-     *  VST3 receivers heartbeat at 1 Hz so they stay fresh.
-     *  M4L receivers write once on load (no heartbeat), so the cutoff is
-     *  set to 300 s — long enough to survive normal use, short enough that
-     *  a crashed Ableton session clears within 5 minutes. */
-    static ReceiverCounts scan (double staleCutoffSeconds = 300.0)
+    /** Scan the registry directory and count active receiver files.
+     *  VST3 receivers heartbeat at 1 Hz; M4L receivers heartbeat every 30 s.
+     *  Files whose first line is "closed" are skipped immediately (written by
+     *  M4L freebang for instant badge update on device deletion).
+     *  Stale cutoff is 60 s — safe margin above the 30 s M4L heartbeat. */
+    static ReceiverCounts scan (double staleCutoffSeconds = 60.0)
     {
         ReceiverCounts counts;
         auto dir = getRegistryDir();
@@ -96,19 +96,23 @@ public:
 
         for (const auto& entry : juce::RangedDirectoryIterator (dir, false))
         {
-            auto age = now - entry.getFile().getLastModificationTime();
+            auto file = entry.getFile();
+            auto age  = now - file.getLastModificationTime();
             if (age > cutoff) continue;
 
-            if (entry.getFile().hasFileExtension ("mpe"))
+            // M4L devices write "closed" on freebang — skip immediately
+            if (file.loadFileAsString().trim().startsWith ("closed")) continue;
+
+            if (file.hasFileExtension ("mpe"))
                 counts.mpeReceivers++;
-            else if (entry.getFile().hasFileExtension ("monopb"))
+            else if (file.hasFileExtension ("monopb"))
                 counts.monoPbReceivers++;
         }
         return counts;
     }
 
-    /** Clean up stale files (crashed receivers that left orphaned files). */
-    static void cleanStale (double staleCutoffSeconds = 360.0)
+    /** Clean up stale and closed files (crashed receivers, freed M4L devices). */
+    static void cleanStale (double staleCutoffSeconds = 90.0)
     {
         auto dir = getRegistryDir();
         if (! dir.isDirectory()) return;
@@ -118,8 +122,9 @@ public:
 
         for (const auto& entry : juce::RangedDirectoryIterator (dir, false))
         {
-            if ((now - entry.getFile().getLastModificationTime()) > cutoff)
-                entry.getFile().deleteFile();
+            auto file = entry.getFile();
+            if ((now - file.getLastModificationTime()) > cutoff)
+                file.deleteFile();
         }
     }
 

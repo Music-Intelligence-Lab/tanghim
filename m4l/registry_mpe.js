@@ -1,21 +1,40 @@
 // Tanghim MPE Receiver — receiver registry
-// Writes ~/Library/Tanghim/receivers/<uuid>.mpe on loadbang.
-// No deletion — transmitter cleans stale files (>360s) from its own timer.
+// loadbang: writes ~/Library/Tanghim/receivers/<uuid>.mpe, heartbeats every 30s.
+// freebang: overwrites file with "closed" for immediate removal from badge count.
+// Transmitter skips files whose first line is "closed"; cleanStale() removes them after 90s.
 
 inlets = 0;
 outlets = 0;
 
+var gPath = null;
+var gTask = null;
+
 function loadbang() {
-    // Max JS File resolves ~ to the user home directory on macOS
     var dir = "~/Library/Tanghim/receivers";
     var uuid = makeUUID();
-    var path = dir + "/" + uuid + ".mpe";
-    var f = new File(path, "write");
+    gPath = dir + "/" + uuid + ".mpe";
+    touch("open");
+    gTask = new Task(heartbeat, this);
+    gTask.interval = 30000;
+    gTask.repeat();
+}
+
+function freebang() {
+    if (gTask) { gTask.cancel(); gTask = null; }
+    if (gPath) touch("closed");
+}
+
+function heartbeat() {
+    if (gPath) touch("open");
+}
+
+function touch(content) {
+    var f = new File(gPath, "write");
     if (f.isopen) {
-        f.writeline("");
+        f.writeline(content);
         f.close();
     } else {
-        post("Tanghim registry: could not write " + path + "\n");
+        post("Tanghim registry: could not write " + gPath + "\n");
     }
 }
 
