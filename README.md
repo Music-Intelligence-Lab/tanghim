@@ -41,11 +41,18 @@ Tanghīm was concieved and designed by [Khyam Allami](https://khyamallami.com) i
 
 ## Installation
 
-Download the latest release for your platform from the [GitHub Releases page](https://github.com/KhyamAllami/tanghim/releases). Copy the two plugin files to the appropriate system directories for your operating system. After copying, rescan plugins in your DAW if they don't appear immediately.
+Download the latest release for your platform from the [GitHub Releases page](https://github.com/KhyamAllami/tanghim/releases). 
+
+For Ableton Live check the dedicated instructions below: [Using Tanghim in Ableton Live](#using-tanghim-in-ableton-live)
+For all other DAWs continue as follows:
 
 You should have two plugins after installation:
 - **Tanghim** (Transmitter) — `.vst3` / `.component` / `.clap`
 - **Tanghim Receiver** — `.vst3` / `.component` / `.clap`
+
+If they didn't auto install correctly, copy the two plugin files to the appropriate system directories for your operating system. 
+After installing/copying, rescan plugins in your DAW if they don't appear immediately.
+
 
 ### macOS
 
