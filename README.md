@@ -521,8 +521,10 @@ Click **Check for Updates** in the status bar — the plugin also checks automat
 
 ## Credits
 
-Conceived and designed by [Khyam Allami](https://khyamallami.com) at the [Music Intelligence Lab](https://musicintelligencelab.com/), American University of Beirut. Coded with [Claude](https://claude.ai).
+Conceived and designed by [Khyam Allami](https://khyamallami.com) at the [Music Intelligence Lab](https://musicintelligencelab.com/), American University of Beirut, 2026. 
 
 Accesses tuning data via the [Digital Arabic Maqām Archive (DiArMaqAr) API](https://diarmaqar.netlify.app) and broadcasts tuning via the [MTS-ESP](https://github.com/ODDSound/MTS-ESP) protocol.
+
+Coded with [Claude](https://claude.ai).
 
 Built with [JUCE 8](https://juce.com/).
