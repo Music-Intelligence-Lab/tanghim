@@ -44,6 +44,7 @@ Tanghīm was concieved and designed by [Khyam Allami](https://khyamallami.com) i
 Download the latest release for your platform from the [GitHub Releases page](https://github.com/KhyamAllami/tanghim/releases). 
 
 For Ableton Live check the dedicated instructions below: [Using Tanghim in Ableton Live](#using-tanghim-in-ableton-live)
+
 For all other DAWs continue as follows:
 
 You should have two plugins after installation:
