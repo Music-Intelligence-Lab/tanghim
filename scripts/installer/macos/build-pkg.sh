@@ -12,6 +12,7 @@
 #   Tanghim Receiver.clap/
 #   Tanghim MPE Receiver.amxd
 #   Tanghim Mono PB Receiver.amxd
+#   MTS-ESP-Max-Package/
 #
 # Produces: <output-dir>/Tanghim-<version>-macOS.pkg
 
@@ -76,12 +77,14 @@ pkgbuild \
     "${WORK_DIR}/Receiver.pkg"
 
 # ── Component 3: M4L (staging + postinstall) ─────────────────────────────────
-# The .amxd files are placed into /tmp/tanghim-m4l-staging inside the payload.
-# The postinstall script then moves them to the console user's Ableton library.
+# The .amxd files and the MTS-ESP-Max-Package are placed into
+# /tmp/tanghim-m4l-staging inside the payload. The postinstall script then
+# moves them to the console user's Ableton library and Max user library.
 M4L_ROOT="${WORK_DIR}/m4l-root"
 mkdir -p "${M4L_ROOT}/tmp/tanghim-m4l-staging"
 cp "${PLUGINS_DIR}/Tanghim MPE Receiver.amxd"     "${M4L_ROOT}/tmp/tanghim-m4l-staging/"
 cp "${PLUGINS_DIR}/Tanghim Mono PB Receiver.amxd" "${M4L_ROOT}/tmp/tanghim-m4l-staging/"
+cp -R "${PLUGINS_DIR}/MTS-ESP-Max-Package"        "${M4L_ROOT}/tmp/tanghim-m4l-staging/"
 
 pkgbuild \
     --identifier "com.khyamallami.tanghim.m4l" \

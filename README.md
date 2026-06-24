@@ -454,13 +454,20 @@ For instruments that don't support MTS-ESP — including hardware synths and man
 
 #### Installing the Max for Live Devices
 
-The macOS and Windows installers install both devices automatically when the M4L component is enabled. If you're building from source, copy both files from the `m4l/` folder into:
+The macOS and Windows installers install both devices and the required Max package automatically when the M4L component is enabled. If you're building from source:
 
-```
-~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim/
-```
+1. Copy both `.amxd` files from `m4l/` into:
+   ```
+   ~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim/
+   ```
+2. Copy the entire `m4l/MTS-ESP-Max-Package/` directory into both:
+   ```
+   ~/Documents/Max 8/Library/MTS-ESP-Max-Package/   (Live 11)
+   ~/Documents/Max 9/Library/MTS-ESP-Max-Package/   (Live 12)
+   ```
+3. Restart Ableton Live.
 
-Then restart Ableton Live. The devices use ODDSound's MTS-ESP Max Package — both `.amxd` files are self-contained frozen devices.
+The Max package contains the ODDSound MTS-ESP externals (the `MTS-ESP.mtof` Max object the receiver patches use). The package must live in the canonical Max user library location above — a standalone `.mxo` next to the `.amxd` does not work for frozen Max for Live devices.
 
 #### Using a Max for Live Receiver
 

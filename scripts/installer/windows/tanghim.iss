@@ -9,6 +9,7 @@
 ;   Tanghim Receiver.clap
 ;   Tanghim MPE Receiver.amxd
 ;   Tanghim Mono PB Receiver.amxd
+;   MTS-ESP-Max-Package\
 
 #ifndef MyAppVersion
   #error MyAppVersion is required (pass /DMyAppVersion=...)
@@ -59,13 +60,22 @@ Source: "{#PluginsDir}\Tanghim Receiver.clap";   DestDir: "{commoncf64}\CLAP";  
 ; M4L — staged under {app}, copied to user profile by [Run] below
 Source: "{#PluginsDir}\Tanghim MPE Receiver.amxd";     DestDir: "{app}\m4l-staging"; Flags: ignoreversion; Components: m4l
 Source: "{#PluginsDir}\Tanghim Mono PB Receiver.amxd"; DestDir: "{app}\m4l-staging"; Flags: ignoreversion; Components: m4l
+Source: "{#PluginsDir}\MTS-ESP-Max-Package\*";         DestDir: "{app}\m4l-staging\MTS-ESP-Max-Package"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: m4l
 
 [Run]
-; Copy the staged .amxd files into the invoking (non-admin) user's Ableton library
-; and delete the legacy combined device left over from prior installs.
-; runasoriginaluser drops elevation so %USERPROFILE% resolves to the real user,
-; not the admin that UAC elevated to. waituntilterminated + "|| exit /b 1" makes
-; a copy failure propagate to Inno Setup instead of being silently swallowed.
+; Copy the staged .amxd files into the invoking (non-admin) user's Ableton
+; library and the MTS-ESP-Max-Package into both Max 8 and Max 9 user
+; libraries. Also delete the legacy combined device left over from prior
+; installs.
+;
+; runasoriginaluser drops elevation so %USERPROFILE% resolves to the real
+; user, not the admin that UAC elevated to. waituntilterminated +
+; "|| exit /b 1" makes a copy failure propagate to Inno Setup instead of
+; being silently swallowed.
+;
+; The MTS-ESP-Max-Package must live at
+; %USERPROFILE%\Documents\Max <N>\Library\MTS-ESP-Max-Package\ — a
+; standalone .mxe64 next to the .amxd does NOT work for frozen .amxd loads.
 Filename: "{cmd}"; \
   Parameters: "/c mkdir ""%USERPROFILE%\Documents\Ableton\User Library\Presets\MIDI Effects\Max MIDI Effect\Tanghim"" 2>nul & del /Q ""%USERPROFILE%\Documents\Ableton\User Library\Presets\MIDI Effects\Max MIDI Effect\Tanghim\Tanghim Receiver.amxd"" 2>nul & copy /Y ""{app}\m4l-staging\Tanghim MPE Receiver.amxd"" ""%USERPROFILE%\Documents\Ableton\User Library\Presets\MIDI Effects\Max MIDI Effect\Tanghim\Tanghim MPE Receiver.amxd"" || exit /b 1"; \
   Flags: runhidden runasoriginaluser waituntilterminated; \
@@ -77,3 +87,15 @@ Filename: "{cmd}"; \
   Flags: runhidden runasoriginaluser waituntilterminated; \
   Components: m4l; \
   StatusMsg: "Installing Tanghim Mono PB Receiver…"
+
+Filename: "{cmd}"; \
+  Parameters: "/c mkdir ""%USERPROFILE%\Documents\Max 8\Library"" 2>nul & rmdir /S /Q ""%USERPROFILE%\Documents\Max 8\Library\MTS-ESP-Max-Package"" 2>nul & xcopy /E /I /Y ""{app}\m4l-staging\MTS-ESP-Max-Package"" ""%USERPROFILE%\Documents\Max 8\Library\MTS-ESP-Max-Package"" || exit /b 1"; \
+  Flags: runhidden runasoriginaluser waituntilterminated; \
+  Components: m4l; \
+  StatusMsg: "Installing MTS-ESP Max Package (Max 8)…"
+
+Filename: "{cmd}"; \
+  Parameters: "/c mkdir ""%USERPROFILE%\Documents\Max 9\Library"" 2>nul & rmdir /S /Q ""%USERPROFILE%\Documents\Max 9\Library\MTS-ESP-Max-Package"" 2>nul & xcopy /E /I /Y ""{app}\m4l-staging\MTS-ESP-Max-Package"" ""%USERPROFILE%\Documents\Max 9\Library\MTS-ESP-Max-Package"" || exit /b 1"; \
+  Flags: runhidden runasoriginaluser waituntilterminated; \
+  Components: m4l; \
+  StatusMsg: "Installing MTS-ESP Max Package (Max 9)…"

@@ -303,7 +303,7 @@ Ableton doesn't support VST3 MIDI effects. Architecture: two pure-native Max pat
 - `dlst` directory: `dire` entries with `type`/`fnam`/`sz32`/`of32`/`flag` sub-fields (all big-endian). Main patch has `flag: 17`, dependencies `flag: 0`
 - Freeze logic lives in `m4l/_patch_common.py`, shared between the two generator scripts
 
-**ODDSound MTS-ESP Max Package** is *vendored* in `m4l/MTS-ESP-Max-Package/` and the `mtof.mxo` external is also copied to the Ableton User Library at install time. The external requires the *full* Max package layout (externals/, init/, help/, package-info.json) at `~/Documents/Max 8/Library/` — not just the `.mxo` next to the `.amxd`.
+**ODDSound MTS-ESP Max Package** is *vendored* in `m4l/MTS-ESP-Max-Package/` and the installer drops the full package into both `~/Documents/Max 8/Library/MTS-ESP-Max-Package/` (Live 11) and `~/Documents/Max 9/Library/MTS-ESP-Max-Package/` (Live 12) at install time. Frozen `.amxd` loads only resolve the externals when the *full* canonical Max package layout (externals/, init/, help/, package-info.json) is present at this path — a standalone `.mxo` next to the `.amxd` does NOT work for frozen .amxd loads in Live (it only works in Max editor mode, which scans patcher-adjacent directories).
 
 **Key gotchas:**
 - **`is_mpe: 1`** on patcher metadata — without it, Ableton normalizes to channel 1 (MPE Receiver only)
@@ -316,7 +316,7 @@ Ableton doesn't support VST3 MIDI effects. Architecture: two pure-native Max pat
 - **`live.midiin` doesn't exist** — use plain `midiin`
 - **MPE channel allocation via `[poly]` uses per-slot state**, not a `noteToChannel[pitch]` mapping. Same-pitch overlap (arpeggios) would otherwise leak channel slots and trigger voice-stealing on still-sounding notes. Mirrors the C++ `MpePitchBendProcessor` design.
 - Patches generated via py2max: `python3 m4l/generate_mpe_patch.py` and `python3 m4l/generate_monopb_patch.py`
-- Install: `~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim/` (both `.amxd` files + MTS-ESP-Max-Package contents under `~/Documents/Max 8/Library/`)
+- Install: `.amxd` files → `~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim/`; MTS-ESP-Max-Package → both `~/Documents/Max 8/Library/MTS-ESP-Max-Package/` (Live 11) and `~/Documents/Max 9/Library/MTS-ESP-Max-Package/` (Live 12)
 - → [diary 2026-02-20](diary/2026-02-20.md) (legacy `vst~`+JS architecture — superseded), [diary 2026-05-05](diary/2026-05-05.md) (legacy poll-rate timing fix + MPE allocation, motivated the rewrite), [diary 2026-05-06](diary/2026-05-06.md) (native rewrite decisions)
 
 ## APVTS Parameters

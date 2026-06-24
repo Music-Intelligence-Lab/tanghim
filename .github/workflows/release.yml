@@ -92,6 +92,7 @@ jobs:
           cp -R "build/TanghimReceiver_artefacts/Release/CLAP/Tanghim Receiver.clap"      staged-plugins/
           cp "m4l/Tanghim MPE Receiver.amxd"     staged-plugins/
           cp "m4l/Tanghim Mono PB Receiver.amxd" staged-plugins/
+          cp -R "m4l/MTS-ESP-Max-Package"        staged-plugins/
 
       - name: Stage plugins (Windows)
         if: runner.os == 'Windows'
@@ -104,6 +105,7 @@ jobs:
           Copy-Item         "build/TanghimReceiver_artefacts/Release/CLAP/Tanghim Receiver.clap"     "staged-plugins/"
           Copy-Item         "m4l/Tanghim MPE Receiver.amxd"     "staged-plugins/"
           Copy-Item         "m4l/Tanghim Mono PB Receiver.amxd" "staged-plugins/"
+          Copy-Item -Recurse "m4l/MTS-ESP-Max-Package"           "staged-plugins/"
 
       - name: Stage plugins (Linux)
         if: runner.os == 'Linux'

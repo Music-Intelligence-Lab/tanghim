@@ -1,6 +1,8 @@
 #!/bin/bash
-# Moves the staged Tanghim .amxd devices from the package payload location
-# (/tmp/tanghim-m4l-staging) to the console user's Ableton library.
+# Moves the staged Tanghim .amxd devices and the MTS-ESP-Max-Package from the
+# package payload (/tmp/tanghim-m4l-staging) to:
+#   - Ableton user library  → ~/Music/Ableton/User Library/.../Tanghim/
+#   - Max user library      → ~/Documents/Max 8/Library/ and ~/Documents/Max 9/Library/
 #
 # Invoked by productbuild when the M4L component is selected.
 # productbuild runs this as root, so we detect the real console user via stat.
@@ -9,9 +11,15 @@ set -euo pipefail
 
 STAGING_DIR="/tmp/tanghim-m4l-staging"
 LEGACY_AMXD_NAME="Tanghim Receiver.amxd"
+MAX_PACKAGE_NAME="MTS-ESP-Max-Package"
 
 if ! compgen -G "${STAGING_DIR}/*.amxd" >/dev/null; then
     echo "postinstall: no staged .amxd files found in ${STAGING_DIR}" >&2
+    exit 1
+fi
+
+if [[ ! -d "${STAGING_DIR}/${MAX_PACKAGE_NAME}" ]]; then
+    echo "postinstall: staged ${MAX_PACKAGE_NAME} not found in ${STAGING_DIR}" >&2
     exit 1
 fi
 
@@ -27,19 +35,35 @@ if [[ -z "${USER_HOME}" ]]; then
     exit 1
 fi
 
-DEST_DIR="${USER_HOME}/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim"
-
-mkdir -p "${DEST_DIR}"
+# ── Ableton User Library: install .amxd devices ──────────────────────────────
+ABLETON_DEST="${USER_HOME}/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim"
+mkdir -p "${ABLETON_DEST}"
 
 # Remove legacy combined device from prior installs (superseded by MPE + Mono PB).
-rm -f "${DEST_DIR}/${LEGACY_AMXD_NAME}"
+rm -f "${ABLETON_DEST}/${LEGACY_AMXD_NAME}"
 
 for staged_file in "${STAGING_DIR}"/*.amxd; do
-    cp -f "${staged_file}" "${DEST_DIR}/"
+    cp -f "${staged_file}" "${ABLETON_DEST}/"
 done
 
-chown -R "${CONSOLE_USER}" "${DEST_DIR}"
+chown -R "${CONSOLE_USER}" "${ABLETON_DEST}"
 
+# ── Max User Library: install MTS-ESP-Max-Package to Max 8 and Max 9 ─────────
+# Live 11 → Max 8, Live 12 → Max 9. Install to both — harmless if one isn't used.
+# Canonical location per ODDSound MTS-ESP-Max-Package readme:
+#   ~/Documents/Max <N>/Library/<PackageName>/
+# Frozen .amxd loads only find the package's externals when this canonical
+# layout is present (a standalone .mxo next to the .amxd does not work).
+for MAX_VERSION in "Max 8" "Max 9"; do
+    MAX_LIB="${USER_HOME}/Documents/${MAX_VERSION}/Library"
+    mkdir -p "${MAX_LIB}"
+    rm -rf "${MAX_LIB}/${MAX_PACKAGE_NAME}"
+    cp -R "${STAGING_DIR}/${MAX_PACKAGE_NAME}" "${MAX_LIB}/"
+    chown -R "${CONSOLE_USER}" "${USER_HOME}/Documents/${MAX_VERSION}"
+done
+
+# ── Cleanup staging ──────────────────────────────────────────────────────────
+rm -rf "${STAGING_DIR}/${MAX_PACKAGE_NAME}"
 rm -f "${STAGING_DIR}"/*.amxd
 
 exit 0
