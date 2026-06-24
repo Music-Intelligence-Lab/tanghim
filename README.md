@@ -445,37 +445,33 @@ If your instrument supports MTS-ESP, this is the simplest path — no Receiver o
 3. On any other instrument track, load an MTS-ESP-compatible synth (e.g. Surge XT, Vital)
 4. The synth will automatically receive the tuning broadcast
 
-### Setup with Max for Live Receiver (MPE or Mono Pitch Bend)
+### Setup with Max for Live Receivers (MPE or Mono Pitch Bend)
 
-For instruments that don't support MTS-ESP — including hardware synths and many software instruments — the Max for Live Receiver delivers tuning via MPE or Mono Pitch Bend, just like the standalone Receiver plugin.
+For instruments that don't support MTS-ESP — including hardware synths and many software instruments — Tanghīm ships two native Max for Live devices that deliver tuning via MPE or Mono Pitch Bend, just like the standalone Receiver plugin:
 
-#### Installing the Max for Live Device
+- **Tanghim MPE Receiver.amxd** — per-note channel allocation with per-note pitch bend (MPE)
+- **Tanghim Mono PB Receiver.amxd** — single-channel monophonic 14-bit pitch bend
 
-1. Download the `Tanghim Receiver.amxd` file from the [GitHub Releases page](https://github.com/KhyamAllami/tanghim/releases) (or locate it in the `m4l/` folder if building from source)
-2. Copy the `.amxd` file to:
-   ```
-   ~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/
-   ```
-3. The Tanghīm Receiver VST3 plugin must also be installed (the M4L device loads it internally)
-4. Restart Ableton Live
+#### Installing the Max for Live Devices
 
-The `.amxd` is a single frozen file — no additional supporting files needed.
+The macOS and Windows installers install both devices automatically when the M4L component is enabled. If you're building from source, copy both files from the `m4l/` folder into:
 
-#### Using the Max for Live Receiver
+```
+~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim/
+```
+
+Then restart Ableton Live. The devices use ODDSound's MTS-ESP Max Package — both `.amxd` files are self-contained frozen devices.
+
+#### Using a Max for Live Receiver
 
 1. Load the main **Tanghīm** plugin on one MIDI track
-2. On your instrument track, add the **Tanghīm Receiver** Max for Live MIDI effect *before* your instrument
-3. Choose **MPE** or **Mono PB** mode depending on your instrument (see the [comparison table](#which-method-should-i-use))
-4. Set the pitch bend range in the M4L device to match your instrument's setting
-5. Play — the M4L device reads the MTS-ESP tuning and applies pitch bend to each note
+2. On your instrument track, add either **Tanghim MPE Receiver** or **Tanghim Mono PB Receiver** as a MIDI effect *before* your instrument (choose based on the [comparison table](#which-method-should-i-use))
+3. Set the pitch bend range in the device to match your instrument's setting
+4. Play — the device reads the MTS-ESP tuning and applies pitch bend to each note
 
-#### How the M4L Device Works
+#### How the M4L Devices Work
 
-The Max for Live wrapper uses a two-part architecture:
-- A hidden VST3 instance of Tanghīm Receiver acts as a data bridge, polling the MTS-ESP tuning table
-- A Max `js` object handles the actual MIDI processing (pitch bend calculation and channel allocation)
-
-This design is necessary because Ableton doesn't allow VST3 plugins to process MIDI directly as effects.
+Both devices are pure-native Max patches built on ODDSound's MTS-ESP Max Package. They read the live MTS-ESP tuning broadcast directly (no VST3 bridge, no JavaScript) and emit standard MPE or 14-bit mono pitch-bend MIDI. The MPE and Mono PB versions are shipped as separate `.amxd` files because the `is_mpe` patcher flag is set at patch-load time and cannot be toggled at runtime.
 
 ### Ableton-Specific Notes
 

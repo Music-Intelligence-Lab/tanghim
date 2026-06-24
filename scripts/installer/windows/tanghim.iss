@@ -7,7 +7,8 @@
 ;   Tanghim.clap
 ;   Tanghim Receiver.vst3\
 ;   Tanghim Receiver.clap
-;   Tanghim Receiver.amxd
+;   Tanghim MPE Receiver.amxd
+;   Tanghim Mono PB Receiver.amxd
 
 #ifndef MyAppVersion
   #error MyAppVersion is required (pass /DMyAppVersion=...)
@@ -44,7 +45,7 @@ WizardStyle=modern
 [Components]
 Name: "transmitter"; Description: "Tanghim (Transmitter) — VST3 + CLAP"; Types: full custom; Flags: fixed
 Name: "receiver";    Description: "Tanghim Receiver — VST3 + CLAP";      Types: full custom; Flags: fixed
-Name: "m4l";         Description: "Tanghim Receiver for Ableton Live (M4L)"
+Name: "m4l";         Description: "Tanghim M4L Receivers (MPE + Mono PB) for Ableton Live"
 
 [Files]
 ; Transmitter — system plugin folders
@@ -56,15 +57,23 @@ Source: "{#PluginsDir}\Tanghim Receiver.vst3\*"; DestDir: "{commoncf64}\VST3\Tan
 Source: "{#PluginsDir}\Tanghim Receiver.clap";   DestDir: "{commoncf64}\CLAP";                      Flags: ignoreversion;                                  Components: receiver
 
 ; M4L — staged under {app}, copied to user profile by [Run] below
-Source: "{#PluginsDir}\Tanghim Receiver.amxd"; DestDir: "{app}\m4l-staging"; Flags: ignoreversion; Components: m4l
+Source: "{#PluginsDir}\Tanghim MPE Receiver.amxd";     DestDir: "{app}\m4l-staging"; Flags: ignoreversion; Components: m4l
+Source: "{#PluginsDir}\Tanghim Mono PB Receiver.amxd"; DestDir: "{app}\m4l-staging"; Flags: ignoreversion; Components: m4l
 
 [Run]
-; Copy the staged .amxd into the invoking (non-admin) user's Ableton library.
+; Copy the staged .amxd files into the invoking (non-admin) user's Ableton library
+; and delete the legacy combined device left over from prior installs.
 ; runasoriginaluser drops elevation so %USERPROFILE% resolves to the real user,
 ; not the admin that UAC elevated to. waituntilterminated + "|| exit /b 1" makes
 ; a copy failure propagate to Inno Setup instead of being silently swallowed.
 Filename: "{cmd}"; \
-  Parameters: "/c mkdir ""%USERPROFILE%\Documents\Ableton\User Library\Presets\MIDI Effects\Max MIDI Effect\Tanghim"" 2>nul & copy /Y ""{app}\m4l-staging\Tanghim Receiver.amxd"" ""%USERPROFILE%\Documents\Ableton\User Library\Presets\MIDI Effects\Max MIDI Effect\Tanghim\Tanghim Receiver.amxd"" || exit /b 1"; \
+  Parameters: "/c mkdir ""%USERPROFILE%\Documents\Ableton\User Library\Presets\MIDI Effects\Max MIDI Effect\Tanghim"" 2>nul & del /Q ""%USERPROFILE%\Documents\Ableton\User Library\Presets\MIDI Effects\Max MIDI Effect\Tanghim\Tanghim Receiver.amxd"" 2>nul & copy /Y ""{app}\m4l-staging\Tanghim MPE Receiver.amxd"" ""%USERPROFILE%\Documents\Ableton\User Library\Presets\MIDI Effects\Max MIDI Effect\Tanghim\Tanghim MPE Receiver.amxd"" || exit /b 1"; \
   Flags: runhidden runasoriginaluser waituntilterminated; \
   Components: m4l; \
-  StatusMsg: "Installing Max for Live device…"
+  StatusMsg: "Installing Tanghim MPE Receiver…"
+
+Filename: "{cmd}"; \
+  Parameters: "/c copy /Y ""{app}\m4l-staging\Tanghim Mono PB Receiver.amxd"" ""%USERPROFILE%\Documents\Ableton\User Library\Presets\MIDI Effects\Max MIDI Effect\Tanghim\Tanghim Mono PB Receiver.amxd"" || exit /b 1"; \
+  Flags: runhidden runasoriginaluser waituntilterminated; \
+  Components: m4l; \
+  StatusMsg: "Installing Tanghim Mono PB Receiver…"

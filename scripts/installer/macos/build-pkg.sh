@@ -10,7 +10,8 @@
 #   Tanghim Receiver.vst3/
 #   Tanghim Receiver.component/
 #   Tanghim Receiver.clap/
-#   Tanghim Receiver.amxd
+#   Tanghim MPE Receiver.amxd
+#   Tanghim Mono PB Receiver.amxd
 #
 # Produces: <output-dir>/Tanghim-<version>-macOS.pkg
 
@@ -75,11 +76,12 @@ pkgbuild \
     "${WORK_DIR}/Receiver.pkg"
 
 # ── Component 3: M4L (staging + postinstall) ─────────────────────────────────
-# The .amxd is placed into /tmp/tanghim-m4l-staging inside the payload. The
-# postinstall script then moves it to the console user's Ableton library.
+# The .amxd files are placed into /tmp/tanghim-m4l-staging inside the payload.
+# The postinstall script then moves them to the console user's Ableton library.
 M4L_ROOT="${WORK_DIR}/m4l-root"
 mkdir -p "${M4L_ROOT}/tmp/tanghim-m4l-staging"
-cp "${PLUGINS_DIR}/Tanghim Receiver.amxd" "${M4L_ROOT}/tmp/tanghim-m4l-staging/"
+cp "${PLUGINS_DIR}/Tanghim MPE Receiver.amxd"     "${M4L_ROOT}/tmp/tanghim-m4l-staging/"
+cp "${PLUGINS_DIR}/Tanghim Mono PB Receiver.amxd" "${M4L_ROOT}/tmp/tanghim-m4l-staging/"
 
 pkgbuild \
     --identifier "com.khyamallami.tanghim.m4l" \

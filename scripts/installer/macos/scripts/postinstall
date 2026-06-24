@@ -1,5 +1,5 @@
 #!/bin/bash
-# Moves the staged Tanghim Receiver.amxd from the package payload location
+# Moves the staged Tanghim .amxd devices from the package payload location
 # (/tmp/tanghim-m4l-staging) to the console user's Ableton library.
 #
 # Invoked by productbuild when the M4L component is selected.
@@ -8,11 +8,10 @@
 set -euo pipefail
 
 STAGING_DIR="/tmp/tanghim-m4l-staging"
-AMXD_NAME="Tanghim Receiver.amxd"
-STAGED_FILE="${STAGING_DIR}/${AMXD_NAME}"
+LEGACY_AMXD_NAME="Tanghim Receiver.amxd"
 
-if [[ ! -f "${STAGED_FILE}" ]]; then
-    echo "postinstall: staged M4L file not found at ${STAGED_FILE}" >&2
+if ! compgen -G "${STAGING_DIR}/*.amxd" >/dev/null; then
+    echo "postinstall: no staged .amxd files found in ${STAGING_DIR}" >&2
     exit 1
 fi
 
@@ -31,9 +30,16 @@ fi
 DEST_DIR="${USER_HOME}/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim"
 
 mkdir -p "${DEST_DIR}"
-cp -f "${STAGED_FILE}" "${DEST_DIR}/${AMXD_NAME}"
-chown -R "${CONSOLE_USER}" "${USER_HOME}/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim"
 
-rm -f "${STAGED_FILE}"
+# Remove legacy combined device from prior installs (superseded by MPE + Mono PB).
+rm -f "${DEST_DIR}/${LEGACY_AMXD_NAME}"
+
+for staged_file in "${STAGING_DIR}"/*.amxd; do
+    cp -f "${staged_file}" "${DEST_DIR}/"
+done
+
+chown -R "${CONSOLE_USER}" "${DEST_DIR}"
+
+rm -f "${STAGING_DIR}"/*.amxd
 
 exit 0

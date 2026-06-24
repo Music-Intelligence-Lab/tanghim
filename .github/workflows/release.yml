@@ -90,7 +90,8 @@ jobs:
           cp -R "build/TanghimReceiver_artefacts/Release/VST3/Tanghim Receiver.vst3"      staged-plugins/
           cp -R "build/TanghimReceiver_artefacts/Release/AU/Tanghim Receiver.component"   staged-plugins/
           cp -R "build/TanghimReceiver_artefacts/Release/CLAP/Tanghim Receiver.clap"      staged-plugins/
-          cp "m4l/Tanghim Receiver.amxd" staged-plugins/
+          cp "m4l/Tanghim MPE Receiver.amxd"     staged-plugins/
+          cp "m4l/Tanghim Mono PB Receiver.amxd" staged-plugins/
 
       - name: Stage plugins (Windows)
         if: runner.os == 'Windows'
@@ -101,7 +102,8 @@ jobs:
           Copy-Item         "build/Tanghim_artefacts/Release/CLAP/Tanghim.clap"                      "staged-plugins/"
           Copy-Item -Recurse "build/TanghimReceiver_artefacts/Release/VST3/Tanghim Receiver.vst3"    "staged-plugins/"
           Copy-Item         "build/TanghimReceiver_artefacts/Release/CLAP/Tanghim Receiver.clap"     "staged-plugins/"
-          Copy-Item         "m4l/Tanghim Receiver.amxd" "staged-plugins/"
+          Copy-Item         "m4l/Tanghim MPE Receiver.amxd"     "staged-plugins/"
+          Copy-Item         "m4l/Tanghim Mono PB Receiver.amxd" "staged-plugins/"
 
       - name: Stage plugins (Linux)
         if: runner.os == 'Linux'
@@ -264,7 +266,7 @@ jobs:
 
             - Tanghim (Transmitter) — VST3, AU (macOS only), CLAP
             - Tanghim Receiver — VST3, AU (macOS only), CLAP
-            - Tanghim Receiver for Ableton Live (M4L) — macOS and Windows installers, optional component
+            - Tanghim M4L Receivers (MPE + Mono PB) for Ableton Live — macOS and Windows installers, optional component
 
             > **Ableton Live users:** Ableton doesn't support VST3 MIDI effects. Enable the M4L component during installation, or use MTS-ESP-capable synths.
           files: artifacts/*

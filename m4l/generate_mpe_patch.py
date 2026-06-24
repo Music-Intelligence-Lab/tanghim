@@ -109,10 +109,9 @@ midiparse = p.add("midiparse @hires 2",
 p.add_line(midiin, midiparse)
 
 # ═══════════════════════════════════════════════════════════════════════
-# midiparse outlet 0 emits a LIST (pitch, velocity) — verified against
-# legacy m4l/Tanghim Receiver.maxpat. We unpack into separate ints.
-# [unpack 0 0] outputs right-to-left: outlet 1 (velocity) first, then
-# outlet 0 (pitch).
+# midiparse outlet 0 emits a LIST (pitch, velocity) — verified empirically.
+# We unpack into separate ints. [unpack 0 0] outputs right-to-left:
+# outlet 1 (velocity) first, then outlet 0 (pitch).
 # ═══════════════════════════════════════════════════════════════════════
 
 note_unpack = p.add("unpack 0 0",

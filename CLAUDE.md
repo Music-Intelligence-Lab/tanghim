@@ -108,10 +108,16 @@ tests/
   TuningEngineTest.cpp
   MidiProcessingTest.cpp
 m4l/
-  generate_patch.py          py2max script to regenerate .maxpat
-  mts_midi_effect.js         Max js object for MIDI processing
-  Tanghim Receiver.maxpat    Generated Max patch
-  Tanghim Receiver.amxd      Compiled Max for Live device
+  _patch_common.py                    Shared py2max freeze-to-amxd helpers
+  generate_mpe_patch.py               py2max script for MPE Receiver
+  generate_monopb_patch.py            py2max script for Mono PB Receiver
+  registry_mpe.js                     Heartbeat registry script (MPE)
+  registry_monopb.js                  Heartbeat registry script (Mono PB)
+  Tanghim MPE Receiver.maxpat         Generated MPE Receiver patch
+  Tanghim MPE Receiver.amxd           Compiled MPE Receiver device
+  Tanghim Mono PB Receiver.maxpat     Generated Mono PB Receiver patch
+  Tanghim Mono PB Receiver.amxd       Compiled Mono PB Receiver device
+  MTS-ESP-Max-Package/                Vendored ODDSound MTS-ESP Max package (mtof.mxo + helpers)
 libs/
   JUCE/                      Git submodule
   clap-juce-extensions/      Git submodule
@@ -285,29 +291,33 @@ Lightweight MIDI effect (`TanghimReceiver`): MTS-ESP Client → pitch bend/MPE o
 
 ## Max for Live Wrapper
 
-Ableton doesn't support VST3 MIDI effects. Architecture: VST3 as data bridge (128 cents params) + Max `js` for MIDI processing + Max patch for routing.
+Ableton doesn't support VST3 MIDI effects. Architecture: two pure-native Max patches built on ODDSound's MTS-ESP Max Package — one MPE Receiver (`Tanghim MPE Receiver.amxd`) and one Mono PB Receiver (`Tanghim Mono PB Receiver.amxd`). No `vst~`, no JavaScript, no VST3 parameter bridge. The MPE/Mono PB split is required because the `is_mpe` patcher flag is set at load time and cannot be toggled at runtime.
 
-**Frozen .amxd (single-file distribution):**
-- The `.amxd` embeds `mts_midi_effect.js` inside the binary — users install one file, no external JS needed
-- Format: `ampf` header + `mmmmmeta` (value 4 = frozen MIDI effect) + `ptch` section containing `mx@c` header + concatenated files + `dlst` directory
+**Topology (MPE Receiver):**
+`midiin → midiparse @hires 1 → unpack` (pitch+vel list at outlet 0 is a *list*, must unpack). Pitch routes to `MTS-ESP.mtof.0` (cents lookup) and to `[poly]` voice allocator. Allocated voice number → channel → sequenced via `[t b b i i]` to emit `xbendout` (pitch bend) then `noteout` on the allocated channel. `xbendout` only *formats* bytes; they must be wired to `midiout` to actually transmit.
+
+**Frozen .amxd format** (reverse-engineered from factory frozen devices LFO.amxd, Max MIDI Receiver.amxd):
+- `ampf` header + `mmmmmeta` (value 4 = frozen MIDI effect) + `ptch` section containing `mx@c` header + concatenated files + `dlst` directory
 - Meta tag prefix encodes device type: `mmmmm` = MIDI effect, `iiiii` = instrument, `aaaaa` = audio effect
 - Frozen meta values: `4` for MIDI effects, `7` for audio effects/instruments
-- `dependency_cache` in patch JSON lists embedded files; `project.contents.code` registers JS
 - `dlst` directory: `dire` entries with `type`/`fnam`/`sz32`/`of32`/`flag` sub-fields (all big-endian). Main patch has `flag: 17`, dependencies `flag: 0`
-- Reverse-engineered from Ableton factory frozen devices (LFO.amxd, Max MIDI Receiver.amxd)
+- Freeze logic lives in `m4l/_patch_common.py`, shared between the two generator scripts
+
+**ODDSound MTS-ESP Max Package** is *vendored* in `m4l/MTS-ESP-Max-Package/` and the `mtof.mxo` external is also copied to the Ableton User Library at install time. The external requires the *full* Max package layout (externals/, init/, help/, package-info.json) at `~/Documents/Max 8/Library/` — not just the `.mxo` next to the `.amxd`.
 
 **Key gotchas:**
-- **JUCE VST3 bypass param at index 0** → APVTS params start at index 1. `cents_0` at **VST3 index 4** (3 control params + bypass)
-- **`is_mpe: 1`** on patcher metadata — without it, Ableton normalizes to channel 1
+- **`is_mpe: 1`** on patcher metadata — without it, Ableton normalizes to channel 1 (MPE Receiver only)
 - **Never reset PB on Note Off** — causes snap during release tail
+- **midiparse outlet 0** emits a `(pitch, vel)` *list*, not a pitch int — must unpack
+- **midiparse outlet 1** is poly aftertouch, NOT velocity
 - **midiparse outlet 5**: 7-bit (0-127), NOT 14-bit. Convert: `val << 7`
-- **`vst~` ignoreclick**: The `vst~` object must have `ignoreclick 1` — without it, clicking anywhere on the M4L device (even blank background) steals keyboard focus from Ableton, disabling computer keyboard MIDI input. Native Ableton devices don't have this issue because they use Ableton's own UI framework, not Max's
-- **JS default initialization**: pattr `@default` may not output on first load (no pattrstorage state). Explicit message box sends `set_mode 0, set_mpe_bend_range 48, set_mono_bend_range 2` to JS on loadbang delay
-- **Parameter-poll rate is bounded by MIDI timing**: `metro N → uzi 128 → get` produces 128/N msgs/sec on Max's scheduler thread, which is the same thread that schedules incoming Note Ons. At `metro 100` (1280 msgs/sec) MIDI gets audible per-note timing jitter. **Use `metro 1000`** — tuning latency is ~1s but imperceptible for human-tempo maqam selection. → [diary 2026-05-05](diary/2026-05-05.md)
-- **MPE channel allocation in JS uses per-slot state**: `channelNote[i]` / `channelActive[i]` arrays, not a `noteToChannel[pitch]` dictionary. Same-pitch overlap (e.g. arpeggios) would otherwise leak channel slots and trigger voice-stealing on still-sounding notes. Mirrors the C++ `MpePitchBendProcessor` design.
-- Patch generated via py2max: `python3 m4l/generate_patch.py`
-- Install: `~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim/`
-- → [diary 2026-02-20](diary/2026-02-20.md) (comprehensive M4L architecture guide), [diary 2026-02-22](diary/2026-02-22.md) (PB combining), [diary 2026-05-05](diary/2026-05-05.md) (poll-rate timing fix + MPE allocation fix)
+- **`[poly]` outlets**: outlet 0 = voice number (1..15), outlet 1 = pitch, outlet 2 = velocity (verified empirically against test in Live)
+- **`xbendout` doesn't transmit** — only formats bytes. Must route bytes to `midiout`
+- **`live.midiin` doesn't exist** — use plain `midiin`
+- **MPE channel allocation via `[poly]` uses per-slot state**, not a `noteToChannel[pitch]` mapping. Same-pitch overlap (arpeggios) would otherwise leak channel slots and trigger voice-stealing on still-sounding notes. Mirrors the C++ `MpePitchBendProcessor` design.
+- Patches generated via py2max: `python3 m4l/generate_mpe_patch.py` and `python3 m4l/generate_monopb_patch.py`
+- Install: `~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim/` (both `.amxd` files + MTS-ESP-Max-Package contents under `~/Documents/Max 8/Library/`)
+- → [diary 2026-02-20](diary/2026-02-20.md) (legacy `vst~`+JS architecture — superseded), [diary 2026-05-05](diary/2026-05-05.md) (legacy poll-rate timing fix + MPE allocation, motivated the rewrite), [diary 2026-05-06](diary/2026-05-06.md) (native rewrite decisions)
 
 ## APVTS Parameters
 
