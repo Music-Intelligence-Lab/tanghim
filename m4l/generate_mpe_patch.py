@@ -356,20 +356,12 @@ p.add_line(poly, pitch_store, outlet=1, inlet=1)  # store pitch silently
 # rationale.
 # ═══════════════════════════════════════════════════════════════════════
 
-pbrange_recv = p.add("receive #0_pbRange",
-    numinlets=0, numoutlets=1, outlettype=[""],
-    patching_rect=[380, 305, 90, 22])
-
-user_pbrange_recv = p.add("receive #0_userPbRange",
-    numinlets=0, numoutlets=1, outlettype=[""],
-    patching_rect=[480, 305, 110, 22])
-
 # pb_expr: combined PB = microtuning + scaled user offset, then clipped.
 #
 #   $f1 = cents                     (banged via cents_store.left)
-#   $f2 = mpePbRange    (semitones) (silent via receive pbRange)
+#   $f2 = mpePbRange    (semitones) (cold, set by MPE PB Range dial below)
 #   $i3 = user_pb_offset (-8192..8191) (silent via user_pb_offset.0)
-#   $f4 = userPbRange   (semitones) (silent via receive userPbRange)
+#   $f4 = userPbRange   (semitones) (cold, set by User PB Range dial below)
 #
 # Microtuning component: cents → PB units = (cents/100) / mpePbRange × 8191
 #   = ($f1 / ($f2 * 100.)) * 8191
@@ -377,14 +369,20 @@ user_pbrange_recv = p.add("receive #0_userPbRange",
 # emit in mpePbRange's PB-unit scale (since synth interprets PB by mpePbRange):
 #   user_offset_pb_units = $i3 * ($f4 / $f2)
 # Combined PB (centered at 8192) = 8192 + microtuning + user_offset.
+#
+# IMPORTANT: the two PB-range values reach the expr's cold inlets (1, 3)
+# via DIRECT patch cords from the live.dial objects (wired below, after the
+# dials are created) — NOT global send/receive. Max send/receive names are
+# global across the whole Live set (even with a #0 prefix they did not
+# isolate in frozen .amxd loads), so two M4L receiver instances cross-fed
+# each other's PB range. Direct cords are strictly instance-local.
 pb_expr = p.add(
     "expr int(8192 + ($f1 / ($f2 * 100.)) * 8191 + ($i3 * $f4 / $f2))",
     numinlets=4, numoutlets=1, outlettype=[""],
     patching_rect=[290, 340, 360, 22])
 p.add_line(cents_store, pb_expr, outlet=0, inlet=0)        # cents (banged)
-p.add_line(pbrange_recv, pb_expr, outlet=0, inlet=1)        # mpePbRange
 p.add_line(user_pb_offset, pb_expr, outlet=0, inlet=2)      # user offset
-p.add_line(user_pbrange_recv, pb_expr, outlet=0, inlet=3)   # userPbRange
+# inlets 1 (mpePbRange) and 3 (userPbRange) wired from the dials below
 
 pb_clip = p.add("clip 0 16383",
     numinlets=3, numoutlets=1, outlettype=[""],
@@ -680,10 +678,8 @@ pbnum = p.add_box(Box(
     varname="MPE PB Range",
 ))
 
-pbrange_send = p.add("send #0_pbRange",
-    numinlets=1, numoutlets=0,
-    patching_rect=[20, 435, 90, 22])
-p.add_line(pbnum, pbrange_send)
+# MPE PB Range dial → pb_expr cold inlet 1 ($f2). Direct cord, instance-local.
+p.add_line(pbnum, pb_expr, outlet=0, inlet=1)
 
 # Two-line label above the User PB dial.
 user_dial_label = p.add_box(Box(
@@ -720,10 +716,8 @@ user_pb_dial = p.add_box(Box(
     varname="User PB Range",
 ))
 
-user_pbrange_send = p.add("send #0_userPbRange",
-    numinlets=1, numoutlets=0,
-    patching_rect=[260, 435, 110, 22])
-p.add_line(user_pb_dial, user_pbrange_send)
+# User PB Range dial → pb_expr cold inlet 3 ($f4). Direct cord, instance-local.
+p.add_line(user_pb_dial, pb_expr, outlet=0, inlet=3)
 
 # ═══════════════════════════════════════════════════════════════════════
 # Receiver registry — writes uuid.mpe on load so the Tanghim

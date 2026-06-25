@@ -206,22 +206,19 @@ p.add_line(chan_msg, noteout, outlet=0, inlet=2)       # ch 1 → noteout (silen
 # PB chain  (identical to MPE patch except xbendout hardwired to ch 1)
 # ═══════════════════════════════════════════════════════════════════════
 
-pbrange_recv = p.add("receive #0_pbRange",
-    numinlets=0, numoutlets=1, outlettype=[""],
-    patching_rect=[380, 305, 90, 22])
-
-user_pbrange_recv = p.add("receive #0_userPbRange",
-    numinlets=0, numoutlets=1, outlettype=[""],
-    patching_rect=[480, 305, 110, 22])
-
+# PB-range values reach the expr's cold inlets (1, 3) via DIRECT patch cords
+# from the single PB Range dial (wired below, after the dial is created) —
+# NOT global send/receive. Max send/receive names are global across the whole
+# Live set (even a #0 prefix did not isolate in frozen .amxd loads), so two
+# M4L receiver instances cross-fed each other's PB range. Direct cords are
+# strictly instance-local.
 pb_expr = p.add(
     "expr int(8192 + ($f1 / ($f2 * 100.)) * 8191 + ($i3 * $f4 / $f2))",
     numinlets=4, numoutlets=1, outlettype=[""],
     patching_rect=[290, 340, 360, 22])
 p.add_line(cents_store, pb_expr, outlet=0, inlet=0)
-p.add_line(pbrange_recv, pb_expr, outlet=0, inlet=1)
 p.add_line(user_pb_offset, pb_expr, outlet=0, inlet=2)
-p.add_line(user_pbrange_recv, pb_expr, outlet=0, inlet=3)
+# inlets 1 ($f2) and 3 ($f4) wired from the PB Range dial below
 
 pb_clip = p.add("clip 0 16383",
     numinlets=3, numoutlets=1, outlettype=[""],
@@ -277,15 +274,10 @@ pbnum = p.add_box(Box(
     varname="PB Range",
 ))
 
-pbrange_send = p.add("send #0_pbRange",
-    numinlets=1, numoutlets=0,
-    patching_rect=[20, 435, 90, 22])
-p.add_line(pbnum, pbrange_send)
-
-user_pbrange_send = p.add("send #0_userPbRange",
-    numinlets=1, numoutlets=0,
-    patching_rect=[20, 460, 110, 22])
-p.add_line(pbnum, user_pbrange_send)
+# Single PB Range dial → both expr cold inlets 1 ($f2) and 3 ($f4): mono
+# shares one range for synth + wheel. Direct cords, instance-local.
+p.add_line(pbnum, pb_expr, outlet=0, inlet=1)
+p.add_line(pbnum, pb_expr, outlet=0, inlet=3)
 
 # ═══════════════════════════════════════════════════════════════════════
 # Receiver registry — writes uuid.monopb on load so the Tanghim
