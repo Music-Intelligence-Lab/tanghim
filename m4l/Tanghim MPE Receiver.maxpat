@@ -461,7 +461,7 @@
 						90,
 						22
 					],
-					"text": "receive pbRange",
+					"text": "receive #0_pbRange",
 					"outlettype": [
 						""
 					]
@@ -479,7 +479,7 @@
 						110,
 						22
 					],
-					"text": "receive userPbRange",
+					"text": "receive #0_userPbRange",
 					"outlettype": [
 						""
 					]
@@ -935,7 +935,7 @@
 						90,
 						22
 					],
-					"text": "send pbRange"
+					"text": "send #0_pbRange"
 				}
 			},
 			{
@@ -1023,7 +1023,7 @@
 						110,
 						22
 					],
-					"text": "send userPbRange"
+					"text": "send #0_userPbRange"
 				}
 			},
 			{

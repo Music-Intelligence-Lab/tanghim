@@ -153,6 +153,7 @@ private:
     juce::TextButton   updatesButton { juce::CharPointer_UTF8 ("\xe2\x9f\xb3 Updates") };
     juce::TextButton   clearCacheButton { juce::CharPointer_UTF8 ("\xc3\x97 Clear Cache") };
     juce::Label        downloadStatusLabel;
+    CopyableLabel      versionLabel;
     juce::TextButton   retryButton;
     StatusBarLookAndFeel statusBarLnF;
     juce::Label        midiPresetLabel { {}, "Preset MIDI Map Config:" };

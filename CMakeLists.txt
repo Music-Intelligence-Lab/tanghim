@@ -177,7 +177,12 @@ target_include_directories(TanghimReceiver
     PRIVATE
         source
         libs/MTS-ESP/Client
+        ${CMAKE_BINARY_DIR}/generated
 )
+
+# Ensure timestamp is generated before compiling and re-link on header change
+add_dependencies(TanghimReceiver GenerateBuildTimestamp)
+set_source_files_properties(source/receiver/ReceiverEditor.cpp PROPERTIES OBJECT_DEPENDS ${TIMESTAMP_HEADER})
 
 target_compile_definitions(TanghimReceiver
     PUBLIC

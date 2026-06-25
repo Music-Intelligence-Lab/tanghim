@@ -206,11 +206,11 @@ p.add_line(chan_msg, noteout, outlet=0, inlet=2)       # ch 1 → noteout (silen
 # PB chain  (identical to MPE patch except xbendout hardwired to ch 1)
 # ═══════════════════════════════════════════════════════════════════════
 
-pbrange_recv = p.add("receive pbRange",
+pbrange_recv = p.add("receive #0_pbRange",
     numinlets=0, numoutlets=1, outlettype=[""],
     patching_rect=[380, 305, 90, 22])
 
-user_pbrange_recv = p.add("receive userPbRange",
+user_pbrange_recv = p.add("receive #0_userPbRange",
     numinlets=0, numoutlets=1, outlettype=[""],
     patching_rect=[480, 305, 110, 22])
 
@@ -277,12 +277,12 @@ pbnum = p.add_box(Box(
     varname="PB Range",
 ))
 
-pbrange_send = p.add("send pbRange",
+pbrange_send = p.add("send #0_pbRange",
     numinlets=1, numoutlets=0,
     patching_rect=[20, 435, 90, 22])
 p.add_line(pbnum, pbrange_send)
 
-user_pbrange_send = p.add("send userPbRange",
+user_pbrange_send = p.add("send #0_userPbRange",
     numinlets=1, numoutlets=0,
     patching_rect=[20, 460, 110, 22])
 p.add_line(pbnum, user_pbrange_send)

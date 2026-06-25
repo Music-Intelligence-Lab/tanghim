@@ -1,20 +1,8 @@
 #include "ReceiverEditor.h"
 #include "ReceiverProcessor.h"
+#include "BuildTimestamp.h"
 
-//==============================================================================
-// Theme colours matching the Transmitter's CSS variables
-namespace Theme
-{
-    static const juce::Colour bg         { 0xff0f0f1a };  // --bg
-    static const juce::Colour surface    { 0xff1a1a2e };  // --surface
-    static const juce::Colour surface2   { 0xff16213e };  // --surface2
-    static const juce::Colour accent     { 0xffe94560 };  // --accent
-    static const juce::Colour text       { 0xffe0e0e0 };  // --text
-    static const juce::Colour textMuted  { 0xff888888 };  // --text-muted
-    static const juce::Colour border     { 0xff2a2a4a };  // --border
-    static const juce::Colour connected  { 0xff81c784 };  // green
-    static const juce::Colour tuningText { 0xffb0b0cc };  // slightly brighter than muted
-}
+// Theme colours come from "../editor/TanghimTheme.h" (included via ReceiverEditor.h)
 
 //==============================================================================
 ReceiverLookAndFeel::ReceiverLookAndFeel()
@@ -169,7 +157,7 @@ ReceiverEditor::ReceiverEditor (ReceiverProcessor& p)
     addAndMakeVisible (maqamInfoLabel);
 
     // ── Version ───────────────────────────────────────────────────────────
-    versionLabel.setText (juce::String ("v") + PLUGIN_VERSION, juce::dontSendNotification);
+    versionLabel.setSourceText (juce::String ("v") + PLUGIN_VERSION + " (" + BUILD_TIMESTAMP + ")");
     versionLabel.setJustificationType (juce::Justification::centredRight);
     versionLabel.setColour (juce::Label::textColourId, Theme::textMuted.withAlpha (0.6f));
     versionLabel.setFont (juce::FontOptions (11.0f));

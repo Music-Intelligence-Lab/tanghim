@@ -882,15 +882,8 @@ void TanghimNativeEditor::paint (juce::Graphics& g)
     g.setColour (juce::Colour (0xff2d2d4a));
     g.drawHorizontalLine (statusBarBounds.getY(), 0.0f, (float) getWidth());
 
-    // Version + timestamp (hidden when download status is showing)
-    if (! downloadStatusLabel.isVisible())
-    {
-        g.setColour (juce::Colour (0xff808099));
-        g.setFont (11.0f);
-        g.drawText ("v" + juce::String (PLUGIN_VERSION) + " (" + juce::String (BUILD_TIMESTAMP) + ")",
-                    statusBarBounds.withTrimmedLeft (16).withWidth (200),
-                    juce::Justification::centredLeft);
-    }
+    // Version + timestamp is rendered by the CopyableLabel `versionLabel`
+    // (set up in the constructor, positioned in resized()).
 }
 
 void TanghimNativeEditor::resized()
@@ -965,7 +958,8 @@ void TanghimNativeEditor::resized()
         const int btnHeight = 18;
         const int yPos = statusArea.getY() + (Theme::kStatusBarHeight - btnHeight) / 2;
 
-        // Download status label + retry button (left side, replaces version text)
+        // Version label (left side) — replaced by the download status label when a fetch is in progress
+        versionLabel.setBounds (statusArea.withTrimmedLeft (16).withWidth (200).withY (yPos).withHeight (btnHeight));
         downloadStatusLabel.setBounds (statusArea.withTrimmedLeft (16).withWidth (200).withY (yPos).withHeight (btnHeight));
         retryButton.setBounds (statusArea.withTrimmedLeft (216).withWidth (50).withY (yPos).withHeight (btnHeight));
 
@@ -1195,7 +1189,9 @@ void TanghimNativeEditor::timerCallback()
             retryButton.setVisible (false);
         }
 
-        // Repaint status bar when visibility changes (toggles version text)
+        // Version label is shown only when download status isn't taking its slot
+        versionLabel.setVisible (! downloadStatusLabel.isVisible());
+
         if (wasVisible != downloadStatusLabel.isVisible())
             repaint (getLocalBounds().removeFromBottom (Theme::kStatusBarHeight));
     }
@@ -1255,6 +1251,13 @@ void TanghimNativeEditor::setupStatusBar()
     const auto borderColor = Theme::border;
     const auto textColor   = Theme::accent;
     const auto mutedColor  = juce::Colour (0xff808099);
+
+    // Version label — selectable/copyable, replaced by the download status label during fetches
+    versionLabel.setFont (juce::FontOptions (11.0f));
+    versionLabel.setColour (juce::Label::textColourId, juce::Colour (0xff808099));
+    versionLabel.setJustificationType (juce::Justification::centredLeft);
+    versionLabel.setSourceText ("v" + juce::String (PLUGIN_VERSION) + " (" + juce::String (BUILD_TIMESTAMP) + ")");
+    addAndMakeVisible (versionLabel);
 
     // Download status label
     downloadStatusLabel.setFont (juce::FontOptions (11.0f));

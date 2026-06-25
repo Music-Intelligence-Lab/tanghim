@@ -38,6 +38,7 @@ namespace Theme
     static const juce::Colour mpeBadge   { 0xff64b5f6 };  // MPE badge (blue)
     static const juce::Colour monoPbBadge{ 0xff66bb6a };  // Mono PB badge (green)
     static const juce::Colour connected  { 0xff81c784 };  // connection status (green)
+    static const juce::Colour tuningText { 0xffb0b0cc };  // tuning info text (Receiver)
 
     // Piano key indicators
     static const juce::Colour whiteKey   { 0x99ffffff };  // rgba(255,255,255,0.6)
@@ -86,6 +87,48 @@ namespace Theme
         return -(pct - 50.0) * kCentsRange / kTrackHalfPct;
     }
 }
+
+//==============================================================================
+/** A Label whose text the user can copy by clicking it.
+    Briefly displays "Copied!" feedback before reverting. */
+class CopyableLabel : public juce::Label,
+                      private juce::Timer
+{
+public:
+    CopyableLabel()
+    {
+        setInterceptsMouseClicks (true, false);
+        setMouseCursor (juce::MouseCursor::PointingHandCursor);
+    }
+
+    void setSourceText (const juce::String& newText)
+    {
+        sourceText = newText;
+        if (! showingFeedback)
+            setText (sourceText, juce::dontSendNotification);
+    }
+
+private:
+    void mouseUp (const juce::MouseEvent&) override
+    {
+        if (sourceText.isEmpty())
+            return;
+        juce::SystemClipboard::copyTextToClipboard (sourceText);
+        showingFeedback = true;
+        setText ("Copied!", juce::dontSendNotification);
+        startTimer (900);
+    }
+
+    void timerCallback() override
+    {
+        stopTimer();
+        showingFeedback = false;
+        setText (sourceText, juce::dontSendNotification);
+    }
+
+    juce::String sourceText;
+    bool showingFeedback = false;
+};
 
 //==============================================================================
 /** Custom LookAndFeel for the Tanghim transmitter UI. */
