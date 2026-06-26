@@ -2,7 +2,7 @@
 # Moves the staged Tanghim .amxd devices and the MTS-ESP-Max-Package from the
 # package payload (/tmp/tanghim-m4l-staging) to:
 #   - Ableton user library  → ~/Music/Ableton/User Library/.../Tanghim/
-#   - Max user library      → ~/Documents/Max 8/Library/ and ~/Documents/Max 9/Library/
+#   - Max Packages folder   → ~/Documents/Max 8/Packages/ and ~/Documents/Max 9/Packages/
 #
 # Invoked by productbuild when the M4L component is selected.
 # productbuild runs this as root, so we detect the real console user via stat.
@@ -48,17 +48,22 @@ done
 
 chown -R "${CONSOLE_USER}" "${ABLETON_DEST}"
 
-# ── Max User Library: install MTS-ESP-Max-Package to Max 8 and Max 9 ─────────
+# ── Max Packages folder: install MTS-ESP-Max-Package to Max 8 and Max 9 ──────
 # Live 11 → Max 8, Live 12 → Max 9. Install to both — harmless if one isn't used.
-# Canonical location per ODDSound MTS-ESP-Max-Package readme:
-#   ~/Documents/Max <N>/Library/<PackageName>/
-# Frozen .amxd loads only find the package's externals when this canonical
-# layout is present (a standalone .mxo next to the .amxd does not work).
+# Canonical location is the Max **Packages** folder, NOT Library:
+#   ~/Documents/Max <N>/Packages/<PackageName>/
+# Packages/ is Max's structured-package search path (externals/, init/, help/,
+# package-info.json get registered); Library/ is a flat catch-all that only
+# happened to resolve the .mxo on macOS and errors on Windows. Frozen .amxd
+# loads only find the package's externals here (a standalone external next to
+# the .amxd does not work). See docs.cycling74.com "About Packages".
 for MAX_VERSION in "Max 8" "Max 9"; do
-    MAX_LIB="${USER_HOME}/Documents/${MAX_VERSION}/Library"
-    mkdir -p "${MAX_LIB}"
-    rm -rf "${MAX_LIB}/${MAX_PACKAGE_NAME}"
-    cp -R "${STAGING_DIR}/${MAX_PACKAGE_NAME}" "${MAX_LIB}/"
+    MAX_PKGS="${USER_HOME}/Documents/${MAX_VERSION}/Packages"
+    mkdir -p "${MAX_PKGS}"
+    rm -rf "${MAX_PKGS}/${MAX_PACKAGE_NAME}"
+    # Remove the stale copy prior installs placed in Library/ (wrong location).
+    rm -rf "${USER_HOME}/Documents/${MAX_VERSION}/Library/${MAX_PACKAGE_NAME}"
+    cp -R "${STAGING_DIR}/${MAX_PACKAGE_NAME}" "${MAX_PKGS}/"
     chown -R "${CONSOLE_USER}" "${USER_HOME}/Documents/${MAX_VERSION}"
 done
 

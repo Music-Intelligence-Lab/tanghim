@@ -462,12 +462,12 @@ The macOS and Windows installers install both devices and the required Max packa
    ```
 2. Copy the entire `m4l/MTS-ESP-Max-Package/` directory into both:
    ```
-   ~/Documents/Max 8/Library/MTS-ESP-Max-Package/   (Live 11)
-   ~/Documents/Max 9/Library/MTS-ESP-Max-Package/   (Live 12)
+   ~/Documents/Max 8/Packages/MTS-ESP-Max-Package/   (Live 11)
+   ~/Documents/Max 9/Packages/MTS-ESP-Max-Package/   (Live 12)
    ```
 3. Restart Ableton Live.
 
-The Max package contains the ODDSound MTS-ESP externals (the `MTS-ESP.mtof` Max object the receiver patches use). The package must live in the canonical Max user library location above — a standalone `.mxo` next to the `.amxd` does not work for frozen Max for Live devices.
+The Max package contains the ODDSound MTS-ESP externals (the `MTS-ESP.mtof` Max object the receiver patches use). It must live in the Max **Packages** folder (not `Library/`) so Max registers it as a structured package — a standalone external next to the `.amxd` does not work for frozen Max for Live devices.
 
 #### Using a Max for Live Receiver
 

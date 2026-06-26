@@ -48,6 +48,15 @@ TanghimProcessor::TanghimProcessor()
       apvts (*this, nullptr, "Parameters", createParameterLayout()),
       updateChecker (apiClient, dataCache, std::weak_ptr<std::atomic<bool>> (alive))
 {
+    // Ensure the receiver-registry directory exists so M4L receivers — which
+    // are pure-native Max patches with no C++ component and no mkdir API — can
+    // write their heartbeat files. The VST3/AU Receiver's announce() also
+    // creates this dir, but it isn't hosted under Ableton/Live (the M4L wrapper
+    // is the Live path), so on a Transmitter + M4L-only setup the Transmitter is
+    // the only Tanghim component that can create it — on every OS, not just
+    // Windows. createDirectory() makes intermediate dirs and no-ops if present.
+    ReceiverRegistry::getRegistryDir().createDirectory();
+
     // Cache parameter pointers for quick access
     for (int i = 0; i < kNumSlotParams; ++i)
         slotParams[i] = dynamic_cast<juce::AudioParameterFloat*> (
