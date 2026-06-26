@@ -47,10 +47,15 @@ ui/node_modules/
 # UI build output
 ui/dist/
 
+# Python bytecode (py2max M4L generators)
+__pycache__/
+*.pyc
+
 # Development notes
 CLAUDE.md
 DIARY.md
 diary/
+docs/
 TODO.md
 IMPLEMENTATION_PLAN.md
 project_idea.md

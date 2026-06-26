@@ -283,14 +283,18 @@ MIDI deviation format: `"48 -5.9"` = MIDI note 48, -5.9 cents from 12-EDO.
 Lightweight MIDI effect (`TanghimReceiver`): MTS-ESP Client → pitch bend/MPE output.
 - Two modes: MPE (ch 2-16, default 48st PB) and Mono PB (single channel, default 2st)
 - APVTS: 3 params (mode, mpePbRange, monoPbRange). `IS_MIDI_EFFECT=TRUE`, `IS_SYNTH=FALSE`
-- File-based registry: `~/Library/Tanghim/receivers/{uuid}.mpe|.monopb` — heartbeat 1Hz, stale >5s, cleanup >10s
+- File-based registry: `<userAppData>/Tanghim/receivers/{uuid}.mpe|.monopb` — JUCE `userApplicationDataDirectory`: macOS `~/Library`, Windows `%APPDATA%` (`CSIDL_APPDATA`). VST3/AU receivers heartbeat 1Hz, M4L receivers every 2s; stale >5s, cleanup >10s. The **Transmitter creates this directory at startup** — M4L receivers are native Max with no mkdir API and the VST3/AU Receiver (whose `announce()` also creates it) isn't hosted under Live, so on a Transmitter + M4L-only setup the Transmitter is the only component that can create it (on every OS — macOS masks the gap only because dev/test machines have run the VST3/AU Receiver at some point). The M4L registry JS selects the per-OS path via `max.os`
 - Transmitter scans at 2Hz; native count = `MTS_GetNumClients()` - (MPE + Mono PB count)
 - Mono PB note stack: last-note priority legato recall
 - PB wheel combining: `combined = clamp(microBend + (userPitchBend - 8192), 0, 16383)`
 - → [diary 2026-02-18](diary/2026-02-18.md), [diary 2026-02-19](diary/2026-02-19.md), [diary 2026-02-22](diary/2026-02-22.md), [diary 2026-02-23b](diary/2026-02-23b.md)
 
-### Receiver AU in Logic — "No transmitter found" until a synth is loaded (NOT a bug)
-The connection flag (`connectedToMaster`) is written **only inside `processBlock()`** (`MTS_HasMaster()` poll). Logic does not call `processBlock()` on an idle MIDI-effect AU track — a track with no instrument downstream and the transport stopped is suspended. So the Receiver AU shows "No transmitter found" on an otherwise-empty track even when a Transmitter is active. As soon as a synth is loaded after the Receiver on the same track (or MIDI flows), Logic activates the track, `processBlock()` runs, and the status flips to "Connected". Tuning (MPE / Mono PB / MTS-ESP) all work correctly once active. This is Logic AU host behaviour, not an MTS-ESP fault — it does not occur in Live with the VST3 Receiver (Live calls `processBlock()` continuously on all tracks). Same-process proof: `lsof` shows Transmitter + all Receivers in one `AUHostingServiceXPC` process sharing one `libMTS.dylib` singleton, so `MTS_HasMaster()` is globally true the moment any client's block runs. **Note:** Live does not list the Receiver AU at all — Live doesn't host MIDI-effect (`aumi`) AUs, which is the same reason the M4L wrapper exists.
+### Receiver shows "No transmitter found" until its `processBlock()` runs (NOT a bug)
+The connection flag (`connectedToMaster`) — and the pitch-bend output itself — are produced **only inside `processBlock()`** (`MTS_HasMaster()` poll). Any host that does not run the Receiver's `processBlock()` shows "No transmitter found" even when a Transmitter is active, because the flag is never written. Two host behaviours trigger this:
+- **Logic AU**: Logic suspends an idle MIDI-effect AU track (no instrument downstream, transport stopped). Loading a synth after the Receiver on the same track (or MIDI flowing) activates the track, `processBlock()` runs, and the status flips to "Connected" — tuning then works correctly.
+- **Ableton Live + the VST3/AU Receiver**: Live does not functionally host VST3 MIDI-effect (or `aumi` AU) plugins, so it does not run the Receiver's `processBlock()` — the status stays "No transmitter found" and no pitch bend is produced. This is why the **M4L wrapper is the supported Live path**, not the VST3/AU Receiver.
+
+This is host behaviour, not an MTS-ESP fault. The two visibility directions are independent: the Receiver announces to the file registry from a **1 Hz timer** (`ReceiverRegistry::heartbeat`, not `processBlock`), so the Transmitter's MPE/Mono PB badge can read 1 while that same Receiver's UI reads "No transmitter found". Same-process proof: `lsof` shows Transmitter + all Receivers in one host process sharing one `libMTS.dylib` singleton, so `MTS_HasMaster()` is globally true the moment any client's block runs.
 
 ## Max for Live Wrapper
 
@@ -306,7 +310,25 @@ Ableton doesn't support VST3 MIDI effects. Architecture: two pure-native Max pat
 - `dlst` directory: `dire` entries with `type`/`fnam`/`sz32`/`of32`/`flag` sub-fields (all big-endian). Main patch has `flag: 17`, dependencies `flag: 0`
 - Freeze logic lives in `m4l/_patch_common.py`, shared between the two generator scripts
 
-**ODDSound MTS-ESP Max Package** is *vendored* in `m4l/MTS-ESP-Max-Package/` and the installer drops the full package into both `~/Documents/Max 8/Library/MTS-ESP-Max-Package/` (Live 11) and `~/Documents/Max 9/Library/MTS-ESP-Max-Package/` (Live 12) at install time. Frozen `.amxd` loads only resolve the externals when the *full* canonical Max package layout (externals/, init/, help/, package-info.json) is present at this path — a standalone `.mxo` next to the `.amxd` does NOT work for frozen .amxd loads in Live (it only works in Max editor mode, which scans patcher-adjacent directories).
+### Vendored ODDSound MTS-ESP Max Package
+
+**ODDSound MTS-ESP Max Package** is *vendored verbatim* in `m4l/MTS-ESP-Max-Package/` and the installer drops the full package into the user's Max **Packages** folder — both `~/Documents/Max 8/Packages/MTS-ESP-Max-Package/` (Live 11) and `~/Documents/Max 9/Packages/MTS-ESP-Max-Package/` (Live 12) — at install time.
+
+- **Must be the `Packages/` folder, NOT `Library/`.** Per Cycling '74 docs, `Packages/` is the structured-package search path (`externals/`, `help/`, `init/`, `package-info.json` are registered; `init/` scripts run); `Library/` is a flat catch-all that only adds files recursively to the search path without package registration. `Library/` resolves the external on macOS but fails to on Windows. Sources: [Packages – Max 8 docs](https://docs.cycling74.com/max8/vignettes/packages), [Library vs Packages – Cycling '74 forum](https://cycling74.com/forums/whats-the-practical-difference-between-library-and-packages-for-max-7).
+- **Must be the FULL package, not just the `.mxo`/`.mxe64`.** Frozen `.amxd` loads only resolve the externals when the full canonical layout is present — a standalone external next to the `.amxd` does NOT work for frozen loads in Live (it only works in Max editor mode, which scans patcher-adjacent directories). Reasons: Max's frozen-load path doesn't search patcher-adjacent dirs, and reference/help patches won't resolve.
+- **Why vendored, not a submodule:** 0BSD license permits redistribution without conditions; vendoring keeps the repo self-contained (no `git clone --recursive`); ~1.3 MB, version-pinned, reproducible CI builds.
+- **Source / pin:** [github.com/ODDSound/MTS-ESP-Max-Package](https://github.com/ODDSound/MTS-ESP-Max-Package), pinned commit `1319621f969da641af4df4201aadbab82943093d` (2025-12-22 "Rebuild with latest libMTSClient."), license 0BSD (see the package's `LICENSE`).
+- **Updating to a newer upstream commit:**
+  ```bash
+  cd /tmp && rm -rf mts-update && mkdir mts-update && cd mts-update
+  git clone --depth 1 https://github.com/ODDSound/MTS-ESP-Max-Package.git .
+  git rev-parse HEAD  # record this as the new "pinned commit" above
+  cd "$REPO_ROOT"
+  rm -rf m4l/MTS-ESP-Max-Package && cp -R /tmp/mts-update m4l/MTS-ESP-Max-Package && rm -rf m4l/MTS-ESP-Max-Package/.git
+  # Verify the macOS external is still a universal binary:
+  file "m4l/MTS-ESP-Max-Package/externals/MTS-ESP.mtof.mxo/Contents/MacOS/MTS-ESP.mtof"
+  # Expected: Mach-O universal binary with 2 architectures: [x86_64...] [arm64...]
+  ```
 
 **Key gotchas:**
 - **`is_mpe: 1`** on patcher metadata — without it, Ableton normalizes to channel 1 (MPE Receiver only)
@@ -319,8 +341,9 @@ Ableton doesn't support VST3 MIDI effects. Architecture: two pure-native Max pat
 - **`live.midiin` doesn't exist** — use plain `midiin`
 - **MPE channel allocation via `[poly]` uses per-slot state**, not a `noteToChannel[pitch]` mapping. Same-pitch overlap (arpeggios) would otherwise leak channel slots and trigger voice-stealing on still-sounding notes. Mirrors the C++ `MpePitchBendProcessor` design.
 - **NEVER use `[send]`/`[receive]` to route per-instance state (e.g. PB range) inside an M4L device.** Max send/receive names are GLOBAL across the entire Live set — every `[receive foo]` in any loaded device hears every `[send foo]`. With one MPE Receiver + one Mono PB Receiver loaded, the PB-range dials cross-fed each other: loading/changing one device silently overwrote the other's range (the dial UI stayed put because it's driven by `live.dial`, not the receive, which made it baffling to diagnose). The `#0_` instance-prefix token does NOT reliably isolate them in *frozen* `.amxd` loads (it isolates abstractions, not top-level device patchers). **Fix: wire the dial directly to the consuming object's cold inlet with a patch cord** — `live.dial → expr` cold inlet (1/3) sets the value without triggering, is strictly instance-local, and removes the shared namespace entirely. Cross-talk then becomes structurally impossible. → [diary 2026-06-25](diary/2026-06-25.md)
+- **Registry path is per-OS and the M4L cannot create it.** The heartbeat `js` writes to `<userAppData>/Tanghim/receivers` matching the Transmitter's scan dir — macOS `~/Library/...`, Windows `~/AppData/Roaming/...` (= `%APPDATA%`); the JS branches on `max.os` (`"macintosh"`/`"windows"`, no fallback). Max resolves `~` to the user home on both OSes ([conformpath docs](https://docs.cycling74.com/max8/refpages/conformpath): `~:` = home). The legacy `js` `File`/`Folder` objects have **no mkdir API**, so the directory must already exist or the heartbeat write fails silently and badges never count — the Transmitter creates it at startup (see Receiver Plugin section). → [diary 2026-06-26](diary/2026-06-26.md)
 - Patches generated via py2max: `python3 m4l/generate_mpe_patch.py` and `python3 m4l/generate_monopb_patch.py`
-- Install: `.amxd` files → `~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim/`; MTS-ESP-Max-Package → both `~/Documents/Max 8/Library/MTS-ESP-Max-Package/` (Live 11) and `~/Documents/Max 9/Library/MTS-ESP-Max-Package/` (Live 12)
+- Install: `.amxd` files → `~/Music/Ableton/User Library/Presets/MIDI Effects/Max MIDI Effect/Tanghim/`; MTS-ESP-Max-Package → both `~/Documents/Max 8/Packages/MTS-ESP-Max-Package/` (Live 11) and `~/Documents/Max 9/Packages/MTS-ESP-Max-Package/` (Live 12) — the `Packages/` folder, not `Library/` (see "Vendored ODDSound MTS-ESP Max Package" above)
 - → [diary 2026-02-20](diary/2026-02-20.md) (legacy `vst~`+JS architecture — superseded), [diary 2026-05-05](diary/2026-05-05.md) (legacy poll-rate timing fix + MPE allocation, motivated the rewrite), [diary 2026-05-06](diary/2026-05-06.md) (native rewrite decisions)
 
 ## APVTS Parameters
@@ -355,6 +378,7 @@ DAW-facing names must be pure ASCII (Ableton garbles UTF-8). No parentheses in P
 
 ## Conventions
 
+- **Documentation-first; never treat self-authored notes as authoritative**: Before asserting how any external tool, library, file format, or install location behaves, verify against authoritative sources — `context7` for up-to-date library/API/CLI docs, the upstream GitHub repo (README, source, and **open + closed issues/comments**), and primary forums (e.g. `cycling74.com` and `docs.cycling74.com` for Max/M4L). Diary entries, this CLAUDE.md, and any prior Claude-authored note are **point-in-time observations, not ground truth** — they can carry an unverified guess forward for weeks (e.g. a self-authored note documented the MTS-ESP Max package install path as `~/Documents/Max <N>/Library/` when the canonical packages folder is `~/Documents/Max <N>/Packages/`, and the wrong value propagated into CLAUDE.md and both installers; `Library/` worked on macOS but failed on Windows). When a self-note and an authoritative source conflict, the authoritative source wins — then fix the note. This extends [feedback_check_object_docs] beyond object wiring to install paths, config, and behavior of every external dependency.
 - **No fallbacks or graceful degradation**: Never add fallback logic, last-resort behaviors, or silent substitution. If primary logic fails or data is missing, skip/omit — do not degrade to an alternative. This applies to data resolution (e.g., no `ipnReference` fallback when `englishName` parsing fails), UI behavior (e.g., no mid-word text breaks as fallback), and all other code paths
 - **Tuning system ≡ tuning system + starting note**: Switching the starting note is functionally identical to switching the tuning system — both trigger `loadTuningSystem()`, reload pitch classes, refresh the maqam list, and require the same preset compatibility checks, state clearing, and UI updates. Any behaviour implemented for tuning system switches MUST also work for starting note switches. They share the same code path (`loadTuningSystem()` in `PluginProcessor`).
 - **Lifetime guard**: `callAsync` lambdas capture `weak_ptr<atomic<bool>>`, check `isAlive(weak)`. `alive` declared BEFORE `apiClient` so it outlives background thread
