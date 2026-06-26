@@ -65,6 +65,12 @@ git push origin v0.1.2
 
 **No manual zip/upload needed** — just push a tag.
 
+### Install cleanup & uninstall
+
+- **Pre-install cleanup** (every install, preserves user data): each installer clears the previous version's files before laying down new ones, so testers always run the latest build in the correct locations. macOS: the Transmitter component's `preinstall` (runs first) calls `tanghim-cleanup.sh --scope plugins` to clear the plug-in bundles; the M4L component self-cleans in its `postinstall` (rmdir-then-copy + legacy delete + stale `Library/` removal). Windows: `[InstallDelete]` clears the system plug-in bundles + stale `m4l-staging`; the `[Run]` steps clear user-scoped M4L/Max files. Runtime data (`<userAppData>/Tanghim`: cache, settings, presets) is **never** touched on install.
+- **Standalone uninstaller** (full removal incl. runtime data + pkg receipts): macOS `scripts/installer/macos/tanghim-cleanup.sh` (shipped as `uninstall-macos.sh`; `sudo bash uninstall-macos.sh` — defaults to `--scope all --mode all`); Windows `scripts/installer/windows/uninstall.bat` (run as administrator). `tanghim-cleanup.sh` is the single source of truth for the macOS path inventory (both preinstall and uninstall).
+- Files are targeted by their known install paths + consistent naming (`Tanghim*`, `MTS-ESP-Max-Package`, `com.khyamallami.tanghim.*`), not a stamped GUID — the path enumeration covers all current + historical-wrong locations.
+
 ## Project Structure
 
 ```

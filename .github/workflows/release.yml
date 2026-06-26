@@ -168,6 +168,9 @@ jobs:
             "${{ steps.version.outputs.version }}" \
             "$(pwd)/staged-plugins" \
             "$(pwd)/installer-out"
+          # Ship the standalone uninstaller (full removal incl. runtime data).
+          # Run with: sudo bash uninstall-macos.sh
+          cp scripts/installer/macos/tanghim-cleanup.sh installer-out/uninstall-macos.sh
 
       - name: Build installer (Windows)
         if: runner.os == 'Windows'
@@ -182,6 +185,9 @@ jobs:
             "/DOutputDir=$outAbs" `
             "scripts\installer\windows\tanghim.iss"
           if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE" }
+          # Ship the standalone uninstaller (full removal incl. runtime data).
+          # Run by right-clicking -> "Run as administrator".
+          Copy-Item "scripts\installer\windows\uninstall.bat" "installer-out\uninstall-windows.bat"
 
       - name: Build installer (Linux)
         if: runner.os == 'Linux'
@@ -263,6 +269,15 @@ jobs:
             - **macOS:** Double-click the `.pkg`. On first plug-in launch you may need to right-click the plug-in file in Finder → Open to bypass Gatekeeper (installer is ad-hoc signed, not notarized).
             - **Windows:** Double-click the `.exe`. Admin rights required (installs to `Program Files`).
             - **Linux:** `tar xzf Tanghim-${{ steps.version.outputs.version }}-Linux.tar.gz && cd Tanghim-${{ steps.version.outputs.version }}-Linux && ./install.sh`
+
+            Each install first clears the previous version's files (and any left in wrong locations) so you always run the latest, correctly-placed build.
+
+            ### Uninstalling
+
+            Full removal, including cached data, settings and presets:
+
+            - **macOS:** `sudo bash uninstall-macos.sh`
+            - **Windows:** right-click `uninstall-windows.bat` → **Run as administrator**
 
             ### What's included
 

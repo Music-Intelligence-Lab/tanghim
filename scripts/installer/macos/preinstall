@@ -1,0 +1,14 @@
+#!/bin/bash
+# Transmitter-component preinstall — runs FIRST (before any payload is laid
+# down), as root. Clears the existing Tanghim plug-in bundles so each install
+# produces a clean bundle (catches files removed between versions). Both the
+# Transmitter and Receiver plug-ins are always-installed components, so clearing
+# both here is safe — they are reinstalled by their own payloads immediately
+# after. M4L files, the Max package, and user runtime data are NOT touched here
+# (the M4L component self-cleans in its postinstall). Best-effort: a cleanup
+# hiccup must never abort the install.
+set -uo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+"${HERE}/tanghim-cleanup.sh" --scope plugins \
+    || echo "preinstall: plugin cleanup reported an issue; continuing install"
+exit 0

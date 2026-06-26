@@ -48,6 +48,20 @@ Name: "transmitter"; Description: "Tanghim (Transmitter) — VST3 + CLAP"; Types
 Name: "receiver";    Description: "Tanghim Receiver — VST3 + CLAP";      Types: full custom; Flags: fixed
 Name: "m4l";         Description: "Tanghim M4L Receivers (MPE + Mono PB) for Ableton Live"
 
+[InstallDelete]
+; Pre-install cleanup: remove the previous plug-in bundles so each install lays
+; down a fresh bundle (catches files removed between versions), and clear the
+; stale m4l staging dir that older installers left in the VST3 folder (the M4L
+; payload is now staged under ProgramData instead). Runs before [Files], scoped
+; to the component being installed so deselecting one never deletes another.
+; User-scoped files (M4L devices, Max package, stale Library copy) are cleaned
+; by the [Run] rmdir-then-copy steps below, which run as the original user.
+Type: filesandordirs; Name: "{commoncf64}\VST3\Tanghim.vst3";          Components: transmitter
+Type: files;          Name: "{commoncf64}\CLAP\Tanghim.clap";          Components: transmitter
+Type: filesandordirs; Name: "{commoncf64}\VST3\Tanghim Receiver.vst3"; Components: receiver
+Type: files;          Name: "{commoncf64}\CLAP\Tanghim Receiver.clap"; Components: receiver
+Type: filesandordirs; Name: "{commoncf64}\VST3\m4l-staging";           Components: m4l
+
 [Files]
 ; Transmitter — system plugin folders
 Source: "{#PluginsDir}\Tanghim.vst3\*"; DestDir: "{commoncf64}\VST3\Tanghim.vst3"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: transmitter

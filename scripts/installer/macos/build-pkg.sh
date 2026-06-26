@@ -45,6 +45,15 @@ restore_plugin_executable_bits() {
 }
 
 # ── Component 1: Transmitter (VST3 + AU + CLAP) ──────────────────────────────
+# This component is installed FIRST, so its preinstall is where we clean the
+# previous install's plug-in bundles (a fresh-bundle pre-clean). Assemble a
+# scripts dir holding the preinstall + the shared tanghim-cleanup.sh it calls.
+TRANSMITTER_SCRIPTS="${WORK_DIR}/transmitter-scripts"
+mkdir -p "${TRANSMITTER_SCRIPTS}"
+cp "${SCRIPT_DIR}/preinstall"          "${TRANSMITTER_SCRIPTS}/preinstall"
+cp "${SCRIPT_DIR}/tanghim-cleanup.sh"  "${TRANSMITTER_SCRIPTS}/tanghim-cleanup.sh"
+chmod +x "${TRANSMITTER_SCRIPTS}/preinstall" "${TRANSMITTER_SCRIPTS}/tanghim-cleanup.sh"
+
 TRANSMITTER_ROOT="${WORK_DIR}/transmitter-root"
 mkdir -p "${TRANSMITTER_ROOT}/Library/Audio/Plug-Ins/VST3"
 mkdir -p "${TRANSMITTER_ROOT}/Library/Audio/Plug-Ins/Components"
@@ -58,6 +67,7 @@ pkgbuild \
     --identifier "com.khyamallami.tanghim.transmitter" \
     --version "${VERSION}" \
     --root "${TRANSMITTER_ROOT}" \
+    --scripts "${TRANSMITTER_SCRIPTS}" \
     "${WORK_DIR}/Transmitter.pkg"
 
 # ── Component 2: Receiver (VST3 + AU + CLAP) ─────────────────────────────────
