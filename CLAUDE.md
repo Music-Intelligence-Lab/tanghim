@@ -304,7 +304,7 @@ This is host behaviour, not an MTS-ESP fault. The two visibility directions are 
 
 ## Max for Live Wrapper
 
-Ableton doesn't support VST3 MIDI effects. Architecture: two pure-native Max patches built on ODDSound's MTS-ESP Max Package — one MPE Receiver (`Tanghim MPE Receiver.amxd`) and one Mono PB Receiver (`Tanghim Mono PB Receiver.amxd`). No `vst~`, no JavaScript, no VST3 parameter bridge. The MPE/Mono PB split is required because the `is_mpe` patcher flag is set at load time and cannot be toggled at runtime.
+Ableton doesn't support VST3 MIDI effects. Architecture: two pure-native Max patches built on ODDSound's MTS-ESP Max Package — one MPE Receiver (`Tanghim MPE Receiver.amxd`) and one Mono PB Receiver (`Tanghim Mono PB Receiver.amxd`). No `vst~`, no JavaScript, no VST3 parameter bridge. The MPE/Mono PB split is required: Mono PB emits on channel 1 to drive ordinary (non-MPE) synths, but Live does not deliver an `is_mpe=1` device's channel-1 output to a downstream non-MPE synth, so a single `is_mpe=1` device cannot serve both modes. (`is_mpe` is also fixed at load time, but that alone is not the blocker — a unified device would pin it on, never toggle it.) → [diary 2026-06-28](diary/2026-06-28.md)
 
 **Topology (MPE Receiver):**
 `midiin → midiparse @hires 1 → unpack` (pitch+vel list at outlet 0 is a *list*, must unpack). Pitch routes to `MTS-ESP.mtof.0` (cents lookup) and to `[poly]` voice allocator. Allocated voice number → channel → sequenced via `[t b b i i]` to emit `xbendout` (pitch bend) then `noteout` on the allocated channel. `xbendout` only *formats* bytes; they must be wired to `midiout` to actually transmit.
