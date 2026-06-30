@@ -93,6 +93,18 @@ Tanghīm stores cached tuning data, settings, and exported MIDI files locally:
 | Cache | `~/Library/Tanghim/cache/` | `%APPDATA%\Tanghim\cache\` | `~/.config/Tanghim/cache/` |
 | MIDI export | `~/Library/Tanghim/midi-export/` | `%APPDATA%\Tanghim\midi-export\` | `~/.config/Tanghim/midi-export/` |
 
+### Uninstalling
+
+Each release ships a standalone uninstaller that **fully removes** Tanghīm — both plug-ins, the Max for Live devices and Max package (if installed), and all local data (cached tuning data, settings, presets, exported MIDI).
+
+| Platform | How to uninstall |
+|---|---|
+| macOS | Download `uninstall-macos.sh` from the release, then run `sudo bash uninstall-macos.sh` |
+| Windows | Download `uninstall-windows.bat` from the release, right-click it → **Run as administrator** |
+| Linux | Delete the plug-in files from `~/.vst3/` and `~/.clap/`, and the data folder `~/.config/Tanghim/` |
+
+> **Reinstalling does not require uninstalling first.** Every installer automatically clears the previous version's files (in all locations, including any left in wrong folders by older builds) before installing the new ones, while preserving your settings, presets, and cache. Use the uninstaller only for a complete removal or a fully clean reset.
+
 ---
 
 ## Quick Start
