@@ -2,7 +2,7 @@
 
 **Arabic Maqām tuning plugin for any DAW.**
 
-Tanghīm is an open-source plugin that dynamically accesses tuning data from the [Digital Arabic Maqām Archive (DiArMaqAr) API](https://diarmaqar.netlify.app) and applies maqam-based tuning to your software and hardware instruments.
+Tanghīm is an open-source plugin that dynamically accesses tuning data from the [Digital Arabic Maqām Archive (DiArMaqAr) API](https://diarmaqar.net) and applies maqam-based tuning to your software and hardware instruments.
 
 It is available as VST3, AU, and CLAP on macOS, Windows, and Linux. Internet access is needed only when selecting a tuning — once selected, the tuning system is saved in a cache on your local drive.
 
@@ -11,7 +11,7 @@ Three tuning methods — **MTS-ESP**, **MPE**, and **Mono Pitch Bend** — ensur
 - **Tanghīm** (Transmitter) — the main plugin with a full graphical interface. Broadcasts tuning via MTS-ESP and hosts a built-in reference oscillator.
 - **Tanghīm Receiver** — a lightweight MIDI effect that reads the MTS-ESP tuning broadcast and delivers it to non-MTS-ESP instruments as MPE per-note pitch bend or mono 14-bit pitch bend.
 
-Tanghīm was concieved and designed by [Khyam Allami](https://khyamallami.com) in 2026 as part of his postdoctoral research in the [Music Intelligence Lab](https://musicintelligencelab.com/) at the American University of Beirut, and coded with [Claude](https://claude.ai).
+Tanghīm was concieved and designed by [Khyam Allami](https://khyamallami.com) as part of his postdoctoral research in the [Music Intelligence Lab](https://musicintelligencelab.com/) at the American University of Beirut, 2026.
 
 ![Tanghīm UI](assets/tanghim-ui.png)
 
