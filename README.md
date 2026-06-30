@@ -83,6 +83,20 @@ AU is not available on Windows.
 
 AU is not available on Linux. Some DAWs also check `/usr/lib/vst3/` and `/usr/lib/clap/` — consult your DAW's documentation if the plugin isn't detected.
 
+### MTS-ESP shared library (required)
+
+Tanghīm broadcasts tuning through ODDSound's **MTS-ESP** system, which relies on a shared system library (`libMTS`) that all MTS-ESP software loads at runtime. **The installers install it for you** — you only need this section if you installed the plugins manually, or if tuning isn't reaching your synth.
+
+**Symptom of a missing library:** the **MTS-ESP badge lights up** in Tanghīm (it looks connected), but no synth is actually retuned — MTS-ESP-native synths (e.g. Surge) don't appear in the badge count, and the MPE / Mono PB receivers stay at standard 12-tone tuning. If this happens, install the library to the system location for your OS:
+
+| Platform | Library path |
+|---|---|
+| macOS | `/Library/Application Support/MTS-ESP/libMTS.dylib` |
+| Windows | `C:\Program Files\Common Files\MTS-ESP\LIBMTS.dll` |
+| Linux | `/usr/local/lib/libMTS.so` |
+
+The library file is bundled with each release. It is shared across all MTS-ESP products on your machine, so installers only add it if it isn't already present and never remove it on uninstall.
+
 ### Data & Preferences
 
 Tanghīm stores cached tuning data, settings, and exported MIDI files locally:

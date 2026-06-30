@@ -84,6 +84,13 @@ if [[ "${SCOPE}" == "all" ]]; then
         rm_path "${USER_HOME}/Documents/${V}/Library/MTS-ESP-Max-Package"   # stale (wrong) location
     done
 
+    # ── DELIBERATELY NOT removed: the MTS-ESP shared library ─────────────────
+    # /Library/Application Support/MTS-ESP/libMTS.dylib is a system-wide resource
+    # installed and shared by every MTS-ESP product (Surge, ODDSound, etc.).
+    # Deleting it would break tuning for other software on this machine. The
+    # installer installs it only if absent (preinstall) and never downgrades it.
+    # Leave it (and MTS-ESP.conf) in place.
+
     # ── Runtime data + pkg receipts (full uninstall only) ────────────────────
     if [[ "${MODE}" == "all" ]]; then
         rm_path "${USER_HOME}/Library/Tanghim"   # cache, settings.json, presets.json, receivers, midi-export

@@ -9,7 +9,13 @@ Tanghim — Linux installation
      ./install.sh
 
    This copies the VST3 plug-ins to ~/.vst3 and the CLAP plug-ins
-   to ~/.clap. No sudo is required.
+   to ~/.clap (no sudo needed for these), and installs the MTS-ESP
+   shared library (libMTS.so) to /usr/local/lib. The library install
+   needs write access to /usr/local/lib — the script uses sudo if
+   available, or prints the manual command if it can't.
+
+   The MTS-ESP library is REQUIRED: without it, Tanghim cannot
+   broadcast tuning to any synth and nothing is retuned.
 
 3. Rescan plug-ins in your DAW (Reaper, Bitwig, Ardour, etc.).
 
@@ -22,6 +28,10 @@ folders yourself:
     plugins/Tanghim Receiver.vst3/   →  ~/.vst3/
     plugins/Tanghim.clap             →  ~/.clap/
     plugins/Tanghim Receiver.clap    →  ~/.clap/
+
+And install the MTS-ESP shared library (REQUIRED for tuning):
+
+    sudo install -m 0755 plugins/libMTS.so /usr/local/lib/libMTS.so
 
 Ableton Live users
 ------------------

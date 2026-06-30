@@ -43,5 +43,33 @@ for clap in "Tanghim.clap" "Tanghim Receiver.clap"; do
     echo "  installed ${clap} → ${CLAP_DEST}/"
 done
 
+# ── MTS-ESP shared library (libMTS) — REQUIRED for tuning to work at all ──────
+# The Transmitter is an MTS-ESP *master*; libMTSMaster.cpp loads this .so at
+# runtime via dlopen("/usr/local/lib/libMTS.so"). Without it, the load fails
+# silently, every MTS_* function pointer is null, MTS_RegisterMaster() is a
+# no-op, and NO master registers in shared memory — so no client ever connects
+# and nothing is tuned. libMTS is a SHARED, system-wide resource installed by
+# every MTS-ESP product: install-if-absent (never clobber a newer copy). This
+# step needs write access to /usr/local/lib, which usually requires root.
+MTS_LIB_SRC="${PLUGINS_SRC}/libMTS.so"
+MTS_LIB_DEST="/usr/local/lib/libMTS.so"
+if [[ -f "${MTS_LIB_DEST}" ]]; then
+    echo "  libMTS already present at ${MTS_LIB_DEST}; leaving untouched"
+elif [[ ! -f "${MTS_LIB_SRC}" ]]; then
+    echo "  warning: ${MTS_LIB_SRC} not found in this package; skipping libMTS" >&2
+elif install -d /usr/local/lib 2>/dev/null && install -m 0755 "${MTS_LIB_SRC}" "${MTS_LIB_DEST}" 2>/dev/null; then
+    echo "  installed libMTS → ${MTS_LIB_DEST}"
+elif command -v sudo >/dev/null 2>&1 \
+     && sudo install -d /usr/local/lib \
+     && sudo install -m 0755 "${MTS_LIB_SRC}" "${MTS_LIB_DEST}"; then
+    echo "  installed libMTS → ${MTS_LIB_DEST} (via sudo)"
+else
+    echo "" >&2
+    echo "  WARNING: could not install the MTS-ESP shared library to ${MTS_LIB_DEST}." >&2
+    echo "  Tanghim's tuning will NOT work until it is present. Install it manually:" >&2
+    echo "    sudo install -m 0755 '${MTS_LIB_SRC}' '${MTS_LIB_DEST}'" >&2
+    echo "" >&2
+fi
+
 echo ""
 echo "Installation complete. Rescan plug-ins in your DAW."

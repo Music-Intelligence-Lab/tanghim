@@ -43,6 +43,13 @@ REM     + ProgramData staging ---
 rmdir /S /Q "%APPDATA%\Tanghim"     2>nul
 rmdir /S /Q "%ProgramData%\Tanghim" 2>nul
 
+REM --- DELIBERATELY NOT removed: the MTS-ESP shared library
+REM     %CommonProgramFiles%\MTS-ESP\LIBMTS.dll. It is a system-wide resource
+REM     installed and shared by every MTS-ESP product (Surge, ODDSound, etc.);
+REM     deleting it would break tuning for other software on this machine. The
+REM     installer installs it only if absent (Inno onlyifdoesntexist) and never
+REM     downgrades it. Leave it in place. ---
+
 echo.
 echo Tanghim removed. (If a DAW was open during removal, rescan plug-ins.)
 echo.

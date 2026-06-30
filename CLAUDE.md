@@ -284,6 +284,16 @@ MIDI deviation format: `"48 -5.9"` = MIDI note 48, -5.9 cents from 12-EDO.
 - JSON keys: `isMtsTransmitter`, `mtsReceivers`, `mtsNativeCount`, `mpeCount`, `monoPbCount`
 - Lightweight `mtsStatusChanged` event (2Hz poll, separate from full `tuningStateChanged`)
 
+### libMTS shared library MUST be installed system-wide (else NOTHING tunes)
+The Transmitter is an MTS-ESP **master**. `libMTSMaster.cpp` (compiled into the plugin) does **not** contain the tuning engine — it `dlopen`/`LoadLibrary`s the **shared `libMTS`** at runtime from a fixed system path, and every `MTS_*` call goes through that handle. Same for clients (`libMTSClient.cpp` loads the same shared lib). Required install locations (authoritative: `libs/MTS-ESP/README.md`):
+- **Windows 64-bit:** `<Common Files>\MTS-ESP\LIBMTS.dll` (resolved via `FOLDERID_ProgramFilesCommon` = `C:\Program Files\Common Files\MTS-ESP`)
+- **macOS:** `/Library/Application Support/MTS-ESP/libMTS.dylib`
+- **Linux:** `/usr/local/lib/libMTS.so`
+
+**Failure mode if absent (silent, total):** `LoadLibrary`/`dlopen` fails → `load_lib()` returns early → **all** `MTS_*` function pointers stay null → `MTS_CanRegisterMaster()` returns `true` (its `HasMaster ? … : true` fallback), so the ctor *thinks* it registered and the **MTS-ESP transmitter badge lights**, but `MTS_RegisterMaster()`/`MTS_SetNoteTunings()` are no-ops, `MTS_GetNumClients()` returns 0. Result: **no master in shared memory → no client (native synths like Surge, or the M4L receiver) ever connects → nothing is retuned, and native clients never appear in the badge.** The badge lighting is a false positive — it does **not** prove the shared lib loaded.
+
+**Installers must ship + install it** (the shipping libs live in `libs/MTS-ESP/libMTS/{Win/64bit,Mac/x86_64_ARM,Linux/x86_64}/`). It is a **shared, system-wide resource** that every MTS-ESP product installs, so: **install-if-absent only** (never downgrade/clobber a newer copy — Windows Inno `onlyifdoesntexist`; macOS/Linux scripts test for the file first) and **never remove it on uninstall** (other software depends on it). Dev/test Macs mask a missing-installer bug because another MTS-ESP product (Surge, ODDSound Mini) already dropped `libMTS.dylib` there — verified empirically: a clean Windows machine had no `LIBMTS.dll`, so the Transmitter badge lit but Surge + both M4L receivers stayed at 12-EDO; dropping the DLL into Common Files fixed all three at once. → [diary 2026-06-30](diary/2026-06-30.md)
+
 ## Receiver Plugin
 
 Lightweight MIDI effect (`TanghimReceiver`): MTS-ESP Client → pitch bend/MPE output.

@@ -13,6 +13,7 @@
 #   Tanghim MPE Receiver.amxd
 #   Tanghim Mono PB Receiver.amxd
 #   MTS-ESP-Max-Package/
+#   libMTS.dylib   (MTS-ESP shared library)
 #
 # Produces: <output-dir>/Tanghim-<version>-macOS.pkg
 
@@ -52,6 +53,16 @@ TRANSMITTER_SCRIPTS="${WORK_DIR}/transmitter-scripts"
 mkdir -p "${TRANSMITTER_SCRIPTS}"
 cp "${SCRIPT_DIR}/preinstall"          "${TRANSMITTER_SCRIPTS}/preinstall"
 cp "${SCRIPT_DIR}/tanghim-cleanup.sh"  "${TRANSMITTER_SCRIPTS}/tanghim-cleanup.sh"
+# Ship libMTS alongside the preinstall so it can install-if-absent the shared
+# MTS-ESP library (see preinstall). It is NOT placed in the payload root because
+# payload files always overwrite, which would clobber a newer libMTS another
+# MTS-ESP product installed. Carrying it in the scripts dir lets preinstall do a
+# conditional copy.
+if [[ ! -f "${PLUGINS_DIR}/libMTS.dylib" ]]; then
+    echo "build-pkg: error: missing ${PLUGINS_DIR}/libMTS.dylib" >&2
+    exit 1
+fi
+cp "${PLUGINS_DIR}/libMTS.dylib"       "${TRANSMITTER_SCRIPTS}/libMTS.dylib"
 chmod +x "${TRANSMITTER_SCRIPTS}/preinstall" "${TRANSMITTER_SCRIPTS}/tanghim-cleanup.sh"
 
 TRANSMITTER_ROOT="${WORK_DIR}/transmitter-root"

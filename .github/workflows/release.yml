@@ -93,6 +93,13 @@ jobs:
           cp "m4l/Tanghim MPE Receiver.amxd"     staged-plugins/
           cp "m4l/Tanghim Mono PB Receiver.amxd" staged-plugins/
           cp -R "m4l/MTS-ESP-Max-Package"        staged-plugins/
+          # MTS-ESP shared library — the Transmitter (master) loads this at
+          # runtime via dlopen("/Library/Application Support/MTS-ESP/libMTS.dylib").
+          # Without it on the target machine, no master registers in shared memory
+          # and no client (Surge, the M4L receiver) ever connects. Installed to the
+          # system MTS-ESP dir by the installer (install-if-absent — it is shared
+          # across all MTS-ESP products).
+          cp "libs/MTS-ESP/libMTS/Mac/x86_64_ARM/libMTS.dylib" staged-plugins/
 
       - name: Stage plugins (Windows)
         if: runner.os == 'Windows'
@@ -106,6 +113,12 @@ jobs:
           Copy-Item         "m4l/Tanghim MPE Receiver.amxd"     "staged-plugins/"
           Copy-Item         "m4l/Tanghim Mono PB Receiver.amxd" "staged-plugins/"
           Copy-Item -Recurse "m4l/MTS-ESP-Max-Package"           "staged-plugins/"
+          # MTS-ESP shared library — the Transmitter (master) loads this at runtime
+          # via LoadLibrary("<Common Files>\MTS-ESP\LIBMTS.dll"). Without it on the
+          # target machine, no master registers in shared memory and no client
+          # (Surge, the M4L receiver) ever connects. Installed to Common Files by the
+          # installer (install-if-absent — shared across all MTS-ESP products).
+          Copy-Item         "libs/MTS-ESP/libMTS/Win/64bit/LIBMTS.dll"          "staged-plugins/"
 
       - name: Stage plugins (Linux)
         if: runner.os == 'Linux'
@@ -115,6 +128,12 @@ jobs:
           cp    build/Tanghim_artefacts/Release/CLAP/Tanghim.clap   staged-plugins/
           cp -r "build/TanghimReceiver_artefacts/Release/VST3/Tanghim Receiver.vst3"  staged-plugins/
           cp    "build/TanghimReceiver_artefacts/Release/CLAP/Tanghim Receiver.clap"  staged-plugins/
+          # MTS-ESP shared library — the Transmitter (master) loads this at runtime
+          # via dlopen("/usr/local/lib/libMTS.so"). Without it on the target machine,
+          # no master registers in shared memory and no client ever connects.
+          # Installed to /usr/local/lib by install.sh (install-if-absent — shared
+          # across all MTS-ESP products).
+          cp    "libs/MTS-ESP/libMTS/Linux/x86_64/libMTS.so"  staged-plugins/
 
       - name: Upload staged plugins
         uses: actions/upload-artifact@v4

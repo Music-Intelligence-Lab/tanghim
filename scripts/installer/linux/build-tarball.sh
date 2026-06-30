@@ -8,6 +8,7 @@
 #   Tanghim.clap
 #   Tanghim Receiver.vst3/
 #   Tanghim Receiver.clap
+#   libMTS.so   (MTS-ESP shared library)
 #
 # Produces: <output-dir>/Tanghim-<version>-Linux.tar.gz
 
@@ -38,7 +39,7 @@ for item in "Tanghim.vst3" "Tanghim Receiver.vst3"; do
     fi
     cp -r "${PLUGINS_DIR}/${item}" "${STAGE}/plugins/"
 done
-for item in "Tanghim.clap" "Tanghim Receiver.clap"; do
+for item in "Tanghim.clap" "Tanghim Receiver.clap" "libMTS.so"; do
     if [[ ! -f "${PLUGINS_DIR}/${item}" ]]; then
         echo "error: missing ${PLUGINS_DIR}/${item}" >&2
         exit 1

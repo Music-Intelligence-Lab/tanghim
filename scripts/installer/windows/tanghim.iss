@@ -10,6 +10,7 @@
 ;   Tanghim MPE Receiver.amxd
 ;   Tanghim Mono PB Receiver.amxd
 ;   MTS-ESP-Max-Package\
+;   LIBMTS.dll   (MTS-ESP shared library, 64-bit)
 
 #ifndef MyAppVersion
   #error MyAppVersion is required (pass /DMyAppVersion=...)
@@ -63,6 +64,24 @@ Type: files;          Name: "{commoncf64}\CLAP\Tanghim Receiver.clap"; Component
 Type: filesandordirs; Name: "{commoncf64}\VST3\m4l-staging";           Components: m4l
 
 [Files]
+; MTS-ESP shared library (libMTS) — REQUIRED for tuning to work at all.
+; The Transmitter is an MTS-ESP *master*; libMTSMaster.cpp loads this DLL at
+; runtime via LoadLibrary("<Common Files>\MTS-ESP\LIBMTS.dll") (resolved from
+; FOLDERID_ProgramFilesCommon = {commoncf64}). If the DLL is absent, the load
+; fails silently, every MTS_* function pointer is null, MTS_RegisterMaster() is
+; a no-op, and NO master registers in shared memory — so no client (Surge, the
+; M4L receiver) ever connects and nothing is ever tuned. libMTS is a SHARED,
+; system-wide resource installed by every MTS-ESP product, so:
+;   * onlyifdoesntexist — never downgrade/clobber a copy another product (or a
+;     newer Tanghim) installed; a present DLL is left untouched.
+;   * NOT listed in [InstallDelete] and NOT removed by the uninstaller — other
+;     MTS-ESP software on the machine depends on it.
+; Source is the 64-bit DLL from libs/MTS-ESP/libMTS/Win/64bit, staged into
+; PluginsDir by the release workflow. (This installer is Uninstallable=no, so
+; there is no Inno-generated uninstaller; the standalone uninstall.bat
+; deliberately leaves this DLL in place — see that file.)
+Source: "{#PluginsDir}\LIBMTS.dll"; DestDir: "{commoncf64}\MTS-ESP"; Flags: onlyifdoesntexist; Components: transmitter
+
 ; Transmitter — system plugin folders
 Source: "{#PluginsDir}\Tanghim.vst3\*"; DestDir: "{commoncf64}\VST3\Tanghim.vst3"; Flags: ignoreversion recursesubdirs createallsubdirs; Components: transmitter
 Source: "{#PluginsDir}\Tanghim.clap";   DestDir: "{commoncf64}\CLAP";             Flags: ignoreversion;                                  Components: transmitter

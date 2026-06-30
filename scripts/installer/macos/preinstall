@@ -11,4 +11,29 @@ set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 "${HERE}/tanghim-cleanup.sh" --scope plugins \
     || echo "preinstall: plugin cleanup reported an issue; continuing install"
+
+# ── MTS-ESP shared library (libMTS) — REQUIRED for tuning to work at all ──────
+# The Transmitter is an MTS-ESP *master*; libMTSMaster.cpp loads this dylib at
+# runtime via dlopen("/Library/Application Support/MTS-ESP/libMTS.dylib"). If it
+# is absent, the load fails silently, every MTS_* function pointer is null,
+# MTS_RegisterMaster() is a no-op, and NO master registers in shared memory — so
+# no client (Surge, the M4L receiver) ever connects and nothing is tuned. (Dev/
+# test Macs only "work" because another MTS-ESP product already installed it.)
+#
+# libMTS is a SHARED, system-wide resource installed by every MTS-ESP product,
+# so install-if-absent: never downgrade/clobber a copy another product (or a
+# newer Tanghim) installed. The standalone uninstaller leaves it in place too.
+MTS_LIB_DIR="/Library/Application Support/MTS-ESP"
+MTS_LIB_DEST="${MTS_LIB_DIR}/libMTS.dylib"
+if [[ ! -f "${MTS_LIB_DEST}" ]]; then
+    if mkdir -p "${MTS_LIB_DIR}" && cp "${HERE}/libMTS.dylib" "${MTS_LIB_DEST}"; then
+        chmod 755 "${MTS_LIB_DEST}"
+        echo "preinstall: installed libMTS → ${MTS_LIB_DEST}"
+    else
+        echo "preinstall: WARNING: failed to install libMTS; tuning will not work until it is present" >&2
+    fi
+else
+    echo "preinstall: libMTS already present at ${MTS_LIB_DEST}; leaving untouched"
+fi
+
 exit 0
