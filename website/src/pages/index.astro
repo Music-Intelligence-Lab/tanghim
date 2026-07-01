@@ -53,8 +53,8 @@ import Badge from '../components/Badge.astro';
               src="/tanghim-ui.png"
               alt="The Tanghīm plugin interface: a bank of tuning sliders showing maqām degrees in gold against a navy panel, with maqām selector, preset grid, and reference-frequency controls."
               class="screenshot"
-              width="1600"
-              height="980"
+              width="1756"
+              height="1370"
               loading="eager"
             />
           </div>
@@ -78,7 +78,7 @@ import Badge from '../components/Badge.astro';
             <span class="accent">Tanghīm</span> (<span lang="ar">تنغيم</span>)
             is the singular of <span class="accent">tanāghīm</span> (<span lang="ar">تناغيم</span>),
             the tuning-systems layer of the <a href="https://diarmaqar.net" class="gloss-link" target="_blank" rel="noopener noreferrer">DiArMaqAr</a> archive.
-            It means both a tuning system and the act of tuning — an intonational tuning, not the setting of an open string's pitch.
+            It means both a tuning system and the act of tuning — an intonational tuning, not the <span class="accent">dūzān</span> (<span lang="ar">دوزان</span>) of setting an open string's pitch.
           </p>
 
           <!-- Compatibility badges -->
@@ -142,6 +142,7 @@ import Badge from '../components/Badge.astro';
     letter-spacing: -0.02em;
     color: var(--brand-text);
     max-width: 18ch;
+    text-wrap: balance;
   }
 
   .gold {
@@ -155,6 +156,7 @@ import Badge from '../components/Badge.astro';
     line-height: 1.65;
     color: var(--brand-muted);
     max-width: 60ch;
+    text-wrap: balance;
   }
 
   /* CTAs */
