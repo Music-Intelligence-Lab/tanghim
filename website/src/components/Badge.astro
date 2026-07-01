@@ -9,19 +9,11 @@ interface Props {
 }
 
 const { variant } = Astro.props;
-
-const variantMap = {
-  mts:    { token: '--badge-teal',    label: 'mts' },
-  mpe:    { token: '--badge-blue',    label: 'mpe' },
-  monopb: { token: '--badge-green',   label: 'monopb' },
-  osc:    { token: '--badge-amber',   label: 'osc' },
-  hept:   { token: '--badge-magenta', label: 'hept' },
-} as const;
-
-const v = variantMap[variant];
+// Per-variant colour comes from the `.badge-{variant}` rule below,
+// which reads the matching `--badge-*` token.
 ---
 
-<span class={`badge badge-${v.label}`}>
+<span class={`badge badge-${variant}`}>
   <slot />
 </span>
 

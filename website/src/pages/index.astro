@@ -225,8 +225,8 @@ import Badge from '../components/Badge.astro';
     inset: -10% -8%;
     background: radial-gradient(
       ellipse 70% 60% at 50% 50%,
-      rgba(212, 168, 67, 0.18) 0%,
-      rgba(212, 168, 67, 0.06) 45%,
+      color-mix(in srgb, var(--brand-gold) 18%, transparent) 0%,
+      color-mix(in srgb, var(--brand-gold) 6%, transparent) 45%,
       transparent 70%
     );
     pointer-events: none;
@@ -244,7 +244,7 @@ import Badge from '../components/Badge.astro';
     box-shadow:
       0 0 0 1px color-mix(in srgb, var(--brand-navy-700) 60%, transparent),
       0 8px 40px rgba(0, 0, 0, 0.55),
-      0 0 60px rgba(212, 168, 67, 0.08);
+      0 0 60px color-mix(in srgb, var(--brand-gold) 8%, transparent);
   }
 
   /* Fade/rise on load — disabled when reduced-motion preferred */
