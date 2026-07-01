@@ -2,14 +2,23 @@
 
 **Arabic Maqām tuning plugin for any DAW.**
 
-Tanghīm is an open-source plugin that dynamically accesses tuning data from the [Digital Arabic Maqām Archive (DiArMaqAr) API](https://diarmaqar.net) and applies maqam-based tuning to your software and hardware instruments.
+Tanghīm is an open-source plugin that dynamically accesses Arabic maqām tuning data from the [Digital Arabic Maqām Archive (DiArMaqAr) API](https://diarmaqar.net) and applies it tuning to your software and hardware instruments.
 
-It is available as VST3, AU, and CLAP on macOS, Windows, and Linux. Internet access is needed only when selecting a tuning — once selected, the tuning system is saved in a cache on your local drive.
+It is available as VST3, AU, and CLAP on macOS, Windows, and Linux. Internet access is needed only when selecting a tuning — once selected, the tuning data is saved in a cache on your local drive.
 
-Three tuning methods — **MTS-ESP**, **MPE**, and **Mono Pitch Bend** — ensure compatibility with virtually any synthesizer. The project consists of two plugins:
+Three tuning methods — **MTS-ESP**, **MPE**, and **Mono Pitch Bend** — ensure compatibility with virtually any synthesizer. 
 
-- **Tanghīm** (Transmitter) — the main plugin with a full graphical interface. Broadcasts tuning via MTS-ESP and hosts a built-in reference oscillator.
-- **Tanghīm Receiver** — a lightweight MIDI effect that reads the MTS-ESP tuning broadcast and delivers it to non-MTS-ESP instruments as MPE per-note pitch bend or mono 14-bit pitch bend.
+The project consists of two plugins for use in any DAW (Desktop Audio Workstation):
+
+- **Tanghim** (Transmitter) — the main plugin with a full graphical interface. Broadcasts tuning via MTS-ESP and hosts a built-in reference oscillator.
+- **Tanghim Receiver** — a lightweight MIDI effect plugin that reads the MTS-ESP tuning broadcast and delivers it to non-MTS-ESP instruments as MPE per-note pitch bend or monophonic 14-bit pitch bend per MIDI channel.
+
+For use with Ableton Live the user is obliged to use the main Transmitter plugin alongside the included Max for Live devices because Live does not allow MIDI Plugins in any format. To solve this we provide:
+
+- **Tanghim MPE Receiver** — A Max for Live MPE MIDI Effect that should be used with MPE enabled synthesisers
+- **Tanghim Mono PB Receiver** — A Max For Live Monophonic Pitch Bend MIDI Effect that should be used with non-MPE enabled synthesisers
+
+As of Live 12, all Live instruments support MPE. In Live 11, only the following Live devices support MPE: Drift, Wavetable, Sampler, Simpler (MPE settings can be changed by converting to Sampler), Arpeggiator, AAS devices (Analog, Tension, Collision, Electric). For more info check the dedicated instructions below: [Using Tanghim in Ableton Live](#using-tanghim-in-ableton-live)
 
 Tanghīm was concieved and designed by [Khyam Allami](https://khyamallami.com) as part of his postdoctoral research in the [Music Intelligence Lab](https://musicintelligencelab.com/) at the American University of Beirut, 2026.
 
