@@ -16,23 +16,23 @@ interface Props {
 const { title, image, imageAlt, reverse = false } = Astro.props;
 ---
 
-<div class:list={['feature-row', { 'feature-row--reverse': reverse }]}>
-  <div class="feature-row-inner">
+<div class:list={['feature-row py-14 px-6 border-t border-[color-mix(in_srgb,var(--brand-muted)_10%,transparent)]', { 'feature-row--reverse': reverse }]}>
+  <div class="feature-row-inner max-w-[1040px] mx-auto grid grid-cols-2 gap-12 items-center max-[720px]:grid-cols-1 max-[720px]:gap-8">
     <!-- Text column -->
-    <div class="feature-row-text">
-      <h3 class="row-title" set:html={title} />
-      <div class="row-body">
+    <div class="flex flex-col gap-[0.875rem]">
+      <h3 class="row-title m-0 font-bold leading-[1.25] tracking-[-0.01em] text-[var(--brand-text)] text-[clamp(1.25rem,2.5vw,1.75rem)]" set:html={title} />
+      <div class="row-body text-[0.9375rem] leading-[1.7] flex flex-col gap-2">
         <slot />
       </div>
     </div>
 
     <!-- Visual column -->
-    <div class="feature-row-visual">
-      <div class="row-glow" aria-hidden="true"></div>
+    <div class="feature-row-visual relative">
+      <div class="row-glow absolute pointer-events-none z-0" aria-hidden="true"></div>
       <img
         src={image}
         alt={imageAlt}
-        class="row-img"
+        class="relative z-[1] block w-full h-auto rounded-[0.5rem] border border-[color-mix(in_srgb,var(--brand-gold)_15%,transparent)]"
         loading="lazy"
         decoding="async"
       />
@@ -41,21 +41,7 @@ const { title, image, imageAlt, reverse = false } = Astro.props;
 </div>
 
 <style>
-  .feature-row {
-    padding: 3.5rem 1.5rem;
-    border-top: 1px solid color-mix(in srgb, var(--brand-muted) 10%, transparent);
-  }
-
-  .feature-row-inner {
-    max-width: 1040px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 3rem;
-    align-items: center;
-  }
-
-  /* Reverse: visual first, text second */
+  /* Reverse layout: visual first, text second */
   .feature-row--reverse .feature-row-inner {
     direction: rtl;
   }
@@ -64,47 +50,30 @@ const { title, image, imageAlt, reverse = false } = Astro.props;
     direction: ltr;
   }
 
-  /* Text column */
-  .feature-row-text {
-    display: flex;
-    flex-direction: column;
-    gap: 0.875rem;
+  /* Undo direction:rtl on mobile */
+  @media (max-width: 720px) {
+    .feature-row--reverse .feature-row-inner {
+      direction: ltr;
+    }
   }
 
-  .row-title {
-    margin: 0;
-    font-size: clamp(1.25rem, 2.5vw, 1.75rem);
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.01em;
-    color: var(--brand-text);
-  }
-
+  /* Row title strong — gold accent from set:html content */
   .row-title :global(strong) {
     color: var(--brand-gold);
     font-weight: inherit;
   }
 
+  /* Row body text color and p margin from slotted content */
   .row-body {
-    font-size: 0.9375rem;
-    line-height: 1.7;
     color: color-mix(in srgb, var(--brand-text) 75%, var(--brand-muted));
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
   }
 
   .row-body :global(p) {
     margin: 0;
   }
 
-  /* Visual column */
-  .feature-row-visual {
-    position: relative;
-  }
-
+  /* Glow behind the image */
   .row-glow {
-    position: absolute;
     inset: -15% -10%;
     background: radial-gradient(
       ellipse 70% 65% at 50% 50%,
@@ -112,33 +81,13 @@ const { title, image, imageAlt, reverse = false } = Astro.props;
       color-mix(in srgb, var(--brand-gold) 4%, transparent) 45%,
       transparent 70%
     );
-    pointer-events: none;
-    z-index: 0;
   }
 
-  .row-img {
-    position: relative;
-    z-index: 1;
-    display: block;
-    width: 100%;
-    height: auto;
-    border-radius: 0.5rem;
-    border: 1px solid color-mix(in srgb, var(--brand-gold) 15%, transparent);
+  /* Image shadow */
+  .feature-row-visual img {
     box-shadow:
       0 4px 24px rgba(0, 0, 0, 0.4),
       0 0 36px color-mix(in srgb, var(--brand-gold) 5%, transparent);
-  }
-
-  /* Stack on narrow viewports */
-  @media (max-width: 720px) {
-    .feature-row-inner {
-      grid-template-columns: 1fr;
-      gap: 2rem;
-    }
-
-    .feature-row--reverse .feature-row-inner {
-      direction: ltr;
-    }
   }
 
   /* Scroll reveal — disabled under reduced motion */

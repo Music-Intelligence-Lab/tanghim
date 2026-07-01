@@ -28,16 +28,16 @@ const platforms = [
 ] as const;
 ---
 
-<div class="download-buttons" id="download">
+<div class="flex flex-col items-center gap-5" id="download">
   {info.version && (
-    <p class="version-label">{info.version} · free &amp; open source</p>
+    <p class="m-0 text-[0.85rem] text-[var(--brand-muted)] tracking-[0.02em]">{info.version} · free &amp; open source</p>
   )}
 
-  <div class="btn-row">
+  <div class="flex gap-[0.875rem] flex-wrap justify-center max-[600px]:flex-col max-[600px]:items-stretch">
     {platforms.map((p) => (
       <a
         href={p.url}
-        class="dl-btn"
+        class="dl-btn group flex items-center gap-3 px-5 py-3 bg-[var(--brand-navy-800)] border border-[color-mix(in_srgb,var(--brand-gold)_30%,transparent)] rounded-[0.5rem] no-underline text-[var(--brand-text)] transition-[border-color,background-color] duration-150 min-w-[180px] max-[600px]:min-w-0 hover:border-[var(--brand-gold)] focus-visible:border-[var(--brand-gold)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-2 focus-visible:outline"
         aria-label={`Download Tanghīm for ${p.label}`}
         target={p.url.startsWith('https://github.com') ? '_blank' : undefined}
         rel={p.url.startsWith('https://github.com') ? 'noopener noreferrer' : undefined}
@@ -45,26 +45,26 @@ const platforms = [
       >
         <!-- Inline SVG platform glyph -->
         {p.key === 'macos' && (
-          <svg class="platform-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <svg class="w-5 h-5 text-[var(--brand-gold)] flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path d="M13.5 2c-.8 0-2 .5-2.7 1.2C10 4 9.7 5.3 9.8 6h.1c.8 0 2-.5 2.6-1.2.6-.8.9-2 .8-2.8H13.5zM16.9 14.3c-.4.9-.6 1.3-1.1 2.1-.7 1.1-1.8 2.5-3.1 2.5-.9 0-1.4-.6-2.8-.6-1.4 0-2 .6-2.8.6-1.3 0-2.3-1.3-3.1-2.4C3 14.3 2 11.2 2 8.3c0-4 2.5-6 4.9-6 1.4 0 2.5.7 3.3.7.8 0 2.1-.8 3.6-.8 1.7 0 3.5 1.1 4.2 3-.3.2-3.3 1.6-3.3 4.9 0 3.8 3.2 5 4.2 5.2z"/>
           </svg>
         )}
         {p.key === 'windows' && (
-          <svg class="platform-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <svg class="w-5 h-5 text-[var(--brand-gold)] flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path d="M2 3.9L9.2 3l.01 7-7.2.04L2 3.9zm7.21 7.06l.01 7.03L2 17.06l.01-6.11 7.2.01zM10.1 3l9.9-1.5V10H10.1V3zm9.9 8l-.01 8.5L10.1 18v-7h9.9z"/>
           </svg>
         )}
         {p.key === 'linux' && (
-          <svg class="platform-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <svg class="w-5 h-5 text-[var(--brand-gold)] flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path d="M10 1C6 1 4 4 4 7c0 2 .7 3.5 1.8 4.7-.2.5-.4 1.1-.6 1.6-.4 1-.8 2-.8 2.7 0 1 .6 1.6 1.5 1.8.5.1 1 .2 1.6.2.7 0 1.4-.1 2-.4.5-.2 1-.3 1.5-.3s1 .1 1.5.3c.6.3 1.3.4 2 .4.6 0 1.1-.1 1.6-.2.9-.2 1.5-.8 1.5-1.8 0-.7-.4-1.7-.8-2.7-.2-.5-.4-1.1-.6-1.6C17.3 10.5 18 9 18 7c0-3-2-6-8-6zM8.5 14c-.3-.3-.4-.6-.4-1v-.3c.5.1 1 .3 1.5.3H10.4c.5 0 1-.2 1.5-.3v.3c0 .4-.1.7-.4 1-.2.2-.6.3-.9.3-.5 0-.8-.1-1.1-.3zM10 6a1 1 0 100 2 1 1 0 000-2z"/>
           </svg>
         )}
-        <span class="btn-text">
-          <span class="btn-platform">{p.label}</span>
-          <span class="btn-desc">{p.desc}</span>
+        <span class="flex flex-col gap-[0.125rem] flex-1">
+          <span class="text-[0.9rem] font-semibold text-[var(--brand-text)] leading-[1.2]">{p.label}</span>
+          <span class="text-[0.75rem] text-[var(--brand-muted)] leading-[1.2]">{p.desc}</span>
         </span>
         <!-- download arrow -->
-        <svg class="dl-arrow" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <svg class="w-4 h-4 text-[var(--brand-muted)] flex-shrink-0 transition-colors duration-150 group-hover:text-[var(--brand-gold)] group-focus-visible:text-[var(--brand-gold)]" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
           <path d="M8 1v9M4 7l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         </svg>
       </a>
@@ -72,121 +72,17 @@ const platforms = [
   </div>
 
   {!info.version && (
-    <p class="fallback-note">
+    <p class="m-0 text-[0.85rem] text-[var(--brand-muted)]">
       Direct download links are temporarily unavailable.
-      Visit the <a href={info.releasesUrl} class="releases-link" target="_blank" rel="noopener noreferrer">Releases page</a> to download.
+      Visit the <a href={info.releasesUrl} class="text-[var(--brand-gold)] underline underline-offset-[2px]" target="_blank" rel="noopener noreferrer">Releases page</a> to download.
     </p>
   )}
 </div>
 
 <style>
-  .download-buttons {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.25rem;
-  }
-
-  .version-label {
-    margin: 0;
-    font-size: 0.85rem;
-    color: var(--brand-muted);
-    letter-spacing: 0.02em;
-  }
-
-  .btn-row {
-    display: flex;
-    gap: 0.875rem;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .dl-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1.25rem;
-    background-color: var(--brand-navy-800);
-    border: 1px solid color-mix(in srgb, var(--brand-gold) 30%, transparent);
-    border-radius: 0.5rem;
-    text-decoration: none;
-    color: var(--brand-text);
-    transition: border-color 0.15s ease, background-color 0.15s ease;
-    min-width: 180px;
-  }
-
+  /* hover background uses color-mix — keep scoped */
   .dl-btn:hover,
   .dl-btn:focus-visible {
-    border-color: var(--brand-gold);
     background-color: color-mix(in srgb, var(--brand-gold) 8%, var(--brand-navy-800));
-    outline: none;
-  }
-
-  .dl-btn:focus-visible {
-    outline: 2px solid var(--brand-gold);
-    outline-offset: 2px;
-  }
-
-  .platform-icon {
-    width: 1.25rem;
-    height: 1.25rem;
-    color: var(--brand-gold);
-    flex-shrink: 0;
-  }
-
-  .btn-text {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-    flex: 1;
-  }
-
-  .btn-platform {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--brand-text);
-    line-height: 1.2;
-  }
-
-  .btn-desc {
-    font-size: 0.75rem;
-    color: var(--brand-muted);
-    line-height: 1.2;
-  }
-
-  .dl-arrow {
-    width: 1rem;
-    height: 1rem;
-    color: var(--brand-muted);
-    flex-shrink: 0;
-    transition: color 0.15s ease;
-  }
-
-  .dl-btn:hover .dl-arrow,
-  .dl-btn:focus-visible .dl-arrow {
-    color: var(--brand-gold);
-  }
-
-  .fallback-note {
-    margin: 0;
-    font-size: 0.85rem;
-    color: var(--brand-muted);
-  }
-
-  .releases-link {
-    color: var(--brand-gold);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-
-  @media (max-width: 600px) {
-    .btn-row {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .dl-btn {
-      min-width: unset;
-    }
   }
 </style>

@@ -15,23 +15,23 @@ import Footer from '../../components/Footer.astro';
     <meta name="description" content="Why Tanghīm works differently in Logic Pro and Ableton Live: the plug-in format constraints, MIDI routing differences, and why the Ableton path uses Max for Live rather than a VST3." />
     <link rel="canonical" href="https://tanghim.app/articles/cross-platform" />
   </head>
-  <body class="article-body">
+  <body class="bg-[var(--brand-navy-900)] text-[var(--brand-text)] font-[family-name:var(--font-sans)] min-h-screen flex flex-col">
     <Nav />
 
-    <main class="article-main">
+    <main class="flex-1 py-10 px-6 pb-20 max-[640px]:py-6 max-[640px]:px-4 max-[640px]:pb-16">
 
       <!-- Back link -->
-      <div class="article-back">
-        <a href="/" class="back-link">← Tanghīm</a>
-        <span class="back-sep" aria-hidden="true">/</span>
-        <a href="/docs" class="back-link">Docs</a>
+      <div class="max-w-[75ch] mx-auto mb-8 flex items-center gap-2 text-[0.875rem]">
+        <a href="/" class="text-[var(--brand-muted)] no-underline transition-colors duration-150 hover:text-[var(--brand-gold)]">← Tanghīm</a>
+        <span class="text-[var(--brand-muted)] opacity-50" aria-hidden="true">/</span>
+        <a href="/docs" class="text-[var(--brand-muted)] no-underline transition-colors duration-150 hover:text-[var(--brand-gold)]">Docs</a>
       </div>
 
-      <article class="article-prose">
+      <article class="article-prose max-w-[75ch] mx-auto leading-[1.75] text-[1.0625rem] max-[640px]:text-[1rem]">
 
-        <header class="article-header">
-          <h1 class="article-title">Plug-in formats, MIDI effects, and DAW support</h1>
-          <p class="article-lead">
+        <header class="mb-12 pb-8 border-b border-[color-mix(in_srgb,var(--brand-gold)_15%,transparent)]">
+          <h1 class="text-[clamp(1.5rem,4vw,2.25rem)] font-bold leading-[1.2] text-[var(--brand-text)] m-0 mb-5 tracking-[-0.02em] max-[640px]:text-[1.5rem]">Plug-in formats, MIDI effects, and DAW support</h1>
+          <p class="text-[1.0625rem] text-[var(--brand-muted)] leading-[1.75] m-0">
             Getting Tanghīm to work the same way across different programs and operating systems was
             the most involved part of the project. The reasons are specific and worth explaining,
             because they are not obvious. This document starts with the terms, then sets out the facts.
@@ -198,30 +198,30 @@ import Footer from '../../components/Footer.astro';
         <section aria-labelledby="h-summary">
           <h2 id="h-summary">Summary</h2>
 
-          <div class="table-scroll">
-            <table class="summary-table">
+          <div class="overflow-x-auto [-webkit-overflow-scrolling:touch] mb-6 rounded-[0.5rem] border border-[color-mix(in_srgb,var(--brand-muted)_20%,transparent)]">
+            <table class="summary-table w-full border-collapse text-[0.9375rem] min-w-[500px]">
               <thead>
-                <tr>
-                  <th scope="col"></th>
-                  <th scope="col">Logic Pro</th>
-                  <th scope="col">Ableton Live</th>
+                <tr class="border-b-2 border-[color-mix(in_srgb,var(--brand-gold)_30%,transparent)]">
+                  <th scope="col" class="text-left px-4 py-3 text-[0.8125rem] font-semibold uppercase tracking-[0.06em] text-[var(--brand-gold)] w-[35%] bg-[var(--brand-navy-700)]"></th>
+                  <th scope="col" class="text-left px-4 py-3 text-[0.8125rem] font-semibold uppercase tracking-[0.06em] text-[var(--brand-gold)] bg-[var(--brand-navy-700)]">Logic Pro</th>
+                  <th scope="col" class="text-left px-4 py-3 text-[0.8125rem] font-semibold uppercase tracking-[0.06em] text-[var(--brand-gold)] bg-[var(--brand-navy-700)]">Ableton Live</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <th scope="row">Hosts MIDI-effect plug-ins?</th>
-                  <td>Yes — in the MIDI FX slot (AU)</td>
-                  <td>No third-party plug-in MIDI-effect slot</td>
+                <tr class="border-b border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] bg-[var(--brand-navy-900)]">
+                  <th scope="row" class="text-left px-4 py-[0.875rem] font-medium text-[var(--brand-muted)] align-top text-[0.9rem]">Hosts MIDI-effect plug-ins?</th>
+                  <td class="px-4 py-[0.875rem] text-[var(--brand-text)] align-top leading-[1.5]">Yes — in the MIDI FX slot (AU)</td>
+                  <td class="px-4 py-[0.875rem] text-[var(--brand-text)] align-top leading-[1.5]">No third-party plug-in MIDI-effect slot</td>
                 </tr>
-                <tr>
-                  <th scope="row">Plug-in formats hosted</th>
-                  <td>AU only</td>
-                  <td>VST3 / AU (as instruments / audio effects)</td>
+                <tr class="border-b border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] bg-[color-mix(in_srgb,var(--brand-navy-800)_50%,transparent)]">
+                  <th scope="row" class="text-left px-4 py-[0.875rem] font-medium text-[var(--brand-muted)] align-top text-[0.9rem]">Plug-in formats hosted</th>
+                  <td class="px-4 py-[0.875rem] text-[var(--brand-text)] align-top leading-[1.5]">AU only</td>
+                  <td class="px-4 py-[0.875rem] text-[var(--brand-text)] align-top leading-[1.5]">VST3 / AU (as instruments / audio effects)</td>
                 </tr>
-                <tr>
-                  <th scope="row">How Tanghīm retunes here</th>
-                  <td>AU MIDI-effect plug-in</td>
-                  <td>Max for Live devices (MPE + Mono PB)</td>
+                <tr class="bg-[var(--brand-navy-900)]">
+                  <th scope="row" class="text-left px-4 py-[0.875rem] font-medium text-[var(--brand-muted)] align-top text-[0.9rem]">How Tanghīm retunes here</th>
+                  <td class="px-4 py-[0.875rem] text-[var(--brand-text)] align-top leading-[1.5]">AU MIDI-effect plug-in</td>
+                  <td class="px-4 py-[0.875rem] text-[var(--brand-text)] align-top leading-[1.5]">Max for Live devices (MPE + Mono PB)</td>
                 </tr>
               </tbody>
             </table>
@@ -235,10 +235,10 @@ import Footer from '../../components/Footer.astro';
           </p>
         </section>
 
-        <section aria-labelledby="h-references" class="references-section">
+        <section aria-labelledby="h-references" class="references-section mt-16 pt-8 border-t border-[color-mix(in_srgb,var(--brand-gold)_15%,transparent)]">
           <h2 id="h-references">References</h2>
 
-          <ol class="references-list">
+          <ol class="references-list pl-6 m-0 text-[var(--brand-muted)] text-[0.9rem] leading-[1.65]">
             <li id="ref-1">
               Steinberg, <em>Licensing FAQ</em>, VST 3 Developer Portal.
               <a href="https://steinbergmedia.github.io/vst3_dev_portal/pages/FAQ/Licensing.html" class="ref-url" target="_blank" rel="noopener noreferrer">steinbergmedia.github.io/vst3_dev_portal/pages/FAQ/Licensing.html</a>
@@ -291,83 +291,12 @@ import Footer from '../../components/Footer.astro';
 </html>
 
 <style>
-  /* ── Page shell ─────────────────────────────────── */
-  .article-body {
-    background-color: var(--brand-navy-900);
-    color: var(--brand-text);
-    font-family: var(--font-sans);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
+  /* ── Prose descendant rules (cannot be utilities — targeting hand-written content) ── */
 
-  .article-main {
-    flex: 1;
-    padding: 2.5rem 1.5rem 5rem;
-  }
-
-  /* ── Back link ──────────────────────────────────── */
-  .article-back {
-    max-width: 75ch;
-    margin: 0 auto 2rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-  }
-
-  .back-link {
-    color: var(--brand-muted);
-    text-decoration: none;
-    transition: color 0.15s ease;
-  }
-
-  .back-link:hover {
-    color: var(--brand-gold);
-  }
-
-  .back-sep {
-    color: var(--brand-muted);
-    opacity: 0.5;
-  }
-
-  /* ── Article container ──────────────────────────── */
-  .article-prose {
-    max-width: 75ch;
-    margin: 0 auto;
-    line-height: 1.75;
-    font-size: 1.0625rem; /* slightly larger than UI default for sustained reading */
-  }
-
-  /* ── Header ─────────────────────────────────────── */
-  .article-header {
-    margin-bottom: 3rem;
-    padding-bottom: 2rem;
-    border-bottom: 1px solid color-mix(in srgb, var(--brand-gold) 15%, transparent);
-  }
-
-  .article-title {
-    font-size: clamp(1.5rem, 4vw, 2.25rem);
-    font-weight: 700;
-    line-height: 1.2;
-    color: var(--brand-text);
-    margin: 0 0 1.25rem;
-    letter-spacing: -0.02em;
-  }
-
-  .article-lead {
-    font-size: 1.0625rem;
-    color: var(--brand-muted);
-    line-height: 1.75;
-    margin: 0;
-  }
-
-  /* ── Sections ───────────────────────────────────── */
   .article-prose section {
     margin-bottom: 3rem;
   }
 
-  /* ── Headings ───────────────────────────────────── */
   .article-prose h2 {
     font-size: 1.25rem;
     font-weight: 600;
@@ -378,7 +307,6 @@ import Footer from '../../components/Footer.astro';
     border-bottom: 1px solid color-mix(in srgb, var(--brand-gold) 20%, transparent);
   }
 
-  /* ── Body text ──────────────────────────────────── */
   .article-prose p {
     margin: 0 0 1.25em;
     color: var(--brand-text);
@@ -407,7 +335,7 @@ import Footer from '../../components/Footer.astro';
     font-style: italic;
   }
 
-  /* ── Inline code ────────────────────────────────── */
+  /* Inline code */
   .article-prose code {
     font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
     font-size: 0.875em;
@@ -418,7 +346,7 @@ import Footer from '../../components/Footer.astro';
     color: var(--brand-text);
   }
 
-  /* ── In-text reference links ────────────────────── */
+  /* In-text reference links */
   .ref-link {
     color: var(--brand-gold);
     text-decoration: none;
@@ -439,88 +367,7 @@ import Footer from '../../components/Footer.astro';
     border-radius: 2px;
   }
 
-  /* ── Summary table ──────────────────────────────── */
-  .table-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin-bottom: 1.5rem;
-    border-radius: 0.5rem;
-    border: 1px solid color-mix(in srgb, var(--brand-muted) 20%, transparent);
-  }
-
-  .summary-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9375rem;
-    min-width: 500px;
-  }
-
-  .summary-table thead tr {
-    background-color: var(--brand-navy-700);
-    border-bottom: 2px solid color-mix(in srgb, var(--brand-gold) 30%, transparent);
-  }
-
-  .summary-table th[scope="col"] {
-    text-align: left;
-    padding: 0.75rem 1rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--brand-gold);
-  }
-
-  .summary-table th[scope="col"]:first-child {
-    width: 35%;
-  }
-
-  .summary-table tbody tr {
-    border-bottom: 1px solid color-mix(in srgb, var(--brand-muted) 12%, transparent);
-  }
-
-  .summary-table tbody tr:last-child {
-    border-bottom: none;
-  }
-
-  .summary-table tbody tr:nth-child(even) {
-    background-color: color-mix(in srgb, var(--brand-navy-800) 50%, transparent);
-  }
-
-  .summary-table tbody tr:nth-child(odd) {
-    background-color: var(--brand-navy-900);
-  }
-
-  .summary-table th[scope="row"] {
-    text-align: left;
-    padding: 0.875rem 1rem;
-    font-weight: 500;
-    color: var(--brand-muted);
-    vertical-align: top;
-    font-size: 0.9rem;
-  }
-
-  .summary-table td {
-    padding: 0.875rem 1rem;
-    color: var(--brand-text);
-    vertical-align: top;
-    line-height: 1.5;
-  }
-
-  /* ── References section ─────────────────────────── */
-  .references-section {
-    margin-top: 4rem;
-    padding-top: 2rem;
-    border-top: 1px solid color-mix(in srgb, var(--brand-gold) 15%, transparent);
-  }
-
-  .references-list {
-    padding-left: 1.5em;
-    margin: 0;
-    color: var(--brand-muted);
-    font-size: 0.9rem;
-    line-height: 1.65;
-  }
-
+  /* References list items */
   .references-list li {
     margin-bottom: 1rem;
     padding-left: 0.25em;
@@ -535,6 +382,7 @@ import Footer from '../../components/Footer.astro';
     color: var(--brand-text);
   }
 
+  /* Reference URLs */
   .ref-url {
     display: inline-block;
     color: var(--brand-gold);
@@ -556,20 +404,5 @@ import Footer from '../../components/Footer.astro';
     outline-offset: 2px;
     border-radius: 2px;
     text-decoration: none;
-  }
-
-  /* ── Mobile responsiveness ──────────────────────── */
-  @media (max-width: 640px) {
-    .article-main {
-      padding: 1.5rem 1rem 4rem;
-    }
-
-    .article-prose {
-      font-size: 1rem;
-    }
-
-    .article-title {
-      font-size: 1.5rem;
-    }
   }
 </style>
