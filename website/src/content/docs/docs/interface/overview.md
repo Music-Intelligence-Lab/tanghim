@@ -1,11 +1,11 @@
 ---
 title: Interface Overview
-description: A map of the Tanghīm window and its four main areas.
+description: A map of the Tanghīm window and its three main areas.
 ---
 
 ![Tanghīm interface](/tanghim-ui.png)
 
-The Tanghīm window is organized into four main areas:
+The Tanghīm window is organized into three main areas:
 
 ## Top Bar
 
@@ -24,7 +24,11 @@ The Tanghīm window is organized into four main areas:
 - **Range Scroller** — navigate the full MIDI range; magnetic snap to C, G, and A positions.
 - **Piano key indicators** — white/black key bars beneath each slider.
 
-## Status Bar (bottom)
+---
+
+### Status Bar
+
+The Status Bar runs along the bottom of the window:
 
 - Version and build info (left)
 - Download status indicator — shows "Downloading…" during data fetches, or "No internet connection" with a Retry button if the connection fails
