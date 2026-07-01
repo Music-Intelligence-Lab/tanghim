@@ -1,4 +1,5 @@
 ---
+import { Icon } from 'astro-icon/components';
 import { getReleaseInfo } from '../lib/releases';
 
 const info = await getReleaseInfo();
@@ -8,21 +9,21 @@ const platforms = [
     key: 'macos',
     label: 'macOS',
     url: info.assets.macos ?? info.releasesUrl,
-    glyph: 'M',
+    icon: 'simple-icons:apple',
     desc: 'Universal (Apple Silicon + Intel)',
   },
   {
     key: 'windows',
     label: 'Windows',
     url: info.assets.windows ?? info.releasesUrl,
-    glyph: 'W',
+    icon: 'simple-icons:windows',
     desc: 'x86_64 installer',
   },
   {
     key: 'linux',
     label: 'Linux',
     url: info.assets.linux ?? info.releasesUrl,
-    glyph: 'L',
+    icon: 'simple-icons:linux',
     desc: 'x86_64 tar.gz',
   },
 ] as const;
@@ -43,22 +44,8 @@ const platforms = [
         rel={p.url.startsWith('https://github.com') ? 'noopener noreferrer' : undefined}
         download={p.url.endsWith('.pkg') || p.url.endsWith('.exe') || p.url.endsWith('.tar.gz') ? '' : undefined}
       >
-        <!-- Inline SVG platform glyph -->
-        {p.key === 'macos' && (
-          <svg class="w-5 h-5 text-[var(--brand-gold)] flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/>
-          </svg>
-        )}
-        {p.key === 'windows' && (
-          <svg class="w-5 h-5 text-[var(--brand-gold)] flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
-          </svg>
-        )}
-        {p.key === 'linux' && (
-          <svg class="w-5 h-5 text-[var(--brand-gold)] flex-shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 00-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.6.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.132 1.884 1.071.771-.06 1.592-.536 2.257-1.306.631-.765 1.683-1.084 2.378-1.503.348-.199.629-.469.649-.853.023-.4-.2-.811-.714-1.376v-.097l-.003-.003c-.17-.2-.25-.535-.338-.926-.085-.401-.182-.786-.492-1.046h-.003c-.059-.054-.123-.089-.188-.126-.099-.401-.244-.759-.42-1.05-.4-.66-.94-1.02-1.5-1.253-.174-.077-.348-.144-.522-.203-.026-.196-.05-.404-.088-.629-.116-.735-.239-1.485-.53-2.135-.281-.63-.72-1.144-1.316-1.475-.596-.335-1.362-.485-2.263-.485h-.048a.9.9 0 00-.111.008c-.058.008-.116.021-.174.037-.006-.09-.02-.201-.038-.317-.104-.653-.284-1.393-.607-2.088-.325-.706-.795-1.373-1.512-1.859C13.762.312 13.005.088 12.107.02a4.34 4.34 0 00-.394-.02h.79z"/>
-          </svg>
-        )}
+        <!-- Platform glyph (astro-icon / Simple Icons) -->
+        <Icon name={p.icon} class="w-5 h-5 text-[var(--brand-gold)] flex-shrink-0" />
         <span class="flex flex-col gap-[0.125rem] flex-1">
           <span class="text-[0.9rem] font-semibold text-[var(--brand-text)] leading-[1.2]">{p.label}</span>
           <span class="text-[0.75rem] text-[var(--brand-muted)] leading-[1.2]">{p.desc}</span>
