@@ -2,6 +2,8 @@
 import '../styles/global.css';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
+import DownloadButtons from '../components/DownloadButtons.astro';
+import Badge from '../components/Badge.astro';
 ---
 <!doctype html>
 <html lang="en">
@@ -13,9 +15,336 @@ import Footer from '../components/Footer.astro';
   </head>
   <body class="bg-[var(--brand-navy-900)] min-h-screen flex flex-col">
     <Nav />
-    <main class="flex-1 flex items-center justify-center">
-      <h1 class="text-5xl font-bold text-[var(--brand-gold)]">Tanghīm — coming soon</h1>
+
+    <main class="flex-1">
+
+      <!-- ═══════════════════════════════════════════
+           HERO
+           ═══════════════════════════════════════════ -->
+      <section class="hero" aria-label="Introduction">
+        <div class="hero-inner">
+
+          <!-- Text block -->
+          <div class="hero-text">
+            <p class="eyebrow">Arabic Maqām Tuning</p>
+
+            <h1 class="headline">
+              Play Arabic maqām with the <span class="gold">intonation</span> it was written for.
+            </h1>
+
+            <p class="subhead">
+              An open-source plugin that brings maqām tuning systems to any DAW — and lets you adjust every degree by ear.
+            </p>
+
+            <!-- CTAs -->
+            <div class="cta-row">
+              <a href="#download" class="cta-primary">Download</a>
+              <a href="/docs" class="cta-secondary">Read the docs</a>
+            </div>
+          </div>
+
+          <!-- Download buttons (id="download" lives inside this component) -->
+          <DownloadButtons />
+
+          <!-- UI screenshot with gold glow -->
+          <div class="screenshot-wrap">
+            <div class="glow" aria-hidden="true"></div>
+            <img
+              src="/tanghim-ui.png"
+              alt="The Tanghīm plugin interface: a bank of tuning sliders showing maqām degrees in gold against a navy panel, with maqām selector, preset grid, and reference-frequency controls."
+              class="screenshot"
+              width="1600"
+              height="980"
+              loading="eager"
+            />
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════
+           TRUST / CONTEXT STRIP
+           ═══════════════════════════════════════════ -->
+      <section class="trust-strip" aria-label="Context and compatibility">
+        <div class="trust-inner">
+
+          <!-- Origin -->
+          <p class="trust-origin">
+            Conceived and designed by Khyam Allami · Music Intelligence Lab, AUB
+          </p>
+
+          <!-- Name gloss -->
+          <p class="name-gloss">
+            <span class="accent">Tanghīm</span> (<span lang="ar">تنغيم</span>)
+            is the singular of <span class="accent">tanāghīm</span> (<span lang="ar">تناغيم</span>),
+            the tuning-systems layer of the <a href="https://diarmaqar.net" class="gloss-link" target="_blank" rel="noopener noreferrer">DiArMaqAr</a> archive.
+            It means both a tuning system and the act of tuning — an intonational tuning, not the setting of an open string's pitch.
+          </p>
+
+          <!-- Compatibility badges -->
+          <div class="trust-compat">
+            <span class="trust-label">Any DAW, any synth — three tuning methods:</span>
+            <div class="badge-row">
+              <Badge variant="mts">MTS-ESP</Badge>
+              <Badge variant="mpe">MPE</Badge>
+              <Badge variant="monopb">Mono PB</Badge>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
     </main>
+
     <Footer />
   </body>
 </html>
+
+<style>
+  /* ─── Hero ──────────────────────────────────────── */
+  .hero {
+    padding: 5rem 1.5rem 4rem;
+  }
+
+  .hero-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.75rem;
+    text-align: center;
+  }
+
+  .hero-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  /* Eyebrow */
+  .eyebrow {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--brand-muted);
+  }
+
+  /* Headline */
+  .headline {
+    margin: 0;
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--brand-text);
+    max-width: 18ch;
+  }
+
+  .gold {
+    color: var(--brand-gold);
+  }
+
+  /* Subhead */
+  .subhead {
+    margin: 0;
+    font-size: clamp(1rem, 2.2vw, 1.125rem);
+    line-height: 1.65;
+    color: var(--brand-muted);
+    max-width: 60ch;
+  }
+
+  /* CTAs */
+  .cta-row {
+    display: flex;
+    gap: 0.875rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    margin-top: 0.25rem;
+  }
+
+  .cta-primary {
+    display: inline-block;
+    padding: 0.65rem 1.75rem;
+    background-color: var(--brand-gold);
+    color: var(--brand-navy-900);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    border-radius: 0.375rem;
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+  }
+
+  .cta-primary:hover {
+    opacity: 0.88;
+  }
+
+  .cta-primary:focus-visible {
+    outline: 2px solid var(--brand-gold);
+    outline-offset: 3px;
+  }
+
+  .cta-secondary {
+    display: inline-block;
+    padding: 0.65rem 1rem;
+    color: var(--brand-muted);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-decoration: none;
+    border-radius: 0.375rem;
+    border: 1px solid color-mix(in srgb, var(--brand-muted) 30%, transparent);
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .cta-secondary:hover {
+    color: var(--brand-text);
+    border-color: color-mix(in srgb, var(--brand-muted) 55%, transparent);
+  }
+
+  .cta-secondary:focus-visible {
+    outline: 2px solid var(--brand-gold);
+    outline-offset: 3px;
+  }
+
+  /* Screenshot + glow */
+  .screenshot-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 820px;
+  }
+
+  /* Gold radial glow — behind the image */
+  .glow {
+    position: absolute;
+    inset: -10% -8%;
+    background: radial-gradient(
+      ellipse 70% 60% at 50% 50%,
+      rgba(212, 168, 67, 0.18) 0%,
+      rgba(212, 168, 67, 0.06) 45%,
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .screenshot {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 0.625rem;
+    border: 1px solid color-mix(in srgb, var(--brand-gold) 22%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--brand-navy-700) 60%, transparent),
+      0 8px 40px rgba(0, 0, 0, 0.55),
+      0 0 60px rgba(212, 168, 67, 0.08);
+  }
+
+  /* Fade/rise on load — disabled when reduced-motion preferred */
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-inner {
+      animation: hero-rise 0.6s ease both;
+    }
+
+    @keyframes hero-rise {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  }
+
+  /* ─── Trust strip ───────────────────────────────── */
+  .trust-strip {
+    border-top: 1px solid color-mix(in srgb, var(--brand-muted) 12%, transparent);
+    padding: 2.5rem 1.5rem 3rem;
+    background-color: color-mix(in srgb, var(--brand-navy-800) 50%, var(--brand-navy-900));
+  }
+
+  .trust-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    text-align: center;
+  }
+
+  .trust-origin {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--brand-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .name-gloss {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: var(--brand-muted);
+    max-width: 62ch;
+  }
+
+  .gloss-link {
+    color: var(--brand-muted);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.15s ease;
+  }
+
+  .gloss-link:hover {
+    color: var(--brand-text);
+  }
+
+  .gloss-link:focus-visible {
+    outline: 2px solid var(--brand-gold);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  .trust-compat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding-top: 0.25rem;
+  }
+
+  .trust-label {
+    font-size: 0.825rem;
+    color: var(--brand-muted);
+    letter-spacing: 0.01em;
+  }
+
+  .badge-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* ─── Mobile ───────────────────────────────────── */
+  @media (max-width: 600px) {
+    .hero {
+      padding: 3.5rem 1.25rem 3rem;
+    }
+
+    .hero-inner {
+      gap: 2rem;
+    }
+
+    .cta-row {
+      gap: 0.625rem;
+    }
+  }
+</style>

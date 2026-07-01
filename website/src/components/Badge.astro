@@ -1,0 +1,62 @@
+---
+// Badge.astro — pill badge for plugin output/method variants
+// Props:
+//   variant: "mts" | "mpe" | "monopb" | "osc" | "hept"
+//   Slot: label text
+
+interface Props {
+  variant: 'mts' | 'mpe' | 'monopb' | 'osc' | 'hept';
+}
+
+const { variant } = Astro.props;
+
+const variantMap = {
+  mts:    { token: '--badge-teal',    label: 'mts' },
+  mpe:    { token: '--badge-blue',    label: 'mpe' },
+  monopb: { token: '--badge-green',   label: 'monopb' },
+  osc:    { token: '--badge-amber',   label: 'osc' },
+  hept:   { token: '--badge-magenta', label: 'hept' },
+} as const;
+
+const v = variantMap[variant];
+---
+
+<span class={`badge badge-${v.label}`}>
+  <slot />
+</span>
+
+<style>
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2em 0.65em;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    border: 1px solid currentColor;
+  }
+
+  /* Per-variant colour — text + border inherit from currentColor; bg is faint tint */
+  .badge-mts {
+    color: var(--badge-teal);
+    background-color: color-mix(in srgb, var(--badge-teal) 12%, transparent);
+  }
+  .badge-mpe {
+    color: var(--badge-blue);
+    background-color: color-mix(in srgb, var(--badge-blue) 12%, transparent);
+  }
+  .badge-monopb {
+    color: var(--badge-green);
+    background-color: color-mix(in srgb, var(--badge-green) 12%, transparent);
+  }
+  .badge-osc {
+    color: var(--badge-amber);
+    background-color: color-mix(in srgb, var(--badge-amber) 12%, transparent);
+  }
+  .badge-hept {
+    color: var(--badge-magenta);
+    background-color: color-mix(in srgb, var(--badge-magenta) 12%, transparent);
+  }
+</style>
