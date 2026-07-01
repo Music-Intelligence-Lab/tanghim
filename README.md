@@ -50,7 +50,7 @@ Tanghīm was concieved and designed by [Khyam Allami](https://khyamallami.com) a
 
 ## Installation
 
-Download the latest release for your platform from the [GitHub Releases page](https://github.com/KhyamAllami/tanghim/releases). 
+Download the latest release for your platform from the [GitHub Releases page](https://github.com/Music-Intelligence-Lab/tanghim/releases). 
 
 For Ableton Live check the dedicated instructions below: [Using Tanghim in Ableton Live](#using-tanghim-in-ableton-live)
 
