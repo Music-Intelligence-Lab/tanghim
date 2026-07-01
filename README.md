@@ -2,11 +2,11 @@
 
 **Arabic Maqām tuning plugin for any DAW.**
 
-Tanghīm is an open-source plugin that dynamically accesses Arabic maqām tuning data from the [Digital Arabic Maqām Archive (DiArMaqAr) API](https://diarmaqar.net) and applies it tuning to your software and hardware instruments.
+Tanghīm is an open-source plugin that dynamically accesses Arabic maqām tuning data from the [Digital Arabic Maqām Archive (DiArMaqAr) API](https://diarmaqar.net) and applies it tuning to your software and hardware instruments. Importantly, all tuning data is easily modifiable so that users can tailor the intonation to their personal tastes without being bound to the data.
 
-It is available as VST3, AU, and CLAP on macOS, Windows, and Linux. Internet access is needed only when selecting a tuning — once selected, the tuning data is saved in a cache on your local drive.
+It is available as VST3, AU, and CLAP on macOS, Windows, and Linux. Three tuning methods — **MTS-ESP**, **MPE**, and **Mono Pitch Bend** — ensure compatibility with virtually any synthesizer. 
 
-Three tuning methods — **MTS-ESP**, **MPE**, and **Mono Pitch Bend** — ensure compatibility with virtually any synthesizer. 
+Internet access is needed only when selecting a tuning — once selected, the tuning data is saved in a cache on your local drive.
 
 The project consists of two plugins for use in any DAW (Desktop Audio Workstation):
 
@@ -197,11 +197,11 @@ When a maqam is selected:
 
 ## The Slider Bank
 
-The slider bank presents 12 sliders — one for each chromatic step of the octave — arranged in the standard Western chromatic order: C, C#, D, D# (Eb), E, F, F#, G, G# (Ab), A, A# (Bb), B. Each slider controls the tuning of its pitch class in cents deviation from 12-tone equal temperament. The same tuning applies to that pitch class across all octaves (unless overridden per-note — see below).
+The slider bank presents 12 sliders — one for each chromatic step of the octave — arranged in the standard Anglo-European chromatic order: C, C#, D, D# (Eb), E, F, F#, G, G# (Ab), A, A# (Bb), B. Each slider controls the tuning of its dedicated pitch class. The same tuning applies to that pitch class across all octaves (unless overridden per-note — see below).
 
 ### How Pitch Classes Map to Sliders
 
-Arabic maqām tuning systems define far more than 12 pitch classes per octave — for example, the 24-tone modern Arabic system has 24 distinct pitches. Tanghīm resolves this by assigning each pitch class to the chromatic slider it is a **variant of**, based on Arabic musicological logic rather than proximity to a 12-EDO semitone.
+Arabic maqām tuning systems define far more than 12 pitch classes per octave — for example, the modern Arabic system has 24 distinct pitches whilst Ibn Sīnā's tuning system from (11th century) defines 17 distinct pitches. Tanghīm resolves this by assigning each pitch class to the chromatic slider it is a **variant of**, based on Arabic musicological logic and the 12-tone chromatic system documented by Al-Kindi (9th century).
 
 For example, in the 24-tone system starting on yegāh, the pitches between D and G map as follows:
 
@@ -212,9 +212,9 @@ For example, in the 24-tone system starting on yegāh, the pitches between D and
 | **F#** | F#♮, F#+# (half-sharp) | nīm ḥijāz, ḥijāz |
 | **G** | G♮ | nawā |
 
-The key principle: **each pitch is a variant of the chromatic note it modifies, not the chromatic note it is closest to.** A half-flat E (segāh, E−b) lives on the E slider because it is a *lowered E*, not a raised Eb. Similarly, a half-sharp F (tīk būselīk, F+#) lives on the F slider because it is a *raised F*.
+The key principle: **each pitch is a variant of the chromatic note it modifies, not the chromatic note it is closest to.** For example the half-flat E (segāh, E−b) lives on the E slider because it is a *lowered E*, not a raised Eb. Similarly, a half-sharp F (tīk būselīk, F+#) lives on the F slider because it is a *raised F*.
 
-When a slider has multiple variants, small **snap markers** on the slider track indicate each available tuning position. Clicking the note name cycles through the variants.
+When a slider has multiple variants, small **snap markers** on the slider track indicate each available tuning position. They can also be overridden for user defined tuning changes.
 
 ### Snap Markers vs Free Tuning
 
