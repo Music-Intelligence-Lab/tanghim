@@ -12,16 +12,55 @@ export default defineConfig({
 			favicon: '/favicon.svg',
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/Music-Intelligence-Lab/tanghim' }],
 			sidebar: [
+				{ label: '← Tanghīm', link: '/' },
 				{
-					label: 'Guides',
+					label: 'Getting Started',
 					items: [
-						// Each item here is one entry in the navigation menu.
-						{ label: 'Example Guide', slug: 'guides/example' },
+						{ slug: 'docs/getting-started/introduction' },
+						{ slug: 'docs/getting-started/installation' },
+						{ slug: 'docs/getting-started/quick-start' },
 					],
 				},
 				{
-					label: 'Reference',
-					items: [{ autogenerate: { directory: 'reference' } }],
+					label: 'The Interface',
+					items: [
+						{ slug: 'docs/interface/overview' },
+						{ slug: 'docs/interface/tuning-systems' },
+						{ slug: 'docs/interface/maqam-selection' },
+						{ slug: 'docs/interface/slider-bank' },
+						{ slug: 'docs/interface/reference-frequency' },
+						{ slug: 'docs/interface/presets' },
+					],
+				},
+				{
+					label: 'Tuning & Output',
+					items: [
+						{ slug: 'docs/tuning/methods' },
+						{ slug: 'docs/tuning/receiver' },
+						{ slug: 'docs/tuning/utility-modes' },
+					],
+				},
+				{
+					label: 'Live Performance & Files',
+					items: [
+						{ slug: 'docs/performance/midi-preset-mapping' },
+						{ slug: 'docs/performance/midi-export' },
+						{ slug: 'docs/performance/state-files' },
+						{ slug: 'docs/performance/daw-automation' },
+						{ slug: 'docs/performance/program-change' },
+					],
+				},
+				{
+					label: 'Ableton Live',
+					items: [
+						{ slug: 'docs/ableton' },
+					],
+				},
+				{
+					label: 'Troubleshooting',
+					items: [
+						{ slug: 'docs/troubleshooting' },
+					],
 				},
 			],
 			customCss: ['./src/styles/global.css'],
