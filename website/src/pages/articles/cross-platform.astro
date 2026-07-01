@@ -1,0 +1,575 @@
+---
+import '../../styles/global.css';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plug-in formats, MIDI effects, and DAW support — Tanghīm</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- SEO -->
+    <meta name="description" content="Why Tanghīm works differently in Logic Pro and Ableton Live: the plug-in format constraints, MIDI routing differences, and why the Ableton path uses Max for Live rather than a VST3." />
+    <link rel="canonical" href="https://tanghim.app/articles/cross-platform" />
+  </head>
+  <body class="article-body">
+    <Nav />
+
+    <main class="article-main">
+
+      <!-- Back link -->
+      <div class="article-back">
+        <a href="/" class="back-link">← Tanghīm</a>
+        <span class="back-sep" aria-hidden="true">/</span>
+        <a href="/docs" class="back-link">Docs</a>
+      </div>
+
+      <article class="article-prose">
+
+        <header class="article-header">
+          <h1 class="article-title">Plug-in formats, MIDI effects, and DAW support</h1>
+          <p class="article-lead">
+            Getting Tanghīm to work the same way across different programs and operating systems was
+            the most involved part of the project. The reasons are specific and worth explaining,
+            because they are not obvious. This document starts with the terms, then sets out the facts.
+          </p>
+        </header>
+
+        <section aria-labelledby="h-terms">
+          <h2 id="h-terms">The terms</h2>
+
+          <p>
+            A <strong>DAW</strong> (digital audio workstation) is the program a musician records and arranges in —
+            Ableton Live, Apple Logic Pro, Reaper, and so on. A <strong>plug-in</strong> is a smaller piece of
+            software that runs <em>inside</em> a DAW: an instrument, an effect, or a tuning tool like
+            Tanghīm.
+          </p>
+
+          <p>
+            Plug-ins come in competing <strong>formats</strong> — standards for how the plug-in and the host DAW
+            talk to each other. The main ones are:
+          </p>
+
+          <ul>
+            <li>
+              <strong>VST</strong> (Virtual Studio Technology), created by Steinberg, in two incompatible
+              generations: <strong>VST2</strong> (older) and <strong>VST3</strong> (current).
+            </li>
+            <li>
+              <strong>AU</strong> (Audio Units), Apple's format, the only one Logic Pro uses.
+            </li>
+            <li>
+              <strong>CLAP</strong>, a newer, open format.
+            </li>
+          </ul>
+
+          <p>
+            A plug-in only runs in a DAW that supports its format, so the same tool is normally built
+            in several formats at once. Tanghīm is built as VST3, AU, and CLAP.
+          </p>
+
+          <p>
+            Plug-ins also come in <strong>kinds</strong>, defined by what flows through them. The data that
+            represents <em>notes</em> — which key is played, how hard, and so on — is called <strong>MIDI</strong>, and
+            it is separate from audio (the actual sound). An <strong>instrument</strong> receives MIDI and produces
+            sound. An <strong>audio effect</strong> processes sound. A <strong>MIDI effect</strong> receives MIDI and outputs
+            <em>modified</em> MIDI, producing no sound of its own; it sits before an instrument and changes
+            what that instrument plays.
+          </p>
+
+          <p>
+            Tanghīm's retuning is a MIDI effect. It takes the notes you play and re-sends them retuned
+            to the correct pitches, using <strong>pitch bend</strong> (small per-note pitch adjustments). It can do
+            this through <strong>MPE</strong> (MIDI Polyphonic Expression), which spreads notes across separate MIDI
+            channels so each can be bent independently, or through a simpler single-channel mode for
+            ordinary synthesisers. The difficulty described below comes from one fact: a <em>MIDI effect
+            that outputs MIDI</em> is supported very differently from one DAW and format to the next.
+          </p>
+        </section>
+
+        <section aria-labelledby="h-formats">
+          <h2 id="h-formats">Plug-in formats and MIDI</h2>
+
+          <p>
+            VST2 passed raw MIDI in and out, which made MIDI-effect plug-ins simple to build. New VST2
+            development is no longer open, however. Steinberg's licensing terms state that a developer
+            who signed the VST2 agreement before October 2018 may distribute VST2 plug-ins, and one
+            who did not may not <a href="#ref-1" class="ref-link">[1]</a>. A project begun after that date cannot release VST2
+            plug-ins.
+          </p>
+
+          <p>
+            VST3, the current generation, handles MIDI differently rather than not at all. It carries
+            notes as structured "events" (which can describe pitch to a fraction of a cent, useful for
+            fine tuning), turns MIDI controller movements into adjustable plug-in parameters rather
+            than a raw stream, and — according to its specification — lets a plug-in send MIDI back out
+            to the host <a href="#ref-2" class="ref-link">[2]</a>. A VST3 MIDI effect is therefore possible in principle.
+            Whether the host actually carries that MIDI on to a downstream instrument is up to the
+            host, not the format.
+          </p>
+
+          <p>
+            Apple's AU format includes a dedicated kind for this exact job — a "MIDI processor" type —
+            described in Apple's developer materials as a plug-in that processes MIDI input and
+            produces MIDI output, and does not produce audio <a href="#ref-3" class="ref-link">[3]</a>.
+          </p>
+        </section>
+
+        <section aria-labelledby="h-hosts">
+          <h2 id="h-hosts">How the hosts differ: Logic Pro and Ableton Live</h2>
+
+          <p>
+            Logic Pro provides a dedicated <strong>MIDI FX</strong> slot on each instrument track, designed to hold
+            a MIDI-effect plug-in whose output feeds the instrument below it <a href="#ref-4" class="ref-link">[4]</a>. Logic
+            uses AU plug-ins only. Tanghīm's AU build is produced as a MIDI processor automatically by
+            JUCE, the framework Tanghīm is written in, so it loads into Logic's MIDI FX slot and works
+            directly.
+          </p>
+
+          <p>
+            Ableton Live is organised differently. Its manual defines only two roles for third-party
+            plug-ins — instrument and audio effect; in Live, MIDI effects are built-in Live devices,
+            and there is no slot for a third-party plug-in that takes MIDI in and feeds MIDI to a
+            following instrument <a href="#ref-5" class="ref-link">[5]</a>. In practice, a VST3 built as a MIDI effect does not
+            run as one in Live: Live's plug-in loader refuses a plug-in that has no audio input
+            (recorded as Ableton issue <code>ABLDEV-00057</code>; JUCE adds a hidden, unused audio output
+            specifically so such plug-ins will load at all) <a href="#ref-6" class="ref-link">[6]</a>. This behaviour is
+            reported by plug-in developers and matches this project's own testing, rather than being
+            stated in Ableton's published manual.
+          </p>
+
+          <p>
+            Live can pass MIDI from one track to another, but Ableton's documentation notes that "Live
+            merges all MIDI channels to one channel when being routed internally from track to track"
+            <a href="#ref-7" class="ref-link">[7]</a>. Because MPE relies on keeping each note on its own channel, this routing
+            path discards the per-note information Tanghīm depends on. The mechanism Live does provide
+            for generating and preserving MPE is a <strong>Max for Live</strong> device — a small program built in
+            Cycling '74's Max environment, which Live hosts as a native device — carrying a setting
+            (<code>is_mpe</code>) that Cycling '74 documents as making the device MPE-capable, able to receive and
+            generate MPE data <a href="#ref-8" class="ref-link">[8]</a>. For these reasons, the supported way to use Tanghīm's
+            retuning inside Live is a Max for Live device, not a VST3 or AU plug-in.
+          </p>
+        </section>
+
+        <section aria-labelledby="h-oddsound">
+          <h2 id="h-oddsound">ODDSound's devices, and why Tanghīm's are built natively</h2>
+
+          <p>
+            ODDSound — the authors of MTS-ESP, the tuning system Tanghīm uses to share tuning data
+            between plug-ins — distribute their own MTS-ESP MIDI Client as a Max for Live device
+            <a href="#ref-9" class="ref-link">[9]</a>. That device works by running a <strong>VST2</strong> plug-in inside Max (using Max's
+            <code>vst~</code> object, which can host a VST2 inside a Max patch); through that VST2, it sends MIDI
+            out directly. The installed files confirm this: the bundle is <code>MTS-ESP MIDI Client.vst</code>,
+            identified as <code>com.ODDSound.MTS-ESP MIDI Client.VST</code>. ODDSound ship two versions, standard
+            and MPE.
+          </p>
+
+          <p>
+            This route requires a VST2 licence. ODDSound, founded in 2013, hold one; this project,
+            begun afterward, does not, so the same route is not open to it. Running a VST2 inside Max
+            this way also has a known weakness — the hosted plug-in can be dropped when Live's audio
+            buffer size changes, and recovered only by hand — which ODDSound note inside their own
+            device.
+          </p>
+
+          <p>
+            ODDSound also publish, free and openly licensed, a separate native Max add-on whose
+            component reads MTS-ESP tuning data directly, with no plug-in involved <a href="#ref-10" class="ref-link">[10]</a>.
+            Tanghīm's Max for Live devices are built on that. The note-handling a hosted plug-in would
+            otherwise do — allocating MPE channels, generating the pitch-bend messages, holding the
+            last note in mono mode — is rebuilt instead from Max's own built-in objects. This needs no
+            VST2 licence and avoids the buffer-size weakness.
+          </p>
+
+          <p>
+            Tanghīm provides two Max for Live receivers, one for MPE and one for Mono Pitch Bend. They
+            are separate because, in Live, a device marked as MPE does not deliver notes on channel 1
+            to an ordinary (non-MPE) synthesiser, whereas a typical mono synth expects its notes on
+            channel 1. The mono path therefore needs a device that is <em>not</em> marked as MPE, and one
+            device cannot be both. (This was established by testing in Live. A commonly repeated claim
+            — that the MPE setting cannot be changed after a device loads — is not confirmed by any
+            official source and is not the reason for the split.)
+          </p>
+        </section>
+
+        <section aria-labelledby="h-summary">
+          <h2 id="h-summary">Summary</h2>
+
+          <div class="table-scroll">
+            <table class="summary-table">
+              <thead>
+                <tr>
+                  <th scope="col"></th>
+                  <th scope="col">Logic Pro</th>
+                  <th scope="col">Ableton Live</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Hosts MIDI-effect plug-ins?</th>
+                  <td>Yes — in the MIDI FX slot (AU)</td>
+                  <td>No third-party plug-in MIDI-effect slot</td>
+                </tr>
+                <tr>
+                  <th scope="row">Plug-in formats hosted</th>
+                  <td>AU only</td>
+                  <td>VST3 / AU (as instruments / audio effects)</td>
+                </tr>
+                <tr>
+                  <th scope="row">How Tanghīm retunes here</th>
+                  <td>AU MIDI-effect plug-in</td>
+                  <td>Max for Live devices (MPE + Mono PB)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            The same Tanghīm source is released as VST3, AU, and CLAP, plus the two Max for Live
+            devices for Ableton Live. Two things could change this in future: Ableton could add
+            support for VST3 MIDI effects, and the Max for Live path relies on ODDSound continuing to
+            publish their free Max component.
+          </p>
+        </section>
+
+        <section aria-labelledby="h-references" class="references-section">
+          <h2 id="h-references">References</h2>
+
+          <ol class="references-list">
+            <li id="ref-1">
+              Steinberg, <em>Licensing FAQ</em>, VST 3 Developer Portal.
+              <a href="https://steinbergmedia.github.io/vst3_dev_portal/pages/FAQ/Licensing.html" class="ref-url" target="_blank" rel="noopener noreferrer">steinbergmedia.github.io/vst3_dev_portal/pages/FAQ/Licensing.html</a>
+            </li>
+            <li id="ref-2">
+              Steinberg, <em>About MIDI in VST 3</em>, VST 3 Developer Portal.
+              <a href="https://steinbergmedia.github.io/vst3_dev_portal/pages/Technical+Documentation/About+MIDI/Index.html" class="ref-url" target="_blank" rel="noopener noreferrer">steinbergmedia.github.io/vst3_dev_portal/pages/Technical+Documentation/About+MIDI/Index.html</a>
+            </li>
+            <li id="ref-3">
+              Apple, <em>Audio Unit Types</em> (<code>kAudioUnitType_MIDIProcessor</code>), Audio Toolbox developer documentation.
+              <a href="https://developer.apple.com/documentation/audiotoolbox/audio_unit_types" class="ref-url" target="_blank" rel="noopener noreferrer">developer.apple.com/documentation/audiotoolbox/audio_unit_types</a>
+            </li>
+            <li id="ref-4">
+              Apple, <em>Use MIDI plug-ins in Logic Pro for Mac</em>, Logic Pro User Guide.
+              <a href="https://support.apple.com/guide/logicpro/use-midi-plug-ins-lgcef1c11e8f/mac" class="ref-url" target="_blank" rel="noopener noreferrer">support.apple.com/guide/logicpro/use-midi-plug-ins-lgcef1c11e8f/mac</a>
+            </li>
+            <li id="ref-5">
+              Ableton, <em>Working with Instruments and Effects</em>, Live Reference Manual.
+              <a href="https://www.ableton.com/en/manual/working-with-instruments-and-effects/" class="ref-url" target="_blank" rel="noopener noreferrer">ableton.com/en/manual/working-with-instruments-and-effects/</a>
+            </li>
+            <li id="ref-6">
+              <em>VST3 MIDI plugins won't load in Ableton Live</em> (Ableton issue <code>ABLDEV-00057</code>; JUCE workaround), JUCE Forum.
+              <a href="https://forum.juce.com/t/vst3-midi-plugins-wont-load-in-ableton-live/36323" class="ref-url" target="_blank" rel="noopener noreferrer">forum.juce.com/t/vst3-midi-plugins-wont-load-in-ableton-live/36323</a>
+            </li>
+            <li id="ref-7">
+              Ableton, <em>Accessing the MIDI output of a VST plug-in</em>, Ableton Help Center.
+              <a href="https://help.ableton.com/hc/en-us/articles/209070189-Accessing-the-MIDI-output-of-a-VST-plug-in" class="ref-url" target="_blank" rel="noopener noreferrer">help.ableton.com/hc/en-us/articles/209070189-Accessing-the-MIDI-output-of-a-VST-plug-in</a>
+            </li>
+            <li id="ref-8">
+              Cycling '74, <em>patcher</em> (the <code>is_mpe</code> attribute), Max Reference.
+              <a href="https://docs.cycling74.com/reference/patcher/" class="ref-url" target="_blank" rel="noopener noreferrer">docs.cycling74.com/reference/patcher/</a>
+            </li>
+            <li id="ref-9">
+              ODDSound, <em>MTS-ESP</em>.
+              <a href="https://oddsound.com/" class="ref-url" target="_blank" rel="noopener noreferrer">oddsound.com</a>
+            </li>
+            <li id="ref-10">
+              ODDSound, <em>MTS-ESP Max Package</em> (0BSD-licensed Max externals).
+              <a href="https://github.com/ODDSound/MTS-ESP-Max-Package" class="ref-url" target="_blank" rel="noopener noreferrer">github.com/ODDSound/MTS-ESP-Max-Package</a>
+            </li>
+          </ol>
+        </section>
+
+      </article>
+    </main>
+
+    <Footer />
+
+  </body>
+</html>
+
+<style>
+  /* ── Page shell ─────────────────────────────────── */
+  .article-body {
+    background-color: var(--brand-navy-900);
+    color: var(--brand-text);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .article-main {
+    flex: 1;
+    padding: 2.5rem 1.5rem 5rem;
+  }
+
+  /* ── Back link ──────────────────────────────────── */
+  .article-back {
+    max-width: 75ch;
+    margin: 0 auto 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .back-link {
+    color: var(--brand-muted);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .back-link:hover {
+    color: var(--brand-gold);
+  }
+
+  .back-sep {
+    color: var(--brand-muted);
+    opacity: 0.5;
+  }
+
+  /* ── Article container ──────────────────────────── */
+  .article-prose {
+    max-width: 75ch;
+    margin: 0 auto;
+    line-height: 1.75;
+    font-size: 1.0625rem; /* slightly larger than UI default for sustained reading */
+  }
+
+  /* ── Header ─────────────────────────────────────── */
+  .article-header {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--brand-gold) 15%, transparent);
+  }
+
+  .article-title {
+    font-size: clamp(1.5rem, 4vw, 2.25rem);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--brand-text);
+    margin: 0 0 1.25rem;
+    letter-spacing: -0.02em;
+  }
+
+  .article-lead {
+    font-size: 1.0625rem;
+    color: var(--brand-muted);
+    line-height: 1.75;
+    margin: 0;
+  }
+
+  /* ── Sections ───────────────────────────────────── */
+  .article-prose section {
+    margin-bottom: 3rem;
+  }
+
+  /* ── Headings ───────────────────────────────────── */
+  .article-prose h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--brand-gold);
+    margin: 0 0 1.25rem;
+    letter-spacing: -0.01em;
+    padding-bottom: 0.375rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--brand-gold) 20%, transparent);
+  }
+
+  /* ── Body text ──────────────────────────────────── */
+  .article-prose p {
+    margin: 0 0 1.25em;
+    color: var(--brand-text);
+  }
+
+  .article-prose p:last-child {
+    margin-bottom: 0;
+  }
+
+  .article-prose ul {
+    margin: 0 0 1.25em;
+    padding-left: 1.5em;
+    color: var(--brand-text);
+  }
+
+  .article-prose li {
+    margin-bottom: 0.5em;
+  }
+
+  .article-prose strong {
+    font-weight: 600;
+    color: var(--brand-text);
+  }
+
+  .article-prose em {
+    font-style: italic;
+  }
+
+  /* ── Inline code ────────────────────────────────── */
+  .article-prose code {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+    font-size: 0.875em;
+    background-color: color-mix(in srgb, var(--brand-navy-700) 80%, transparent);
+    border: 1px solid color-mix(in srgb, var(--brand-muted) 20%, transparent);
+    border-radius: 0.25em;
+    padding: 0.1em 0.35em;
+    color: var(--brand-text);
+  }
+
+  /* ── In-text reference links ────────────────────── */
+  .ref-link {
+    color: var(--brand-gold);
+    text-decoration: none;
+    font-size: 0.8em;
+    font-weight: 600;
+    vertical-align: super;
+    line-height: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .ref-link:hover {
+    opacity: 0.75;
+  }
+
+  .ref-link:focus-visible {
+    outline: 2px solid var(--brand-gold);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* ── Summary table ──────────────────────────────── */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--brand-muted) 20%, transparent);
+  }
+
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+    min-width: 500px;
+  }
+
+  .summary-table thead tr {
+    background-color: var(--brand-navy-700);
+    border-bottom: 2px solid color-mix(in srgb, var(--brand-gold) 30%, transparent);
+  }
+
+  .summary-table th[scope="col"] {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--brand-gold);
+  }
+
+  .summary-table th[scope="col"]:first-child {
+    width: 35%;
+  }
+
+  .summary-table tbody tr {
+    border-bottom: 1px solid color-mix(in srgb, var(--brand-muted) 12%, transparent);
+  }
+
+  .summary-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .summary-table tbody tr:nth-child(even) {
+    background-color: color-mix(in srgb, var(--brand-navy-800) 50%, transparent);
+  }
+
+  .summary-table tbody tr:nth-child(odd) {
+    background-color: var(--brand-navy-900);
+  }
+
+  .summary-table th[scope="row"] {
+    text-align: left;
+    padding: 0.875rem 1rem;
+    font-weight: 500;
+    color: var(--brand-muted);
+    vertical-align: top;
+    font-size: 0.9rem;
+  }
+
+  .summary-table td {
+    padding: 0.875rem 1rem;
+    color: var(--brand-text);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  /* ── References section ─────────────────────────── */
+  .references-section {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid color-mix(in srgb, var(--brand-gold) 15%, transparent);
+  }
+
+  .references-list {
+    padding-left: 1.5em;
+    margin: 0;
+    color: var(--brand-muted);
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+
+  .references-list li {
+    margin-bottom: 1rem;
+    padding-left: 0.25em;
+  }
+
+  .references-list li:last-child {
+    margin-bottom: 0;
+  }
+
+  .references-list em {
+    font-style: italic;
+    color: var(--brand-text);
+  }
+
+  .ref-url {
+    display: inline-block;
+    color: var(--brand-gold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: color-mix(in srgb, var(--brand-gold) 40%, transparent);
+    word-break: break-all;
+    transition: color 0.15s ease;
+    font-size: 0.875em;
+  }
+
+  .ref-url:hover {
+    color: color-mix(in srgb, var(--brand-gold) 80%, white);
+    text-decoration-color: var(--brand-gold);
+  }
+
+  .ref-url:focus-visible {
+    outline: 2px solid var(--brand-gold);
+    outline-offset: 2px;
+    border-radius: 2px;
+    text-decoration: none;
+  }
+
+  /* ── Mobile responsiveness ──────────────────────── */
+  @media (max-width: 640px) {
+    .article-main {
+      padding: 1.5rem 1rem 4rem;
+    }
+
+    .article-prose {
+      font-size: 1rem;
+    }
+
+    .article-title {
+      font-size: 1.5rem;
+    }
+  }
+</style>
