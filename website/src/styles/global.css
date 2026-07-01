@@ -1,3 +1,10 @@
+/* Fontsource self-hosted fonts */
+@import '@fontsource-variable/inter';
+@import '@fontsource/ibm-plex-sans-arabic/400.css';
+@import '@fontsource/ibm-plex-sans-arabic/500.css';
+@import '@fontsource/ibm-plex-sans-arabic/600.css';
+@import '@fontsource/ibm-plex-sans-arabic/700.css';
+
 @layer base, starlight, theme, components, utilities;
 
 @import '@astrojs/starlight-tailwind';
@@ -5,13 +12,35 @@
 @import 'tailwindcss/utilities.css' layer(utilities);
 
 @theme {
-	/*
-	Configure your Tailwind theme that will be used by Starlight.
-	https://starlight.astro.build/guides/css-and-tailwind/#styling-starlight-with-tailwind
-	*/
+	/* Body/UI font — Inter Variable (geometric sans, good diacritic coverage) */
+	--font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+
+	/* Arabic-aware accent font — IBM Plex Sans Arabic */
+	--font-accent: 'IBM Plex Sans Arabic', 'Inter Variable', ui-sans-serif, sans-serif;
+
+	/* Brand colours — navy */
+	--brand-navy-900: #0d0f1f;
+	--brand-navy-800: #141733;
+	--brand-navy-700: #1b1f42;
+
+	/* Brand colours — primary accents */
+	--brand-gold: #d4a843;
+	--brand-red: #e0455a;
+
+	/* Badge colours */
+	--badge-teal: #26a69a;
+	--badge-blue: #64b5f6;
+	--badge-green: #66bb6a;
+	--badge-amber: #ffa726;
+	--badge-magenta: #d050e0;
+
+	/* Text */
+	--brand-text: #e8e8f0;
+	--brand-muted: #8a8ca8;
 }
 
-/*
-Add additional Tailwind styles to this file:
-https://tailwindcss.com/docs/adding-custom-styles#using-custom-css
-*/
+/* Accent font class — Arabic script, transliteration, wordmark */
+.accent,
+[lang="ar"] {
+	font-family: var(--font-accent);
+}

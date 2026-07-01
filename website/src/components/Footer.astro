@@ -1,0 +1,121 @@
+---
+// Footer.astro — site footer
+---
+<footer class="site-footer">
+  <div class="footer-inner">
+    <!-- Link groups -->
+    <div class="footer-links">
+      <div class="link-group">
+        <span class="group-label">Documentation</span>
+        <a href="/docs" class="footer-link">Docs</a>
+        <a href="/articles/cross-platform" class="footer-link">Article</a>
+      </div>
+
+      <div class="link-group">
+        <span class="group-label">Project</span>
+        <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="footer-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/Music-Intelligence-Lab/tanghim/releases" class="footer-link" target="_blank" rel="noopener noreferrer">Releases</a>
+      </div>
+
+      <div class="link-group">
+        <span class="group-label">External</span>
+        <a href="https://diarmaqar.net" class="footer-link" target="_blank" rel="noopener noreferrer">DiArMaqAr</a>
+        <a href="https://khyamallami.com" class="footer-link" target="_blank" rel="noopener noreferrer">khyamallami.com</a>
+      </div>
+    </div>
+
+    <!-- Credit + open source -->
+    <div class="footer-credit">
+      <p class="credit-line">
+        Conceived and designed by Khyam Allami · Music Intelligence Lab, AUB (2026).
+        Open source — <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="footer-link-inline" target="_blank" rel="noopener noreferrer">view on GitHub</a>.
+      </p>
+
+      <!-- Accent font rendering test — verifies ī ā ḥ ṣ and Arabic script -->
+      <p class="font-test accent" aria-hidden="true">
+        Tanghīm · تنغيم · rāst · ṣabā
+      </p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background-color: var(--brand-navy-800);
+    border-top: 1px solid color-mix(in srgb, var(--brand-gold) 15%, transparent);
+    padding: 3rem 1.5rem 2rem;
+  }
+
+  .footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 3rem;
+    flex-wrap: wrap;
+  }
+
+  .link-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .group-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--brand-muted);
+    margin-bottom: 0.25rem;
+  }
+
+  .footer-link {
+    color: var(--brand-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.15s ease;
+  }
+
+  .footer-link:hover {
+    color: var(--brand-text);
+  }
+
+  .footer-credit {
+    border-top: 1px solid color-mix(in srgb, var(--brand-muted) 15%, transparent);
+    padding-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .credit-line {
+    font-size: 0.85rem;
+    color: var(--brand-muted);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .footer-link-inline {
+    color: var(--brand-muted);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.15s ease;
+  }
+
+  .footer-link-inline:hover {
+    color: var(--brand-text);
+  }
+
+  .font-test {
+    font-size: 0.85rem;
+    color: var(--brand-muted);
+    margin: 0;
+    /* accent class applies IBM Plex Sans Arabic for Arabic + diacritics */
+  }
+</style>

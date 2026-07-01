@@ -1,5 +1,7 @@
 ---
 import '../styles/global.css';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
 ---
 <!doctype html>
 <html lang="en">
@@ -7,10 +9,13 @@ import '../styles/global.css';
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tanghīm</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
-  <body class="bg-[#0d0f1f] min-h-screen flex items-center justify-center">
-    <main class="text-center">
-      <h1 class="text-5xl font-bold text-[#d4a843]">Tanghīm — coming soon</h1>
+  <body class="bg-[var(--brand-navy-900)] min-h-screen flex flex-col">
+    <Nav />
+    <main class="flex-1 flex items-center justify-center">
+      <h1 class="text-5xl font-bold text-[var(--brand-gold)]">Tanghīm — coming soon</h1>
     </main>
+    <Footer />
   </body>
 </html>

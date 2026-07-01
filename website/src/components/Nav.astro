@@ -1,0 +1,169 @@
+---
+// Nav.astro — sticky top navigation
+---
+<nav class="site-nav" aria-label="Main navigation">
+  <div class="nav-inner">
+    <!-- Wordmark -->
+    <a href="/" class="wordmark accent" aria-label="Tanghīm home">
+      Tangh<span class="wordmark-i">ī</span>m
+    </a>
+
+    <!-- Mobile toggle -->
+    <details class="mobile-menu">
+      <summary class="menu-toggle" aria-label="Open menu">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <rect y="4" width="22" height="2" rx="1" fill="currentColor"/>
+          <rect y="10" width="22" height="2" rx="1" fill="currentColor"/>
+          <rect y="16" width="22" height="2" rx="1" fill="currentColor"/>
+        </svg>
+      </summary>
+      <div class="mobile-dropdown">
+        <a href="/#features" class="nav-link">Features</a>
+        <a href="/docs" class="nav-link">Docs</a>
+        <a href="/articles/cross-platform" class="nav-link">Article</a>
+        <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="nav-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="/#download" class="nav-btn-mobile">Download</a>
+      </div>
+    </details>
+
+    <!-- Desktop links -->
+    <div class="desktop-links">
+      <a href="/#features" class="nav-link">Features</a>
+      <a href="/docs" class="nav-link">Docs</a>
+      <a href="/articles/cross-platform" class="nav-link">Article</a>
+      <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="nav-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="/#download" class="nav-btn">Download</a>
+    </div>
+  </div>
+</nav>
+
+<style>
+  .site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: var(--brand-navy-900);
+    border-bottom: 1px solid color-mix(in srgb, var(--brand-gold) 20%, transparent);
+  }
+
+  .nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .wordmark {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--brand-text);
+    text-decoration: none;
+    letter-spacing: -0.01em;
+  }
+
+  .wordmark-i {
+    color: var(--brand-gold);
+  }
+
+  .wordmark:hover {
+    color: var(--brand-text);
+  }
+
+  .desktop-links {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .nav-link {
+    color: var(--brand-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.375rem;
+    transition: color 0.15s ease;
+  }
+
+  .nav-link:hover {
+    color: var(--brand-text);
+  }
+
+  .nav-btn {
+    margin-left: 0.5rem;
+    background-color: var(--brand-gold);
+    color: var(--brand-navy-900);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.4rem 1rem;
+    border-radius: 0.375rem;
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+  }
+
+  .nav-btn:hover {
+    opacity: 0.9;
+  }
+
+  /* Mobile menu — hidden by default on desktop */
+  .mobile-menu {
+    display: none;
+  }
+
+  @media (max-width: 720px) {
+    .desktop-links {
+      display: none;
+    }
+
+    .mobile-menu {
+      display: block;
+      position: relative;
+    }
+
+    .menu-toggle {
+      list-style: none;
+      cursor: pointer;
+      color: var(--brand-text);
+      padding: 0.25rem;
+      border-radius: 0.25rem;
+    }
+
+    .menu-toggle::-webkit-details-marker {
+      display: none;
+    }
+
+    .mobile-dropdown {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 0.5rem);
+      background-color: var(--brand-navy-800);
+      border: 1px solid color-mix(in srgb, var(--brand-gold) 20%, transparent);
+      border-radius: 0.5rem;
+      padding: 0.5rem;
+      min-width: 180px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+
+    .mobile-dropdown .nav-link {
+      display: block;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .nav-btn-mobile {
+      display: block;
+      margin-top: 0.25rem;
+      background-color: var(--brand-gold);
+      color: var(--brand-navy-900);
+      font-weight: 600;
+      font-size: 0.875rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.375rem;
+      text-decoration: none;
+      text-align: center;
+    }
+  }
+</style>

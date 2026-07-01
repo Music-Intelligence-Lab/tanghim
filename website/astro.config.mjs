@@ -7,8 +7,9 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
 	integrations: [
 		starlight({
-			title: 'Docs with Tailwind',
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
+			title: 'Tanghīm',
+			favicon: '/favicon.svg',
+			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/Music-Intelligence-Lab/tanghim' }],
 			sidebar: [
 				{
 					label: 'Guides',
