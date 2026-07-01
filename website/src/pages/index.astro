@@ -4,6 +4,9 @@ import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import DownloadButtons from '../components/DownloadButtons.astro';
 import Badge from '../components/Badge.astro';
+import Showcase from '../components/Showcase.astro';
+import FeatureRow from '../components/FeatureRow.astro';
+import FeatureGrid from '../components/FeatureGrid.astro';
 ---
 <!doctype html>
 <html lang="en">
@@ -92,6 +95,109 @@ import Badge from '../components/Badge.astro';
           </div>
 
         </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════
+           FEATURE BODY
+           ═══════════════════════════════════════════ -->
+      <section id="features" aria-label="Features">
+
+        <!-- Showcase 1: Slider Bank -->
+        <Showcase
+          title="Every degree, <strong>editable</strong>."
+          subtitle="The tuning data is the starting point, not a cage."
+          image="/shot-sliders.png"
+          imageAlt="The Tanghīm slider bank: twelve per-chromatic-step sliders showing cents readouts, IPN labels, solfège, and PAO names, with gold-highlighted maqām degree thumbs."
+        >
+          <p>Twelve sliders — one per chromatic step — set the cents for each maqām degree. Tanghīm loads the archive's tuning, then lets you adjust any degree by ear; your edits are the source of truth for the frequency table.</p>
+        </Showcase>
+
+        <!-- Showcase 2: Tuning Methods -->
+        <Showcase
+          title="One tuning, <strong>three ways</strong> out."
+          subtitle="Reach virtually any instrument."
+          image="/shot-reffreq.png"
+          imageAlt="The Tanghīm top-right controls: Reference Frequency knob at 110.00 Hz showing C→C, Osc and Hept toggle badges, and the MTS-ESP, MPE, and Mono PB status badges."
+        >
+          <p>MTS-ESP retunes compatible synths automatically over shared memory. MPE sends per-note pitch bend across channels 2–16 for polyphonic instruments. Mono Pitch Bend drives ordinary single-channel synths. The top bar shows which are active.</p>
+          <div class="badge-row">
+            <Badge variant="mts">MTS-ESP</Badge>
+            <Badge variant="mpe">MPE</Badge>
+            <Badge variant="monopb">Mono PB</Badge>
+          </div>
+        </Showcase>
+
+        <!-- Showcase 3: Maqam Selection & Presets -->
+        <Showcase
+          title="Pick a maqām, <strong>snap</strong> the scale."
+          subtitle="Eight presets, mappable to MIDI."
+          image="/shot-presets.png"
+          imageAlt="The Tanghīm maqām selector showing 'maqām rāst' in the dropdown and the 4×2 preset grid with the first slot highlighted in gold as the active preset."
+        >
+          <p>Choose a maqām and transposition; the sliders snap to its intervals and the degrees highlight in gold. Save up to eight presets and switch between them live — including by MIDI note or Program Change.</p>
+        </Showcase>
+
+        <!-- Showcase 4: Oscillator & Heptatonic mode -->
+        <Showcase
+          title="Hear it <strong>instantly</strong>."
+          subtitle="Audition tunings; play the scale on the white keys."
+          image="/tanghim-ui.png"
+          imageAlt="The full Tanghīm interface showing the Osc and Hept toggle badges active in the top-right corner alongside the tuning-method status indicators."
+        >
+          <p>The built-in triangle-wave oscillator (Osc) lets you hear a tuning with no external instrument loaded. Heptatonic mode (Hept) remaps the keyboard so the white keys play the maqām degrees in order from the tonic.</p>
+          <div class="badge-row">
+            <Badge variant="osc">Osc</Badge>
+            <Badge variant="hept">Hept</Badge>
+          </div>
+        </Showcase>
+
+        <!-- FeatureRow A: MIDI preset mapping -->
+        <FeatureRow
+          title="Switch maqāmat <strong>mid-performance</strong>."
+          image="/shot-presets.png"
+          imageAlt="The Tanghīm preset grid with eight slots showing named maqām presets ready for live MIDI switching."
+        >
+          <p>Map MIDI notes to presets through a dedicated input, so you can switch maqāmat mid-performance from a controller — reliable regardless of DAW routing.</p>
+        </FeatureRow>
+
+        <!-- FeatureRow B: MIDI export & .tanghim files (reversed) -->
+        <FeatureRow
+          title="Export the scale. <strong>Save</strong> the setup."
+          image="/tanghim-ui.png"
+          imageAlt="The Tanghīm interface showing the MIDI drag export button and the full tuning state ready to save as a .tanghim file."
+          reverse
+        >
+          <p>Drag the current maqām scale out as a Standard MIDI File — with a Program Change embedded so the preset re-arms on playback. Save and reload full tuning setups as human-readable .tanghim files.</p>
+        </FeatureRow>
+
+        <!-- Feature Grid -->
+        <FeatureGrid items={[
+          {
+            title: 'Per-note overrides',
+            body: 'Give the same pitch class a different variant in a specific octave.',
+          },
+          {
+            title: 'Reference frequency',
+            body: "Set the tuning's base pitch by knob, exact Hz, or ±100-cent steps; it carries across system switches.",
+          },
+          {
+            title: 'Range scroller',
+            body: 'Pan the 128-note keyboard with magnetic snap to C, G, and A.',
+          },
+          {
+            title: 'DAW automation',
+            body: 'Slider cents, reference offset, and preset are exposed as automatable parameters.',
+          },
+          {
+            title: 'Save & load',
+            body: 'Store and recall complete tuning states as portable .tanghim files.',
+          },
+          {
+            title: 'Program-change switching',
+            body: 'Switch presets from your DAW with MIDI Program Change messages.',
+          },
+        ]} />
+
       </section>
 
     </main>

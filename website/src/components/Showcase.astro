@@ -1,0 +1,168 @@
+---
+// Showcase.astro — full-width feature block: big centered visual + centered copy
+// Props:
+//   title:    string — shown verbatim (HTML: use ** around the gold-accented word in the parent)
+//   subtitle: string
+//   image:    string — public path e.g. "/shot-sliders.png"
+//   imageAlt: string
+//   reverse?: boolean — reserved for future use; layout is always centered
+
+interface Props {
+  title: string;
+  subtitle: string;
+  image: string;
+  imageAlt: string;
+  reverse?: boolean;
+}
+
+const { title, subtitle, image, imageAlt } = Astro.props;
+---
+
+<div class="showcase">
+  <div class="showcase-inner">
+    <!-- Copy -->
+    <div class="showcase-copy">
+      <h2 class="showcase-title" set:html={title} />
+      <p class="showcase-subtitle">{subtitle}</p>
+      <div class="showcase-body">
+        <slot />
+      </div>
+    </div>
+
+    <!-- Visual with soft gold glow -->
+    <div class="showcase-visual">
+      <div class="showcase-glow" aria-hidden="true"></div>
+      <img
+        src={image}
+        alt={imageAlt}
+        class="showcase-img"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+  </div>
+</div>
+
+<style>
+  .showcase {
+    padding: 4rem 1.5rem;
+    border-top: 1px solid color-mix(in srgb, var(--brand-muted) 10%, transparent);
+  }
+
+  .showcase-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.5rem;
+    text-align: center;
+  }
+
+  /* Copy block */
+  .showcase-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.875rem;
+    max-width: 60ch;
+  }
+
+  .showcase-title {
+    margin: 0;
+    font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    color: var(--brand-text);
+  }
+
+  /* Gold accent word — wrap the target word in <strong> in the title prop */
+  .showcase-title :global(strong) {
+    color: var(--brand-gold);
+    font-weight: inherit;
+  }
+
+  .showcase-subtitle {
+    margin: 0;
+    font-size: clamp(0.9375rem, 2vw, 1.0625rem);
+    color: var(--brand-muted);
+    line-height: 1.5;
+  }
+
+  .showcase-body {
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    color: color-mix(in srgb, var(--brand-text) 80%, var(--brand-muted));
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    align-items: center;
+  }
+
+  .showcase-body :global(p) {
+    margin: 0;
+    max-width: 58ch;
+  }
+
+  .showcase-body :global(.badge-row) {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 0.25rem;
+  }
+
+  /* Visual */
+  .showcase-visual {
+    position: relative;
+    width: 100%;
+    max-width: 820px;
+  }
+
+  .showcase-glow {
+    position: absolute;
+    inset: -12% -8%;
+    background: radial-gradient(
+      ellipse 70% 60% at 50% 50%,
+      color-mix(in srgb, var(--brand-gold) 15%, transparent) 0%,
+      color-mix(in srgb, var(--brand-gold) 5%, transparent) 45%,
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .showcase-img {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--brand-gold) 18%, transparent);
+    box-shadow:
+      0 4px 32px rgba(0, 0, 0, 0.45),
+      0 0 48px color-mix(in srgb, var(--brand-gold) 6%, transparent);
+  }
+
+  /* Subtle scroll-reveal — disabled when reduced motion preferred */
+  @media (prefers-reduced-motion: no-preference) {
+    .showcase-inner {
+      animation: reveal 0.5s ease both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 30%;
+    }
+  }
+
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
