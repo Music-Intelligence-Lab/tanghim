@@ -13,23 +13,11 @@ const { variant } = Astro.props;
 // which reads the matching `--badge-*` token.
 ---
 
-<span class={`badge badge-${variant}`}>
+<span class={`inline-flex items-center py-[0.2em] px-[0.65em] rounded-full text-[0.78rem] font-semibold tracking-[0.03em] whitespace-nowrap border border-current badge-${variant}`}>
   <slot />
 </span>
 
 <style>
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.2em 0.65em;
-    border-radius: 9999px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    white-space: nowrap;
-    border: 1px solid currentColor;
-  }
-
   /* Per-variant colour — text + border inherit from currentColor; bg is faint tint */
   .badge-mts {
     color: var(--badge-teal);
