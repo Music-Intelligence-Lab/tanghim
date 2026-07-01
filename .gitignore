@@ -47,6 +47,10 @@ ui/node_modules/
 # UI build output
 ui/dist/
 
+# Website (Astro) build + deps
+website/dist/
+website/node_modules/
+
 # Python bytecode (py2max M4L generators)
 __pycache__/
 *.pyc
@@ -55,7 +59,7 @@ __pycache__/
 CLAUDE.md
 DIARY.md
 diary/
-docs/
+/docs/
 CROSS-PLATFORM.md
 TODO.md
 IMPLEMENTATION_PLAN.md
