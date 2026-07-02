@@ -49,6 +49,16 @@
 	--brand-muted: #8a8ca8;
 }
 
+/* Base reset — this Starlight+Tailwind setup imports theme.css + utilities.css
+   but NOT Tailwind Preflight, so the browser's default body margin (8px) is
+   never zeroed. That 8px gutter sat above the sticky nav at scroll=0 (nav
+   measured ~66px) and scrolled away when the nav stuck to top:0 (56px). Reset it. */
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+
 /* Prevent horizontal layout shift when a scrollbar appears/disappears */
 html {
 	scrollbar-gutter: stable;
