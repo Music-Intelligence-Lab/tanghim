@@ -64,6 +64,14 @@ html {
 	scrollbar-gutter: stable;
 }
 
+/* Prevent the browser from auto-correcting scroll position when content above
+   the viewport changes size (scroll anchoring) — this caused a scroll jump on
+   the landing page as the hero/reveal animations settled. */
+html,
+body {
+	overflow-anchor: none;
+}
+
 /* Accent font class — Latin wordmark + transliterations (IBM Plex diacritics) */
 .accent {
 	font-family: var(--font-accent);
