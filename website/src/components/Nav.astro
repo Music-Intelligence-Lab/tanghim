@@ -25,13 +25,13 @@ const locales = [
 <nav class="sticky top-0 z-[100] bg-[var(--brand-navy-900)] border-b border-[color-mix(in_srgb,var(--brand-gold)_20%,transparent)]" aria-label="Main navigation">
   <div class="max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
     <!-- Wordmark -->
-    <a href="/" class="text-[1.25rem] font-semibold text-[var(--brand-text)] no-underline tracking-[-0.01em] hover:text-[var(--brand-text)] accent" aria-label="Tanghīm home">
+    <a href="/" class="text-[1.25rem] font-semibold text-[var(--brand-text)] no-underline tracking-[-0.01em] hover:text-[var(--brand-text)] accent focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:rounded-[2px] focus-visible:outline" aria-label="Tanghīm home">
       Tangh<span class="text-[var(--brand-gold)]">ī</span>m
     </a>
 
     <!-- Mobile toggle -->
     <details class="hidden max-[720px]:block relative">
-      <summary class="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-[var(--brand-text)] p-1 rounded-[0.25rem]" aria-label="Open menu">
+      <summary class="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-[var(--brand-text)] p-1 rounded-[0.25rem] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline" aria-label="Open menu">
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
           <rect y="4" width="22" height="2" rx="1" fill="currentColor"/>
           <rect y="10" width="22" height="2" rx="1" fill="currentColor"/>
@@ -39,11 +39,11 @@ const locales = [
         </svg>
       </summary>
       <div class="absolute end-0 top-[calc(100%+0.5rem)] bg-[var(--brand-navy-800)] border border-[color-mix(in_srgb,var(--brand-gold)_20%,transparent)] rounded-[0.5rem] p-2 min-w-[180px] flex flex-col gap-[0.125rem]">
-        <a href="/#features" class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]">Features</a>
-        <a href="/docs" class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]">Docs</a>
-        <a href="/articles/cross-platform" class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]">Article</a>
-        <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href="/#download" class="block mt-1 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] font-semibold text-[0.875rem] px-3 py-2 rounded-[0.375rem] no-underline text-center">Download</a>
+        <a href="/#features" class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Features</a>
+        <a href="/docs" class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Docs</a>
+        <a href="/articles/cross-platform" class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Article</a>
+        <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="/#download" class="block mt-1 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] font-semibold text-[0.875rem] px-3 py-2 rounded-[0.375rem] no-underline text-center focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Download</a>
         <!-- Language switcher (mobile) -->
         <div class="border-t border-[color-mix(in_srgb,var(--brand-muted)_15%,transparent)] mt-1 pt-1 flex gap-1" role="navigation" aria-label="Language">
           {locales.map(({ code, label }) => (
@@ -51,7 +51,7 @@ const locales = [
               href={localeHref(code)}
               lang={code === 'en' ? undefined : code}
               aria-current={currentLocale === code ? 'page' : undefined}
-              class={`flex-1 text-center no-underline text-[0.8rem] px-2 py-1.5 rounded-[0.375rem] transition-colors duration-150 ease-[ease] ${currentLocale === code ? 'text-[var(--brand-gold)] font-semibold bg-[color-mix(in_srgb,var(--brand-gold)_10%,transparent)]' : 'text-[var(--brand-muted)] hover:text-[var(--brand-text)]'}`}
+              class={`flex-1 text-center no-underline text-[0.8rem] px-2 py-1.5 rounded-[0.375rem] transition-colors duration-150 ease-[ease] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline ${currentLocale === code ? 'text-[var(--brand-gold)] font-semibold bg-[color-mix(in_srgb,var(--brand-gold)_10%,transparent)]' : 'text-[var(--brand-muted)] hover:text-[var(--brand-text)]'}`}
             >{label}</a>
           ))}
         </div>
@@ -60,10 +60,10 @@ const locales = [
 
     <!-- Desktop links -->
     <div class="flex items-center gap-1 max-[720px]:hidden">
-      <a href="/#features" class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]">Features</a>
-      <a href="/docs" class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]">Docs</a>
-      <a href="/articles/cross-platform" class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]">Article</a>
-      <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="/#features" class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Features</a>
+      <a href="/docs" class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Docs</a>
+      <a href="/articles/cross-platform" class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Article</a>
+      <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline" target="_blank" rel="noopener noreferrer">GitHub</a>
       <!-- Language switcher (desktop) -->
       <div class="ms-2 flex items-center gap-0.5 border-s border-[color-mix(in_srgb,var(--brand-muted)_20%,transparent)] ps-3" role="navigation" aria-label="Language">
         {locales.map(({ code, label }) => (
@@ -71,11 +71,11 @@ const locales = [
             href={localeHref(code)}
             lang={code === 'en' ? undefined : code}
             aria-current={currentLocale === code ? 'page' : undefined}
-            class={`no-underline text-[0.825rem] px-2 py-[0.3rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] ${currentLocale === code ? 'text-[var(--brand-gold)] font-semibold' : 'text-[var(--brand-muted)] hover:text-[var(--brand-text)]'}`}
+            class={`no-underline text-[0.825rem] px-2 py-[0.3rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline ${currentLocale === code ? 'text-[var(--brand-gold)] font-semibold' : 'text-[var(--brand-muted)] hover:text-[var(--brand-text)]'}`}
           >{label}</a>
         ))}
       </div>
-      <a href="/#download" class="ms-2 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] font-semibold text-[0.875rem] px-4 py-[0.4rem] rounded-[0.375rem] no-underline transition-[opacity,transform] duration-150 ease-[ease] hover:opacity-90 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0">Download</a>
+      <a href="/#download" class="ms-2 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] font-semibold text-[0.875rem] px-4 py-[0.4rem] rounded-[0.375rem] no-underline transition-[opacity,transform] duration-150 ease-[ease] hover:opacity-90 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Download</a>
     </div>
   </div>
 </nav>

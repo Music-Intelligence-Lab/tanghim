@@ -14,6 +14,9 @@ import Footer from '../../components/Footer.astro';
     <link rel="canonical" href="https://tanghim.app/ar/" />
   </head>
   <body class="bg-[var(--brand-navy-900)] min-h-screen flex flex-col">
+    <!-- Skip to main content (keyboard users) -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
     <Nav />
 
     <!-- Translation-in-progress banner -->
@@ -25,7 +28,7 @@ import Footer from '../../components/Footer.astro';
       </div>
     </div>
 
-    <main class="flex-1 flex flex-col items-center justify-center py-20 px-6 max-[600px]:py-14 max-[600px]:px-5" lang="ar">
+    <main class="flex-1 flex flex-col items-center justify-center py-20 px-6 max-[600px]:py-14 max-[600px]:px-5" id="main-content" lang="ar">
 
       <div class="flex flex-col items-center gap-8 text-center max-w-[540px]">
 

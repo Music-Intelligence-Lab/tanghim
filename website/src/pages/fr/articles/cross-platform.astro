@@ -14,6 +14,9 @@ import Footer from '../../../components/Footer.astro';
     <link rel="canonical" href="https://tanghim.app/fr/articles/cross-platform" />
   </head>
   <body class="bg-[var(--brand-navy-900)] text-[var(--brand-text)] min-h-screen flex flex-col">
+    <!-- Skip to main content (keyboard users) -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
     <Nav />
 
     <!-- Translation-in-progress banner -->
@@ -25,11 +28,11 @@ import Footer from '../../../components/Footer.astro';
       </div>
     </div>
 
-    <main class="flex-1 py-10 px-6 pb-20 max-[640px]:py-6 max-[640px]:px-4 max-[640px]:pb-16">
+    <main class="flex-1 py-10 px-6 pb-20 max-[640px]:py-6 max-[640px]:px-4 max-[640px]:pb-16" id="main-content">
 
       <!-- Back link -->
       <div class="max-w-[75ch] mx-auto mb-8 flex items-center gap-2 text-[0.875rem]">
-        <a href="/fr/" class="text-[var(--brand-muted)] no-underline transition-colors duration-150 hover:text-[var(--brand-gold)]">← Tanghīm</a>
+        <a href="/fr/" class="text-[var(--brand-muted)] no-underline transition-colors duration-150 hover:text-[var(--brand-gold)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-2 focus-visible:rounded-[2px] focus-visible:outline">← Tanghīm</a>
       </div>
 
       <article class="max-w-[75ch] mx-auto leading-[1.75] text-[1.0625rem] max-[640px]:text-[1rem]">
