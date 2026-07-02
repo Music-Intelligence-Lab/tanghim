@@ -79,15 +79,35 @@ body {
 
 /* Arabic text: body = IBM Plex Sans Arabic; display (headings/nav/buttons) = Tajawal.
    Applies to plain pages (lang="ar" spans/pages) AND anything under an ar-locale root. */
-[lang="ar"],
 :lang(ar) {
 	font-family: var(--font-arabic-body);
 	/* Feed Starlight docs (which render Arabic body via --sl-font) the Arabic body face */
 	--sl-font: var(--font-arabic-body);
 }
-[lang="ar"] :is(h1, h2, h3, h4, .accent, nav a, button, .display),
-:lang(ar) :is(h1, h2, h3, h4) {
+:lang(ar) :is(h1, h2, h3, h4, nav a, button, .display) {
 	font-family: var(--font-arabic-display);
+}
+
+/* Latin-tagged text inside an Arabic page keeps the Latin faces — the element's
+   own lang wins over the ar-locale root. Covers the "Tanghīm" wordmark, the
+   "English"/"Français" switcher labels, and any Latin term. (:lang() matches
+   by the element's resolved language, so :lang(en) on an lang="en" child
+   overrides the ancestor :lang(ar) rules above.) */
+:lang(en),
+:lang(fr) {
+	font-family: var(--font-sans);
+}
+.accent {
+	font-family: var(--font-accent);
+}
+
+/* Arabic nav links: correct the vertical metrics. Tajawal renders larger and
+   with a taller line-box than Inter at the same font-size, so Arabic labels
+   looked oversized and sat off-centre in the fixed-height bar. Nudge size down
+   to match Inter's optical size and pin line-height so they centre cleanly. */
+:lang(ar) nav a {
+	font-size: 0.95em;
+	line-height: 1;
 }
 
 /* ─── Cross-browser scroll reveal ───────────────────────────────────────────
