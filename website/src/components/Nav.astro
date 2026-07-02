@@ -21,6 +21,23 @@ const locales = [
   { code: 'ar', label: 'العربية' },
   { code: 'fr', label: 'Français' },
 ];
+
+// Locale-correct base for internal links
+const localeBase = currentLocale === 'en' ? '' : `/${currentLocale}`;
+
+// Nav link labels per locale
+const labels = {
+  en: { features: 'Features', docs: 'Docs', article: 'Article', download: 'Download' },
+  ar: { features: 'الميزات', docs: 'التوثيق', article: 'المقالة', download: 'تنزيل' },
+  fr: { features: 'Fonctionnalités', docs: 'Docs', article: 'Article', download: 'Télécharger' },
+};
+const t = labels[currentLocale as keyof typeof labels];
+
+// Download href: FR landing has no #download yet → point to EN
+const downloadHref = currentLocale === 'fr' ? '/#download' : `${localeBase}/#download`;
+
+// lang attribute for Arabic labels (so Tajawal applies)
+const arLang = currentLocale === 'ar' ? 'ar' : undefined;
 ---
 <nav class="sticky top-0 z-[100] h-14 box-border bg-[var(--brand-navy-900)] border-b border-[color-mix(in_srgb,var(--brand-gold)_20%,transparent)]" aria-label="Main navigation">
   <div class="max-w-[1200px] mx-auto px-6 h-full flex items-center justify-between">
@@ -39,11 +56,11 @@ const locales = [
         </svg>
       </summary>
       <div class="absolute end-0 top-[calc(100%+0.5rem)] bg-[var(--brand-navy-800)] border border-[color-mix(in_srgb,var(--brand-gold)_20%,transparent)] rounded-[0.5rem] p-2 min-w-[180px] flex flex-col gap-[0.125rem]">
-        <a href="/#features" class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Features</a>
-        <a href="/docs" class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Docs</a>
-        <a href="/articles/cross-platform" class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Article</a>
+        <a href={`${localeBase}/#features`} lang={arLang} class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.features}</a>
+        <a href={`${localeBase}/docs`} lang={arLang} class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.docs}</a>
+        <a href={`${localeBase}/articles/cross-platform`} lang={arLang} class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.article}</a>
         <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href="/#download" class="block mt-1 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] font-semibold text-[0.875rem] px-3 py-2 rounded-[0.375rem] no-underline text-center focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Download</a>
+        <a href={downloadHref} lang={arLang} class="block mt-1 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] font-semibold text-[0.875rem] px-3 py-2 rounded-[0.375rem] no-underline text-center focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.download}</a>
         <!-- Language switcher (mobile) -->
         <div class="border-t border-[color-mix(in_srgb,var(--brand-muted)_15%,transparent)] mt-1 pt-1 flex gap-1" role="navigation" aria-label="Language">
           {locales.map(({ code, label }) => (
@@ -60,9 +77,9 @@ const locales = [
 
     <!-- Desktop links -->
     <div class="flex items-center gap-1 max-[720px]:hidden">
-      <a href="/#features" class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Features</a>
-      <a href="/docs" class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Docs</a>
-      <a href="/articles/cross-platform" class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Article</a>
+      <a href={`${localeBase}/#features`} lang={arLang} class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.features}</a>
+      <a href={`${localeBase}/docs`} lang={arLang} class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.docs}</a>
+      <a href={`${localeBase}/articles/cross-platform`} lang={arLang} class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.article}</a>
       <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline" target="_blank" rel="noopener noreferrer">GitHub</a>
       <!-- Language switcher (desktop) -->
       <div class="ms-2 flex items-center gap-0.5 border-s border-[color-mix(in_srgb,var(--brand-muted)_20%,transparent)] ps-3" role="navigation" aria-label="Language">
@@ -75,7 +92,7 @@ const locales = [
           >{label}</a>
         ))}
       </div>
-      <a href="/#download" class="ms-2 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] font-semibold text-[0.875rem] px-4 py-[0.4rem] rounded-[0.375rem] no-underline transition-[opacity,transform] duration-150 ease-[ease] hover:opacity-90 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">Download</a>
+      <a href={downloadHref} lang={arLang} class="ms-2 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] font-semibold text-[0.875rem] px-4 py-[0.4rem] rounded-[0.375rem] no-underline transition-[opacity,transform] duration-150 ease-[ease] hover:opacity-90 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.download}</a>
     </div>
   </div>
 </nav>

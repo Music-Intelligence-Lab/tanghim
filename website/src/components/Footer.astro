@@ -1,24 +1,66 @@
 ---
-// Footer.astro — site footer
+// Footer.astro — site footer (locale-aware)
+const parts = Astro.url.pathname.split('/').filter(Boolean);
+const currentLocale = (parts[0] === 'ar' || parts[0] === 'fr') ? parts[0] : 'en';
+const localeBase = currentLocale === 'en' ? '' : `/${currentLocale}`;
+
+// Locale label sets
+const footerText = {
+  en: {
+    docGroup: 'Documentation',
+    docsLink: 'Docs',
+    articleLink: 'Article',
+    projectGroup: 'Project',
+    releasesLink: 'Releases',
+    externalGroup: 'External',
+    credit: 'Conceived and designed by Khyam Allami · Music Intelligence Lab, AUB (2026).',
+    openSource: 'Open source — ',
+    viewOnGitHub: 'view on GitHub',
+  },
+  ar: {
+    docGroup: 'التوثيق',
+    docsLink: 'التوثيق',
+    articleLink: 'المقالة',
+    projectGroup: 'المشروع',
+    releasesLink: 'الإصدارات',
+    externalGroup: 'روابط خارجية',
+    credit: 'من تصميم وتطوير خيّام اللامي · مختبر ذكاء الموسيقى، الجامعة الأمريكية في بيروت (2026).',
+    openSource: 'مفتوح المصدر — ',
+    viewOnGitHub: 'عرض على GitHub',
+  },
+  fr: {
+    docGroup: 'Documentation',
+    docsLink: 'Docs',
+    articleLink: 'Article',
+    projectGroup: 'Projet',
+    releasesLink: 'Versions',
+    externalGroup: 'Externe',
+    credit: 'Conçu et développé par Khyam Allami · Music Intelligence Lab, AUB (2026).',
+    openSource: 'Open source — ',
+    viewOnGitHub: 'voir sur GitHub',
+  },
+};
+const t = footerText[currentLocale as keyof typeof footerText];
+const arLang = currentLocale === 'ar' ? 'ar' : undefined;
 ---
 <footer class="bg-[var(--brand-navy-800)] pt-12 pb-8 px-6 border-t border-[color-mix(in_srgb,var(--brand-gold)_15%,transparent)]">
   <div class="max-w-[1200px] mx-auto flex flex-col gap-10">
     <!-- Link groups -->
     <div class="flex gap-12 flex-wrap">
       <div class="flex flex-col gap-2">
-        <span class="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--brand-muted)] mb-1">Documentation</span>
-        <a href="/docs" class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]">Docs</a>
-        <a href="/articles/cross-platform" class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]">Article</a>
+        <span lang={arLang} class="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--brand-muted)] mb-1">{t.docGroup}</span>
+        <a href={`${localeBase}/docs`} lang={arLang} class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]">{t.docsLink}</a>
+        <a href={`${localeBase}/articles/cross-platform`} lang={arLang} class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]">{t.articleLink}</a>
       </div>
 
       <div class="flex flex-col gap-2">
-        <span class="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--brand-muted)] mb-1">Project</span>
+        <span lang={arLang} class="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--brand-muted)] mb-1">{t.projectGroup}</span>
         <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href="https://github.com/Music-Intelligence-Lab/tanghim/releases" class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">Releases</a>
+        <a href="https://github.com/Music-Intelligence-Lab/tanghim/releases" lang={arLang} class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">{t.releasesLink}</a>
       </div>
 
       <div class="flex flex-col gap-2">
-        <span class="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--brand-muted)] mb-1">External</span>
+        <span lang={arLang} class="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--brand-muted)] mb-1">{t.externalGroup}</span>
         <a href="https://diarmaqar.net" class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">DiArMaqAr</a>
         <a href="https://khyamallami.com" class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">khyamallami.com</a>
       </div>
@@ -26,9 +68,9 @@
 
     <!-- Credit + open source -->
     <div class="border-t border-[color-mix(in_srgb,var(--brand-muted)_15%,transparent)] pt-6 flex flex-col gap-3">
-      <p class="text-[0.85rem] text-[var(--brand-muted)] m-0 leading-[1.6]">
-        Conceived and designed by Khyam Allami · Music Intelligence Lab, AUB (2026).
-        Open source — <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="footer-link text-[var(--brand-muted)] underline underline-offset-[2px] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">view on GitHub</a>.
+      <p lang={arLang} class="text-[0.85rem] text-[var(--brand-muted)] m-0 leading-[1.6]">
+        {t.credit}
+        {' '}{t.openSource}<a href="https://github.com/Music-Intelligence-Lab/tanghim" lang={undefined} class="footer-link text-[var(--brand-muted)] underline underline-offset-[2px] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">{t.viewOnGitHub}</a>.
       </p>
     </div>
   </div>
