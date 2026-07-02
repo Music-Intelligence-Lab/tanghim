@@ -1,9 +1,14 @@
 /* Fontsource self-hosted fonts */
 @import '@fontsource-variable/inter';
+/* IBM Plex Sans Arabic — Arabic BODY text */
 @import '@fontsource/ibm-plex-sans-arabic/400.css';
 @import '@fontsource/ibm-plex-sans-arabic/500.css';
 @import '@fontsource/ibm-plex-sans-arabic/600.css';
 @import '@fontsource/ibm-plex-sans-arabic/700.css';
+/* Tajawal — Arabic DISPLAY (titles, subtitles, menus) */
+@import '@fontsource/tajawal/400.css';
+@import '@fontsource/tajawal/500.css';
+@import '@fontsource/tajawal/700.css';
 
 @layer base, starlight, theme, components, utilities;
 
@@ -15,8 +20,13 @@
 	/* Body/UI font — Inter Variable (geometric sans, good diacritic coverage) */
 	--font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 
-	/* Arabic-aware accent font — IBM Plex Sans Arabic */
+	/* Arabic fonts: Tajawal for display (titles/subtitles/menus),
+	   IBM Plex Sans Arabic for body text. --font-accent (used by the Latin
+	   wordmark/transliterations) stays IBM Plex Sans Arabic for consistent
+	   diacritic rendering. */
 	--font-accent: 'IBM Plex Sans Arabic', 'Inter Variable', ui-sans-serif, sans-serif;
+	--font-arabic-display: 'Tajawal', 'IBM Plex Sans Arabic', ui-sans-serif, sans-serif;
+	--font-arabic-body: 'IBM Plex Sans Arabic', ui-sans-serif, sans-serif;
 
 	/* Brand colours — navy */
 	--brand-navy-900: #0d0f1f;
@@ -39,10 +49,27 @@
 	--brand-muted: #8a8ca8;
 }
 
-/* Accent font class — Arabic script, transliteration, wordmark */
-.accent,
-[lang="ar"] {
+/* Prevent horizontal layout shift when a scrollbar appears/disappears */
+html {
+	scrollbar-gutter: stable;
+}
+
+/* Accent font class — Latin wordmark + transliterations (IBM Plex diacritics) */
+.accent {
 	font-family: var(--font-accent);
+}
+
+/* Arabic text: body = IBM Plex Sans Arabic; display (headings/nav/buttons) = Tajawal.
+   Applies to plain pages (lang="ar" spans/pages) AND anything under an ar-locale root. */
+[lang="ar"],
+:lang(ar) {
+	font-family: var(--font-arabic-body);
+	/* Feed Starlight docs (which render Arabic body via --sl-font) the Arabic body face */
+	--sl-font: var(--font-arabic-body);
+}
+[lang="ar"] :is(h1, h2, h3, h4, .accent, nav a, button, .display),
+:lang(ar) :is(h1, h2, h3, h4) {
+	font-family: var(--font-arabic-display);
 }
 
 /* ─── Cross-browser scroll reveal ───────────────────────────────────────────
@@ -54,8 +81,8 @@
 /* Only hide when JS is enabled (body.js-ready set by inline script before paint) */
 body.js-ready .reveal {
 	opacity: 0;
-	transform: translateY(16px);
-	transition: opacity 0.5s ease, transform 0.5s ease;
+	transform: translateY(20px);
+	transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 body.js-ready .reveal.is-visible {

@@ -24,7 +24,6 @@ export default defineConfig({
 			},
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/Music-Intelligence-Lab/tanghim' }],
 			sidebar: [
-				{ label: '← Tanghīm', link: '/' },
 				{
 					label: 'Getting Started',
 					items: [
