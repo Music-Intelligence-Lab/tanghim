@@ -280,7 +280,7 @@ import FeatureGrid from '../components/FeatureGrid.astro';
           }
         }
       },
-      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+      { threshold: 0, rootMargin: '0px 0px -160px 0px' }
     );
 
     document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
@@ -340,13 +340,13 @@ import FeatureGrid from '../components/FeatureGrid.astro';
   /* Hero fade/rise on load — disabled when reduced-motion preferred */
   @media (prefers-reduced-motion: no-preference) {
     .hero-inner {
-      animation: hero-rise 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation: hero-rise 1.1s cubic-bezier(0.33, 0, 0.2, 1) both;
     }
 
     @keyframes hero-rise {
       from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(28px);
       }
       to {
         opacity: 1;
