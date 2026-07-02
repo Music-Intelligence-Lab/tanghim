@@ -101,13 +101,15 @@ body {
 	font-family: var(--font-accent);
 }
 
-/* Arabic nav links: correct the vertical metrics. Tajawal renders larger and
-   with a taller line-box than Inter at the same font-size, so Arabic labels
-   looked oversized and sat off-centre in the fixed-height bar. Nudge size down
-   to match Inter's optical size and pin line-height so they centre cleanly. */
-:lang(ar) nav a {
+/* Arabic nav text: Tajawal renders larger than Inter at the same size, so nudge
+   it down to match the English optical size. Do NOT force line-height:1 — that
+   squeezes Tajawal's line box tighter than its metrics want and floats the ink
+   to the top of the box, throwing off vertical centring. Inherit `normal` like
+   the English links (which the user approved).
+   The wordmark (.nav-wordmark) is EXCLUDED from all AR nav adjustments so the
+   "Tanghīm" logo renders identically in every language. */
+:lang(ar) nav a:not(.nav-wordmark) {
 	font-size: 0.95em;
-	line-height: 1;
 }
 
 /* ─── Cross-browser scroll reveal ───────────────────────────────────────────
