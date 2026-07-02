@@ -44,3 +44,30 @@
 [lang="ar"] {
 	font-family: var(--font-accent);
 }
+
+/* ─── Cross-browser scroll reveal ───────────────────────────────────────────
+   Elements with .reveal start hidden (JS must be enabled for this).
+   The JS observer adds .is-visible when the element enters the viewport.
+   No-JS + reduced-motion: elements are always fully visible.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Only hide when JS is enabled (body.js-ready set by inline script before paint) */
+body.js-ready .reveal {
+	opacity: 0;
+	transform: translateY(16px);
+	transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+body.js-ready .reveal.is-visible {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+/* Disable ALL reveal animation under reduced-motion — always show content */
+@media (prefers-reduced-motion: reduce) {
+	body.js-ready .reveal {
+		opacity: 1;
+		transform: none;
+		transition: none;
+	}
+}

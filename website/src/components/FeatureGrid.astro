@@ -21,13 +21,13 @@ interface Props {
 const { items } = Astro.props;
 ---
 
-<div class="py-14 px-6 border-t border-[color-mix(in_srgb,var(--brand-muted)_10%,transparent)]">
+<div class="reveal py-14 px-6 border-t border-[color-mix(in_srgb,var(--brand-muted)_10%,transparent)]">
   <ul
     class="list-none m-0 mx-auto p-0 max-w-[1040px] grid grid-cols-2 gap-px bg-[color-mix(in_srgb,var(--brand-muted)_10%,transparent)] border border-[color-mix(in_srgb,var(--brand-muted)_10%,transparent)] rounded-[0.625rem] overflow-hidden max-[600px]:grid-cols-1"
     role="list"
   >
     {items.map((item) => (
-      <li class="grid-card flex gap-[0.875rem] p-6 px-7 transition-colors duration-150">
+      <li class="grid-card flex gap-[0.875rem] p-6 px-7 transition-[background-color,transform,box-shadow] duration-[150ms] ease-[ease] hover:-translate-y-[3px] motion-reduce:hover:translate-y-0">
         <span class="flex-shrink-0 mt-[0.125rem] text-[0.625rem] text-[var(--brand-gold)] leading-[1.6]" aria-hidden="true">▸</span>
         <div class="flex flex-col gap-[0.375rem] min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
@@ -50,5 +50,12 @@ const { items } = Astro.props;
 
   .grid-card:hover {
     background-color: color-mix(in srgb, var(--brand-navy-700) 50%, var(--brand-navy-800));
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--brand-gold) 8%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .grid-card {
+      transition: background-color 150ms ease;
+    }
   }
 </style>

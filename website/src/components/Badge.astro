@@ -13,7 +13,7 @@ const { variant } = Astro.props;
 // which reads the matching `--badge-*` token.
 ---
 
-<span class={`inline-flex items-center py-[0.2em] px-[0.65em] rounded-full text-[0.78rem] font-semibold tracking-[0.03em] whitespace-nowrap border border-current badge-${variant}`}>
+<span class={`inline-flex items-center py-[0.2em] px-[0.65em] rounded-full text-[0.78rem] font-semibold tracking-[0.03em] whitespace-nowrap border border-current transition-[opacity,box-shadow] duration-150 ease-[ease] badge-${variant}`}>
   <slot />
 </span>
 
@@ -23,20 +23,50 @@ const { variant } = Astro.props;
     color: var(--badge-teal);
     background-color: color-mix(in srgb, var(--badge-teal) 12%, transparent);
   }
+  .badge-mts:hover {
+    background-color: color-mix(in srgb, var(--badge-teal) 20%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--badge-teal) 30%, transparent);
+  }
+
   .badge-mpe {
     color: var(--badge-blue);
     background-color: color-mix(in srgb, var(--badge-blue) 12%, transparent);
   }
+  .badge-mpe:hover {
+    background-color: color-mix(in srgb, var(--badge-blue) 20%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--badge-blue) 30%, transparent);
+  }
+
   .badge-monopb {
     color: var(--badge-green);
     background-color: color-mix(in srgb, var(--badge-green) 12%, transparent);
   }
+  .badge-monopb:hover {
+    background-color: color-mix(in srgb, var(--badge-green) 20%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--badge-green) 30%, transparent);
+  }
+
   .badge-osc {
     color: var(--badge-amber);
     background-color: color-mix(in srgb, var(--badge-amber) 12%, transparent);
   }
+  .badge-osc:hover {
+    background-color: color-mix(in srgb, var(--badge-amber) 20%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--badge-amber) 30%, transparent);
+  }
+
   .badge-hept {
     color: var(--badge-magenta);
     background-color: color-mix(in srgb, var(--badge-magenta) 12%, transparent);
+  }
+  .badge-hept:hover {
+    background-color: color-mix(in srgb, var(--badge-magenta) 20%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--badge-magenta) 30%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    span[class*="badge-"] {
+      transition: none;
+    }
   }
 </style>

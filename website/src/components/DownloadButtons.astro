@@ -38,7 +38,7 @@ const platforms = [
     {platforms.map((p) => (
       <a
         href={p.url}
-        class="dl-btn group flex items-center gap-3 px-5 py-3 bg-[var(--brand-navy-800)] border border-[color-mix(in_srgb,var(--brand-gold)_30%,transparent)] rounded-[0.5rem] no-underline text-[var(--brand-text)] transition-[border-color,background-color] duration-150 min-w-[180px] max-[600px]:min-w-0 hover:border-[var(--brand-gold)] focus-visible:border-[var(--brand-gold)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-2 focus-visible:outline"
+        class="dl-btn group flex items-center gap-3 px-5 py-3 bg-[var(--brand-navy-800)] border border-[color-mix(in_srgb,var(--brand-gold)_30%,transparent)] rounded-[0.5rem] no-underline text-[var(--brand-text)] transition-[border-color,background-color,transform] duration-150 ease-[ease] min-w-[180px] max-[600px]:min-w-0 hover:border-[var(--brand-gold)] hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 focus-visible:border-[var(--brand-gold)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-2 focus-visible:outline"
         aria-label={`Download Tanghīm for ${p.label}`}
         target={p.url.startsWith('https://github.com') ? '_blank' : undefined}
         rel={p.url.startsWith('https://github.com') ? 'noopener noreferrer' : undefined}
@@ -51,7 +51,7 @@ const platforms = [
           <span class="text-[0.75rem] text-[var(--brand-muted)] leading-[1.2]">{p.desc}</span>
         </span>
         <!-- download arrow -->
-        <svg class="w-4 h-4 text-[var(--brand-muted)] flex-shrink-0 transition-colors duration-150 group-hover:text-[var(--brand-gold)] group-focus-visible:text-[var(--brand-gold)]" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <svg class="w-4 h-4 text-[var(--brand-muted)] flex-shrink-0 transition-colors duration-150 ease-[ease] group-hover:text-[var(--brand-gold)] group-focus-visible:text-[var(--brand-gold)]" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
           <path d="M8 1v9M4 7l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         </svg>
       </a>
@@ -71,5 +71,6 @@ const platforms = [
   .dl-btn:hover,
   .dl-btn:focus-visible {
     background-color: color-mix(in srgb, var(--brand-gold) 8%, var(--brand-navy-800));
+    outline: none; /* suppress native ring; focus-visible utility provides gold ring */
   }
 </style>

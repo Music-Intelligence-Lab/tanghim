@@ -17,7 +17,7 @@ const { title, image, imageAlt, reverse = false } = Astro.props;
 ---
 
 <div class:list={['feature-row py-14 px-6 border-t border-[color-mix(in_srgb,var(--brand-muted)_10%,transparent)]', { 'feature-row--reverse': reverse }]}>
-  <div class="feature-row-inner max-w-[1040px] mx-auto grid grid-cols-2 gap-12 items-center max-[720px]:grid-cols-1 max-[720px]:gap-8">
+  <div class="feature-row-inner reveal max-w-[1040px] mx-auto grid grid-cols-2 gap-12 items-center max-[720px]:grid-cols-1 max-[720px]:gap-8">
     <!-- Text column -->
     <div class="flex flex-col gap-[0.875rem]">
       <h3 class="row-title m-0 font-bold leading-[1.25] tracking-[-0.01em] text-[var(--brand-text)] text-[clamp(1.25rem,2.5vw,1.75rem)]" set:html={title} />
@@ -90,23 +90,6 @@ const { title, image, imageAlt, reverse = false } = Astro.props;
       0 0 36px color-mix(in srgb, var(--brand-gold) 5%, transparent);
   }
 
-  /* Scroll reveal — disabled under reduced motion */
-  @media (prefers-reduced-motion: no-preference) {
-    .feature-row-inner {
-      animation: row-reveal 0.5s ease both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 30%;
-    }
-  }
-
-  @keyframes row-reveal {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+  /* Scroll reveal is handled by the global .reveal / .is-visible mechanism
+     (IntersectionObserver in index.astro) — no animation-timeline needed here. */
 </style>

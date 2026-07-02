@@ -34,8 +34,12 @@ import FeatureGrid from '../components/FeatureGrid.astro';
     <meta name="twitter:title" content="Tanghīm — Arabic Maqām Tuning for Any DAW" />
     <meta name="twitter:description" content="Tanghīm is an open-source Arabic maqām tuning plugin for any DAW — load a maqām, adjust every degree by ear, and tune your instruments via MTS-ESP, MPE, or Mono Pitch Bend." />
     <meta name="twitter:image" content="https://tanghim.app/og-image.png" />
+
   </head>
   <body class="bg-[var(--brand-navy-900)] min-h-screen flex flex-col">
+    <!-- JS-gate: only hide .reveal elements when JS is running.
+         Without this class, all .reveal elements remain fully visible (no-JS safe). -->
+    <script is:inline>document.body.classList.add('js-ready');</script>
     <Nav />
 
     <main class="flex-1">
@@ -60,8 +64,8 @@ import FeatureGrid from '../components/FeatureGrid.astro';
 
             <!-- CTAs -->
             <div class="flex gap-[0.875rem] flex-wrap justify-center items-center mt-1 max-[600px]:gap-[0.625rem]">
-              <a href="#download" class="inline-block py-[0.65rem] px-7 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] text-[0.9375rem] font-bold rounded-[0.375rem] no-underline transition-opacity duration-150 hover:opacity-[0.88] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline">Download</a>
-              <a href="/docs" class="cta-secondary inline-block py-[0.65rem] px-4 text-[var(--brand-muted)] text-[0.9375rem] font-medium no-underline rounded-[0.375rem] border border-[color-mix(in_srgb,var(--brand-muted)_30%,transparent)] transition-[color,border-color] duration-150 focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline">Read the docs</a>
+              <a href="#download" class="inline-block py-[0.65rem] px-7 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] text-[0.9375rem] font-bold rounded-[0.375rem] no-underline transition-[opacity,transform] duration-150 ease-[ease] hover:opacity-[0.88] hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline">Download</a>
+              <a href="/docs" class="cta-secondary inline-block py-[0.65rem] px-4 text-[var(--brand-muted)] text-[0.9375rem] font-medium no-underline rounded-[0.375rem] border border-[color-mix(in_srgb,var(--brand-muted)_30%,transparent)] transition-[color,border-color] duration-150 ease-[ease] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline">Read the docs</a>
             </div>
           </div>
 
@@ -84,7 +88,7 @@ import FeatureGrid from '../components/FeatureGrid.astro';
       <!-- ═══════════════════════════════════════════
            TRUST / CONTEXT STRIP
            ═══════════════════════════════════════════ -->
-      <section class="trust-strip border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] pt-10 pb-12 px-6" aria-label="Context and compatibility">
+      <section class="trust-strip reveal border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] pt-10 pb-12 px-6" aria-label="Context and compatibility">
         <div class="max-w-[860px] mx-auto flex flex-col items-center gap-5 text-center">
 
           <!-- Origin -->
@@ -96,7 +100,7 @@ import FeatureGrid from '../components/FeatureGrid.astro';
           <p class="m-0 text-[0.875rem] leading-[1.7] text-[var(--brand-muted)] max-w-[62ch] text-balance">
             <span class="accent">Tanghīm</span> (<span lang="ar">تنغيم</span>)
             is the singular of <span class="accent">tanāghīm</span> (<span lang="ar">تناغيم</span>),
-            the tuning-systems layer of the <a href="https://diarmaqar.net" class="text-[var(--brand-muted)] underline underline-offset-[2px] transition-colors duration-150 hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline" target="_blank" rel="noopener noreferrer">DiArMaqAr</a> archive.
+            the tuning-systems layer of the <a href="https://diarmaqar.net" class="text-[var(--brand-muted)] underline underline-offset-[2px] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline" target="_blank" rel="noopener noreferrer">DiArMaqAr</a> archive.
             It means both a tuning system and the act of tuning — an intonational tuning, not the <span class="accent">dūzān</span> (<span lang="ar">دوزان</span>) of setting an open string's pitch.
           </p>
 
@@ -219,7 +223,7 @@ import FeatureGrid from '../components/FeatureGrid.astro';
       <!-- ═══════════════════════════════════════════
            ABLETON CALL-OUT
            ═══════════════════════════════════════════ -->
-      <section class="ableton-callout border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="Ableton Live compatibility">
+      <section class="ableton-callout reveal border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="Ableton Live compatibility">
         <div class="max-w-[680px] mx-auto flex flex-col gap-4">
           <h2 class="m-0 text-[clamp(1.25rem,3vw,1.625rem)] font-bold text-[var(--brand-text)] tracking-[-0.01em] text-balance">Works in Ableton Live, too.</h2>
           <p class="m-0 text-[1rem] leading-[1.7] text-[var(--brand-muted)] max-w-[60ch] text-pretty">
@@ -228,8 +232,8 @@ import FeatureGrid from '../components/FeatureGrid.astro';
             No extra configuration; install, load, and the tuning follows.
           </p>
           <div class="flex flex-col gap-[0.375rem] pt-1 max-[600px]:gap-[0.625rem]">
-            <a href="/articles/cross-platform" class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline">Read the full cross-platform story →</a>
-            <a href="/docs/ableton" class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline">Ableton Live setup guide →</a>
+            <a href="/articles/cross-platform" class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline">Read the full cross-platform story →</a>
+            <a href="/docs/ableton" class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline">Ableton Live setup guide →</a>
           </div>
         </div>
       </section>
@@ -238,11 +242,11 @@ import FeatureGrid from '../components/FeatureGrid.astro';
            FINAL CTA BAND
            DownloadButtons anchor (#download) lives here
            ═══════════════════════════════════════════ -->
-      <section class="cta-band border-t-2 border-[color-mix(in_srgb,var(--brand-gold)_35%,transparent)] py-20 px-6 pb-22 bg-[var(--brand-navy-800)] max-[600px]:py-14 max-[600px]:pb-16 max-[600px]:px-5" aria-label="Download">
+      <section class="cta-band reveal border-t-2 border-[color-mix(in_srgb,var(--brand-gold)_35%,transparent)] py-20 px-6 bg-[var(--brand-navy-800)] max-[600px]:py-14 max-[600px]:px-5" aria-label="Download">
         <div class="max-w-[860px] mx-auto flex flex-col items-center gap-8 text-center">
           <h2 class="m-0 text-[clamp(1.5rem,3.5vw,2.25rem)] font-bold text-[var(--brand-text)] tracking-[-0.02em] text-balance max-w-[24ch]">Free, open-source, and ready for your maqām.</h2>
           <DownloadButtons />
-          <a href="/docs" class="cta-secondary inline-block mt-1 py-[0.65rem] px-4 text-[var(--brand-muted)] text-[0.9375rem] font-medium no-underline rounded-[0.375rem] border border-[color-mix(in_srgb,var(--brand-muted)_30%,transparent)] transition-[color,border-color] duration-150 focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline">Read the docs</a>
+          <a href="/docs" class="cta-secondary inline-block mt-1 py-[0.65rem] px-4 text-[var(--brand-muted)] text-[0.9375rem] font-medium no-underline rounded-[0.375rem] border border-[color-mix(in_srgb,var(--brand-muted)_30%,transparent)] transition-[color,border-color] duration-150 ease-[ease] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline">Read the docs</a>
         </div>
       </section>
 
@@ -251,6 +255,34 @@ import FeatureGrid from '../components/FeatureGrid.astro';
     <Footer />
   </body>
 </html>
+
+<script>
+  // Cross-browser scroll reveals via IntersectionObserver.
+  // Requires body.js-ready (set by inline script above) — without it .reveal
+  // elements are already fully visible, so no observer is needed.
+  // Also skips entirely under prefers-reduced-motion (elements are visible via CSS).
+  if (
+    typeof IntersectionObserver !== 'undefined' &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target); // animate once only
+          }
+        }
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    );
+
+    document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+  } else {
+    // Ensure all reveals are visible if observer unavailable or motion reduced
+    document.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-visible'));
+  }
+</script>
 
 <style>
   /* Trust strip background — color-mix */
