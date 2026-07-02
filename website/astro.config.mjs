@@ -12,6 +12,16 @@ export default defineConfig({
 		starlight({
 			title: 'Tanghīm',
 			favicon: '/favicon.svg',
+			// Trilingual docs. English is the root locale (no URL prefix → keeps
+			// /docs/... unchanged); Arabic (RTL) and French are prefixed
+			// (/ar/..., /fr/...). Untranslated pages fall back to English
+			// automatically via Starlight's built-in fallback + notice.
+			defaultLocale: 'root',
+			locales: {
+				root: { label: 'English', lang: 'en' },
+				ar: { label: 'العربية', lang: 'ar', dir: 'rtl' },
+				fr: { label: 'Français', lang: 'fr' },
+			},
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/Music-Intelligence-Lab/tanghim' }],
 			sidebar: [
 				{ label: '← Tanghīm', link: '/' },
