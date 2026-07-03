@@ -72,10 +72,8 @@ body {
 	overflow-anchor: none;
 }
 
-/* Accent font class — Latin wordmark + transliterations (IBM Plex diacritics) */
-.accent {
-	font-family: var(--font-accent);
-}
+/* (The .accent rule lives after the :lang() rules below so it wins by source
+   order for the wordmark — see there.) */
 
 /* Arabic text: body = IBM Plex Sans Arabic; display (headings/nav/buttons) = Tajawal.
    Applies to plain pages (lang="ar" spans/pages) AND anything under an ar-locale root. */
@@ -84,19 +82,28 @@ body {
 	/* Feed Starlight docs (which render Arabic body via --sl-font) the Arabic body face */
 	--sl-font: var(--font-arabic-body);
 }
-:lang(ar) :is(h1, h2, h3, h4, nav a, button, .display) {
+:lang(ar) :is(h1, h2, h3, h4, button, .display) {
+	font-family: var(--font-arabic-display);
+}
+/* Arabic nav links get the display face — but NOT Latin-tagged links (the
+   GitHub/English/Français items keep their Latin font) and NOT the wordmark.
+   This must exclude [lang="en"]/[lang="fr"] here because the descendant-
+   combinator rule `:lang(ar) nav a` (specificity 0,1,1) would otherwise beat the
+   element's own `:lang(en)` rule (0,0,1) and force Tajawal onto Latin text. */
+:lang(ar) nav a:not([lang="en"]):not([lang="fr"]):not(.nav-wordmark) {
 	font-family: var(--font-arabic-display);
 }
 
-/* Latin-tagged text inside an Arabic page keeps the Latin faces — the element's
-   own lang wins over the ar-locale root. Covers the "Tanghīm" wordmark, the
-   "English"/"Français" switcher labels, and any Latin term. (:lang() matches
-   by the element's resolved language, so :lang(en) on an lang="en" child
-   overrides the ancestor :lang(ar) rules above.) */
+/* Latin-tagged text inside an Arabic page keeps the Latin faces (Inter). Now
+   that the AR nav rule above excludes [lang="en"]/[lang="fr"], these low-
+   specificity rules actually win for Latin nav items, the wordmark, and inline
+   Latin brand terms. */
 :lang(en),
 :lang(fr) {
 	font-family: var(--font-sans);
 }
+/* Wordmark + transliterations: IBM Plex Sans Arabic, identical in all languages.
+   Placed last so it wins over :lang(en) for the .accent wordmark. */
 .accent {
 	font-family: var(--font-accent);
 }
