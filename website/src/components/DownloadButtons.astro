@@ -30,10 +30,6 @@ const platforms = [
 ---
 
 <div class="flex flex-col items-center gap-5" id="download">
-  {info.version && (
-    <p class="m-0 text-[0.85rem] text-[var(--brand-muted)] tracking-[0.02em]">{info.version} · free &amp; open source</p>
-  )}
-
   <div class="flex gap-[0.875rem] flex-wrap justify-center max-[600px]:flex-col max-[600px]:items-stretch">
     {platforms.map((p) => (
       <a

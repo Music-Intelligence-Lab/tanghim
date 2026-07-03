@@ -13,12 +13,13 @@ interface Props {
   image: string;
   imageAlt: string;
   reverse?: boolean;
+  id?: string;
 }
 
-const { title, subtitle, image, imageAlt } = Astro.props;
+const { title, subtitle, image, imageAlt, id } = Astro.props;
 ---
 
-<div class="py-16 px-6 border-t border-[color-mix(in_srgb,var(--brand-muted)_10%,transparent)]">
+<div class="page-band py-16 px-6 border-t border-[color-mix(in_srgb,var(--brand-muted)_10%,transparent)]" id={id}>
   <div class="showcase-inner reveal max-w-[860px] mx-auto flex flex-col items-center gap-10 text-center">
     <!-- Copy -->
     <div class="flex flex-col items-center gap-[0.875rem] max-w-[60ch]">

@@ -1,0 +1,158 @@
+---
+// Interlude.astro — editorial "margin gloss" aside between showcase blocks.
+//
+// A reusable lexicon-entry treatment: a large Arabic display glyph set like an
+// illuminated initial in its own column, an eyebrow category label, and the
+// gloss prose at reading measure to the right — left-aligned to break the
+// centered hero/showcase rhythm. Designed to be dropped in several times
+// (name gloss, and more to come) with different glyph + eyebrow + body.
+//
+// Props:
+//   eyebrow:      string — small gold category label (e.g. "On the name")
+//   glyph?:       string — Arabic display word set large (e.g. "تنغيم"); omit for text-only interludes
+//   glyphRoman?:  string — optional roman transliteration shown under the glyph
+//   body slot:    the gloss prose (HTML allowed)
+
+interface Props {
+  eyebrow: string;
+  glyph?: string;
+}
+
+const { eyebrow, glyph } = Astro.props;
+---
+
+<div class:list={['interlude-inner reveal', { 'interlude-inner--no-glyph': !glyph }]}>
+  {glyph && (
+    <div class="interlude-glyph" aria-hidden="true">
+      <span lang="ar" class="interlude-glyph-word">{glyph}</span>
+    </div>
+  )}
+  <div class="interlude-text">
+    <p class="interlude-eyebrow">{eyebrow}</p>
+    <div class="interlude-body">
+      <slot />
+    </div>
+  </div>
+</div>
+
+<style>
+  .interlude-inner {
+    max-width: 940px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 2.1fr);
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: center;
+  }
+
+  /* Text-only interludes (no Arabic glyph) — a single reading column with a
+     gold rule at its left edge, marking it as an explainer aside rather than a
+     lexical gloss. Used by the "what is X?" strips (MTS-ESP, DiArMaqAr). */
+  .interlude-inner--no-glyph {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 760px;
+  }
+
+  .interlude-inner--no-glyph .interlude-text {
+    border-left: 2px solid color-mix(in srgb, var(--brand-gold) 40%, transparent);
+    padding-left: clamp(1.25rem, 3vw, 2rem);
+  }
+
+  /* Illuminated-initial glyph column */
+  .interlude-glyph {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .interlude-glyph-word {
+    font-family: var(--font-arabic-display);
+    font-weight: 700;
+    font-size: clamp(3.25rem, 9vw, 5.5rem);
+    line-height: 0.95;
+    color: var(--brand-gold);
+    /* Very soft glow so the glyph reads as illuminated, not flat */
+    text-shadow: 0 0 32px color-mix(in srgb, var(--brand-gold) 22%, transparent);
+  }
+
+  /* Eyebrow — the lexicon category */
+  .interlude-eyebrow {
+    margin: 0 0 0.75rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--brand-gold);
+  }
+
+  .interlude-text {
+    padding-left: clamp(1rem, 2.5vw, 1.75rem);
+  }
+
+  .interlude-body {
+    font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+    line-height: 1.85;
+    color: var(--brand-muted);
+    max-width: 62ch;
+  }
+
+  .interlude-body :global(p) {
+    margin: 0;
+  }
+
+  .interlude-body :global(.interlude-link) {
+    color: color-mix(in srgb, var(--brand-text) 78%, var(--brand-muted));
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--brand-gold) 50%, transparent);
+    text-underline-offset: 2px;
+    transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  }
+
+  .interlude-body :global(.interlude-link:hover) {
+    color: var(--brand-text);
+    text-decoration-color: var(--brand-gold);
+  }
+
+  .interlude-body :global(.interlude-link:focus-visible) {
+    outline: 2px solid var(--brand-gold);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  .interlude-body :global(p + p) {
+    margin-top: 0.9rem;
+  }
+
+  /* Arabic inline terms in the prose pick up the display face + gold tint */
+  .interlude-body :global([lang='ar']) {
+    font-family: var(--font-arabic-display);
+    color: color-mix(in srgb, var(--brand-gold) 80%, var(--brand-text));
+    font-size: 1.08em;
+  }
+
+  .interlude-body :global(strong.accent),
+  .interlude-body :global(strong) {
+    color: var(--brand-text);
+    font-weight: 600;
+  }
+
+  .interlude-body :global(em) {
+    color: color-mix(in srgb, var(--brand-text) 78%, var(--brand-muted));
+    font-style: italic;
+  }
+
+  @media (max-width: 720px) {
+    .interlude-inner {
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+    .interlude-glyph {
+      align-items: flex-start;
+      text-align: left;
+    }
+    .interlude-text {
+      padding-left: 0;
+    }
+  }
+</style>

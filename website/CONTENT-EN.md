@@ -3,6 +3,7 @@
 > Edit the text below, then hand it back. I'll place your edited copy and use it as the basis for AR/FR translation.
 >
 > **How to specify each showcase's layout:** add a `Layout:` line using ONE of these values:
+>
 > - `centered` — big centered visual with centered copy above/below (current Showcase style)
 > - `image-left` — visual on the left, text on the right (two-column row)
 > - `image-right` — visual on the right, text on the left (two-column row)
@@ -10,108 +11,187 @@
 >
 > `<strong>...</strong>` marks the gold-accent word(s) in a title — keep or move the tags as you like.
 > Lines starting with `#` or `>` are notes to me; leave them or delete them.
+>
+> **Section order — momentum first, depth as reward:** lead with the strongest capability, keep the
+> feature tour flowing, and drop the explainer interludes (MTS-ESP, DiArMaqAr, the name gloss) between
+> features where a hooked scroller starts asking "how does this work / where's this from?". The name
+> gloss lands late as a grace note before the CTA.
 
 ---
+
+
 
 ## HERO
 
-Eyebrow: Arabic Maqām Tuning
-Headline: Play Arabic maqām with the <strong>intonation</strong> it was written for.
-Subhead: An open-source plugin that brings maqām tuning systems to any DAW — and lets you adjust every degree by ear.
-Primary button: Download
-Secondary link: Read the docs
+Eyebrow: Finally!
+Headline: A **thousand years** of Arabic maqām intonation at your fingertips  
+Subhead: Tanghīm is a free, open-source MIDI plugin that brings historical Arabic maqām tunings from the **Digital Arabic Maqām Archive** directly to any DAW.  
+
+Primary button: Download  
+Secondary link: Read the docs  
 Screenshot alt text: The Tanghīm plugin interface: a bank of tuning sliders showing maqām degrees in gold against a navy panel, with maqām selector, preset grid, and reference-frequency controls.
 
-## TRUST / CONTEXT STRIP
+---
 
-Origin line: Conceived and designed by Khyam Allami · Music Intelligence Lab, AUB
-Name gloss: Tanghīm (تنغيم) is the singular of tanāghīm (تناغيم), the tuning-systems layer of the DiArMaqAr archive. It means both a tuning system and the act of tuning — an intonational tuning, not the dūzān (دوزان) of setting an open string's pitch.
-Compatibility line: Any DAW, any synth — three tuning methods:
-Badges: MTS-ESP · MPE · Mono PB
+
+
+## TRUST STRIP
+
+Origin line: Conceived and designed by Khyam Allami at the [Music Intelligence Lab](https://musicintelligencelab.com/)/[Center for Advanced Mathematical Sciences](https://www.aub.edu.lb/cams/), American University of Beirut, 2026. Free and [open source](https://github.com/Music-Intelligence-Lab/tanghim), licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
 ---
 
-## SHOWCASES (primary feature blocks)
 
-<!-- Showcase 1: Slider Bank -->
-Layout: centered
-Title: Every degree, <strong>editable</strong>.
-Subtitle: The tuning data is the starting point, not a cage.
-Copy: Twelve sliders — one per chromatic step — set the cents for each maqām degree. Tanghīm loads the archive's tuning, then lets you adjust any degree by ear; your edits are the source of truth for the frequency table.
 
-<!-- Showcase 2: Tuning Methods -->
-Layout: centered
-Title: One tuning, <strong>three ways</strong> out.
-Subtitle: Three output methods for a wide range of instruments.
-Copy: MTS-ESP retunes compatible synths automatically over shared memory. MPE sends per-note pitch bend across channels 2–16 for polyphonic instruments. Mono Pitch Bend drives ordinary single-channel synths. The top bar shows which are active.
-Badges: MTS-ESP · MPE · Mono PB
+## SHOWCASE
 
-<!-- Showcase 3: Maqām Selection & Presets -->
-Layout: centered
-Title: Pick a maqām, <strong>snap</strong> the scale.
-Subtitle: Eight presets, mappable to MIDI.
-Copy: Choose a maqām and transposition; the sliders snap to its intervals and the degrees highlight in gold. Save up to eight presets and switch between them live — including by MIDI note or Program Change.
-
-<!-- Showcase 4: Oscillator & Heptatonic mode -->
-Layout: centered
-Title: Hear it <strong>instantly</strong>.
-Subtitle: Audition tunings; play the scale on the white keys.
-Copy: The built-in triangle-wave oscillator (Osc) lets you hear a tuning with no external instrument loaded. Heptatonic mode (Hept) remaps the keyboard so the white keys play the maqām degrees in order from the tonic.
-Badges: Osc · Hept
+Layout: centered  
+Title: Arabic maqām tuning, **your sounds**  
+Subtitle: Three tuning methods, from software synths to hardware.  
+Copy: MTS-ESP retunes compatible synths automatically and immediately from the main *transmitter* plugin over shared memory. Our dedicated *receiver* plugin enables per-note pitch bend using MPE for polyphonic instruments, or Mono Pitch Bend for simpler single-MIDI-channel synths.  
+Badges: MTS-ESP · MPE · Mono PB  
 
 ---
 
-## FEATURE ROWS (secondary, alternating two-column)
 
-<!-- FeatureRow A: MIDI preset mapping -->
-Layout: image-left
-Title: Switch maqāmat <strong>mid-performance</strong>.
-Copy: Map MIDI notes to presets through a dedicated input, so you can switch maqāmat mid-performance from a controller — reliable regardless of DAW routing.
 
-<!-- FeatureRow B: MIDI export & .tanghim files -->
-Layout: image-right
-Title: Export the scale. <strong>Save</strong> the setup.
-Copy: Drag the current maqām scale out as a Standard MIDI File — with a Program Change embedded so the preset re-arms on playback. Save and reload full tuning setups as human-readable .tanghim files.
+## MTS-ESP STRIP
+
+Title: What is MTS-ESP?  
+Copy: MTS-ESP is a tuning protocol developed by [ODDSound](https://github.com/ODDSound/MTS-ESP). One transmitter plugin sets the tuning and any number of compatible instruments connect to it automatically, retuning together with no manual setup. The tuning updates in real time, so a change of maqām or transposition follows every connected instrument as it plays.
 
 ---
 
-## FEATURE GRID (compact cards, one line each — text-only)
 
-Card 1 — Per-note overrides: Give the same pitch class a different variant in a specific octave.
-Card 2 — Reference frequency: Set the tuning's base pitch by knob, exact Hz, or ±100-cent steps; it carries across system switches.
-Card 3 — Range scroller: Pan the 128-note keyboard with magnetic snap to C, G, and A.
-Card 4 — DAW automation: Slider cents, reference offset, and preset are exposed as automatable parameters.
-Card 5 — Save & load: Store and recall complete tuning states as portable .tanghim files.
-Card 6 — Program-change switching: Switch presets from your DAW with MIDI Program Change messages.
+
+## SHOWCASE
+
+Layout: centered  
+Title: Edit with your **ears** and play  
+Subtitle: Theoretical tuning data, in practice  
+Copy: Twelve sliders, one per chromatic step, provide a simple and immediate way to explore the tunings. Each slider includes snap markers that let you explore the different intervals in each tuning, whilst also letting you adjust any note by ear.
 
 ---
+
+
+
+## SHOWCASE
+
+Layout: centered  
+Title: Choose your maqām then **modulate**  
+Subtitle: MIDI mappable and automatable presets.  
+Copy: Save up to eight presets of any maqām in any available transposition and switch between them by MIDI mapping your controller, using Program Change messages or DAW automation.
+
+---
+
+
+
+## DIARMAQAR STRIP
+
+Title: What is the Digital Arabic Maqām Archive (DiArMaqAr)?  
+Copy: Tanghīm draws its data from the Digital Arabic Maqām Archive (DiArMaqAr) — an open-source repository of historically documented tuning systems and maqāmāt from the music of the Arabic-speaking region, each with full bibliographic attribution: source citations and page references. DiArMaqAr was researched, designed, and developed by Khyam Allami with Ibrahim El Khansa at the Music Intelligence Lab, American University of Beirut. Tanghīm queries its REST API and caches the data locally, so the tunings you play are the same source-attributed values the archive holds — and an update button tells you when the archive has changed.
+
+---
+
+
+
+## SHOWCASE
+
+Layout: centered  
+Title: Hear it **instantly**  
+Subtitle: Audition any tuning with no instrument loaded.  
+Copy: The built-in triangle-wave oscillator (Osc) lets you hear a tuning immediately, with no external instrument loaded — so you can explore a maqām the moment you select it.  
+Badges: Osc  
+
+---
+
+
+
+## FEATURE
+
+Layout: image-left  
+Title: Heptatonic mode for quick play  
+Copy: Heptatonic mode (Hept) remaps the keyboard so every maqām is performable on the diatonic (white) keys alone — the white keys play the maqām degrees in order from the tonic. It makes any maqām easy to hear and produce, with no complex fingerings to learn.  
+
+---
+
+
+
+## FEATURE
+
+Layout: image-right  
+Title: Save and load your maqām tunings  
+Copy: Tanghīm lets you edit, save, and reload maqām tunings and preset settings as human-readable .tanghim files — including per-note overrides across different octaves.
+
+---
+
+
+
+## FEATURE
+
+Layout: image-left  
+Title: Grab and process the **MIDI notes**  
+Copy: Drag the current maqām's MIDI notes out as a standard MIDI file — onto your timeline, or as a clip to feed arpeggiators and other MIDI processors. A Program Change is embedded so the preset re-arms on playback.
+
+---
+
+
 
 ## ABLETON CALL-OUT
 
-Title: Works in Ableton Live, too.
-Copy: Ableton Live doesn't host third-party MIDI-effect plug-ins, so Tanghīm ships Max for Live receivers — an MPE Receiver and a Mono Pitch Bend Receiver — that deliver the tuning inside Live. No extra configuration; install, load, and the tuning follows.
-Link 1: Read the full cross-platform story →
+Title: A musically meaningful maqām tuning method for Ableton Live  
+Copy: Ableton Live doesn't allow third-party MIDI-effect plug-ins. To solve this, Tanghīm ships with two Max for Live devices — an MPE Receiver and a Mono Pitch Bend Receiver — that deliver the tuning inside Live. No extra configuration, simply install, load, and the tuning follows.
+
+Link 1: Read the article for the story  →  
 Link 2: Ableton Live setup guide →
 
 ---
 
+
+
+## CARDS GRID
+
+Card 1 — Per-note overrides: Give the same note a different intonation in any octave.  
+Card 2 — Reference frequency: Set the tuning's base pitch by knob, exact Hz, or in cents; retains across tuning systems.  
+Card 3 — Range scroller: Pan the 128-note keyboard with magnetic snap to C, G, and A.  
+Card 4 — DAW automation: Slider cents, reference offset, and preset are exposed as automatable parameters.  
+Card 5 — Save & load: Store and recall complete tuning states as portable .tanghim files.  
+Card 6 — Program-change switching: Switch presets from your DAW with MIDI Program Change messages.
+
+---
+
+
+
+## MUSICOLOGY STRIP
+
+Name gloss: **Tanghīm** (تنغيم) is an Arabic *maṣdar* (verbal noun), denoting the act of intoning or setting pitch. In linguistics it is the standard equivalent of *intonation*, the melodic contour of speech. Here it names intonational tuning, the pitch relationships that make up a system, as distinct from the Arabic-language usage of *dūzān* (دوزان) for the mechanical tuning of an instrument's strings. Dūzān is a borrowing from Ottoman Turkish düzen ("order, arrangement, tuning"), from the verb düzmek ("to arrange, put in order").
+
+---
+
+
+
 ## FINAL CTA BAND
 
-Headline: Free, open-source, and ready for your maqām.
+Headline: Free, open-source, and ready for your music.  
 Buttons: Download  ·  Read the docs
 
 ---
 
+
+
 ## FOOTER
 
-Credit: Conceived and designed by Khyam Allami · Music Intelligence Lab, AUB (2026).
-Open source line: Open source — view on GitHub.
-Link groups:
-  Documentation: Docs · Article
-  Project: GitHub · Releases
-  External: DiArMaqAr · khyamallami.com
+Credit: Conceived and designed by Khyam Allami at the [Music Intelligence Lab](https://musicintelligencelab.com/)/[Center for Advanced Mathematical Sciences](https://www.aub.edu.lb/cams/), American University of Beirut, 2026.  
+Open source line: Free and [open source](https://github.com/Music-Intelligence-Lab/tanghim), licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).   
+
+Link groups:  
+Documentation: Docs · Article  
+Project: GitHub · Downloads  
+Related: Digital Arabic Maqām Archive (DiArMaqAr) · khyamallami.com
 
 ---
+
+
 
 ## NAV
 
