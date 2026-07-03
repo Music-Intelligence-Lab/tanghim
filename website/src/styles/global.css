@@ -101,15 +101,28 @@ body {
 	font-family: var(--font-accent);
 }
 
-/* Arabic nav text: Tajawal renders larger than Inter at the same size, so nudge
-   it down to match the English optical size. Do NOT force line-height:1 — that
-   squeezes Tajawal's line box tighter than its metrics want and floats the ink
-   to the top of the box, throwing off vertical centring. Inherit `normal` like
-   the English links (which the user approved).
-   The wordmark (.nav-wordmark) is EXCLUDED from all AR nav adjustments so the
-   "Tanghīm" logo renders identically in every language. */
+/* Arabic nav text (Tajawal): match the English optical size, and nudge down for
+   OPTICAL centring. The glyph bounding box measures as centred (txtΔ ≈ EN), but
+   Arabic letterforms sit high within their em box, so they LOOK too high. A small
+   AR-scoped downward nudge fixes the perceived position. Tune --ar-optical by eye.
+   Scoped to :lang(ar); wordmark excluded so the logo is identical in all langs. */
+:lang(ar) nav {
+	--ar-optical: 2.5px;
+}
 :lang(ar) nav a:not(.nav-wordmark) {
 	font-size: 0.95em;
+}
+/* Plain links (not the padded Download pill): shift the whole small box down —
+   it only contains text, so this moves the glyphs without side effects. */
+:lang(ar) nav a:not(.nav-wordmark):not(.nav-download) {
+	position: relative;
+	top: var(--ar-optical);
+}
+/* Download pill: shift only the label inside the pill, not the pill itself,
+   by rebalancing its vertical padding. */
+:lang(ar) nav a.nav-download {
+	padding-top: calc(0.4rem + var(--ar-optical));
+	padding-bottom: calc(0.4rem - var(--ar-optical));
 }
 
 /* ─── Cross-browser scroll reveal ───────────────────────────────────────────
