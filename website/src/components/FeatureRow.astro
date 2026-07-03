@@ -41,19 +41,15 @@ const { title, image, imageAlt, reverse = false } = Astro.props;
 </div>
 
 <style>
-  /* Reverse layout: visual first, text second */
-  .feature-row--reverse .feature-row-inner {
-    direction: rtl;
-  }
-
-  .feature-row--reverse .feature-row-inner > * {
-    direction: ltr;
-  }
-
-  /* Undo direction:rtl on mobile */
-  @media (max-width: 720px) {
-    .feature-row--reverse .feature-row-inner {
-      direction: ltr;
+  /* Reverse layout: pull the visual into the inline-start column. `order`
+     reorders within the grid's own writing direction, so the flip is correct
+     under both LTR (visual→left) and RTL (visual→right) without a `direction`
+     override — slotted text therefore keeps the page's direction. Only reorder
+     at ≥2 columns; on mobile the single column keeps DOM order (text, then
+     visual). */
+  @media (min-width: 721px) {
+    .feature-row--reverse .feature-row-visual {
+      order: -1;
     }
   }
 

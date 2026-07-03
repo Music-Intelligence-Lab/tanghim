@@ -4,27 +4,65 @@ import { getReleaseInfo } from '../lib/releases';
 
 const info = await getReleaseInfo();
 
+// Locale from the first path segment (ar/fr → locale, else en) — mirrors Nav/Footer.
+const parts = Astro.url.pathname.split('/').filter(Boolean);
+const currentLocale = (parts[0] === 'ar' || parts[0] === 'fr') ? parts[0] : 'en';
+const arLang = currentLocale === 'ar' ? 'ar' : undefined;
+
+// Localised labels. Platform names (macOS/Windows/Linux) and the arch strings
+// (x86_64, Apple Silicon, Intel, tar.gz) are proper nouns — kept verbatim.
+const dl = {
+  en: {
+    macDesc: 'Universal (Apple Silicon + Intel)',
+    winDesc: 'x86_64 installer',
+    linuxDesc: 'x86_64 tar.gz',
+    ariaFor: (label: string) => `Download Tanghīm for ${label}`,
+    unavailable: 'Direct download links are temporarily unavailable. Visit the',
+    releasesPage: 'Releases page',
+    toDownload: 'to download.',
+  },
+  ar: {
+    macDesc: 'شامل (Apple Silicon + Intel)',
+    winDesc: 'مُثبِّت x86_64',
+    linuxDesc: 'x86_64 tar.gz',
+    ariaFor: (label: string) => `تنزيل Tanghīm لنظام ${label}`,
+    unavailable: 'روابط التنزيل المباشر غير متوفرة مؤقتاً. تفضّل بزيارة',
+    releasesPage: 'صفحة الإصدارات',
+    toDownload: 'للتنزيل.',
+  },
+  fr: {
+    macDesc: 'Universel (Apple Silicon + Intel)',
+    winDesc: 'Installateur x86_64',
+    linuxDesc: 'x86_64 tar.gz',
+    ariaFor: (label: string) => `Télécharger Tanghīm pour ${label}`,
+    unavailable: 'Les liens de téléchargement direct sont momentanément indisponibles. Consultez la',
+    releasesPage: 'page des versions',
+    toDownload: 'pour télécharger.',
+  },
+} as const;
+const t = dl[currentLocale as keyof typeof dl];
+
 const platforms = [
   {
     key: 'macos',
     label: 'macOS',
     url: info.assets.macos ?? info.releasesUrl,
     icon: 'simple-icons:apple',
-    desc: 'Universal (Apple Silicon + Intel)',
+    desc: t.macDesc,
   },
   {
     key: 'windows',
     label: 'Windows',
     url: info.assets.windows ?? info.releasesUrl,
     icon: 'simple-icons:windows',
-    desc: 'x86_64 installer',
+    desc: t.winDesc,
   },
   {
     key: 'linux',
     label: 'Linux',
     url: info.assets.linux ?? info.releasesUrl,
     icon: 'simple-icons:linux',
-    desc: 'x86_64 tar.gz',
+    desc: t.linuxDesc,
   },
 ] as const;
 ---
@@ -35,7 +73,7 @@ const platforms = [
       <a
         href={p.url}
         class="dl-btn group flex items-center gap-3 px-5 py-3 bg-[var(--brand-navy-800)] border border-[color-mix(in_srgb,var(--brand-gold)_30%,transparent)] rounded-[0.5rem] no-underline text-[var(--brand-text)] transition-[border-color,background-color,transform] duration-150 ease-[ease] min-w-[180px] max-[600px]:min-w-0 hover:border-[var(--brand-gold)] hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 focus-visible:border-[var(--brand-gold)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-2 focus-visible:outline"
-        aria-label={`Download Tanghīm for ${p.label}`}
+        aria-label={t.ariaFor(p.label)}
         target={p.url.startsWith('https://github.com') ? '_blank' : undefined}
         rel={p.url.startsWith('https://github.com') ? 'noopener noreferrer' : undefined}
         download={p.url.endsWith('.pkg') || p.url.endsWith('.exe') || p.url.endsWith('.tar.gz') ? '' : undefined}
@@ -44,7 +82,7 @@ const platforms = [
         <Icon name={p.icon} class="w-5 h-5 text-[var(--brand-gold)] flex-shrink-0" />
         <span class="flex flex-col gap-[0.125rem] flex-1">
           <span class="text-[0.9rem] font-semibold text-[var(--brand-text)] leading-[1.2]">{p.label}</span>
-          <span class="text-[0.75rem] text-[var(--brand-muted)] leading-[1.2]">{p.desc}</span>
+          <span lang={arLang} class="text-[0.75rem] text-[var(--brand-muted)] leading-[1.2]">{p.desc}</span>
         </span>
         <!-- download arrow -->
         <svg class="w-4 h-4 text-[var(--brand-muted)] flex-shrink-0 transition-colors duration-150 ease-[ease] group-hover:text-[var(--brand-gold)] group-focus-visible:text-[var(--brand-gold)]" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -55,9 +93,8 @@ const platforms = [
   </div>
 
   {!info.version && (
-    <p class="m-0 text-[0.85rem] text-[var(--brand-muted)]">
-      Direct download links are temporarily unavailable.
-      Visit the <a href={info.releasesUrl} class="text-[var(--brand-gold)] underline underline-offset-[2px]" target="_blank" rel="noopener noreferrer">Releases page</a> to download.
+    <p lang={arLang} class="m-0 text-[0.85rem] text-[var(--brand-muted)]">
+      {t.unavailable} <a href={info.releasesUrl} class="text-[var(--brand-gold)] underline underline-offset-[2px]" target="_blank" rel="noopener noreferrer">{t.releasesPage}</a> {t.toDownload}
     </p>
   )}
 </div>

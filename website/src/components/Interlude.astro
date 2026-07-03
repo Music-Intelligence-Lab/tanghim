@@ -54,16 +54,20 @@ const { eyebrow, glyph } = Astro.props;
   }
 
   .interlude-inner--no-glyph .interlude-text {
-    border-left: 2px solid color-mix(in srgb, var(--brand-gold) 40%, transparent);
-    padding-left: clamp(1.25rem, 3vw, 2rem);
+    /* Logical props so the gold rule sits on the inline-start edge in both
+       directions (left under LTR, right under RTL). */
+    border-inline-start: 2px solid color-mix(in srgb, var(--brand-gold) 40%, transparent);
+    padding-inline-start: clamp(1.25rem, 3vw, 2rem);
   }
 
   /* Illuminated-initial glyph column */
   .interlude-glyph {
     display: flex;
     flex-direction: column;
+    /* flex-end + text-align:end are direction-aware: the glyph hugs the text
+       column (its right in LTR, its left in RTL). */
     align-items: flex-end;
-    text-align: right;
+    text-align: end;
   }
 
   .interlude-glyph-word {
@@ -86,8 +90,14 @@ const { eyebrow, glyph } = Astro.props;
     color: var(--brand-gold);
   }
 
+  /* Arabic script must never be letter-spaced — positive tracking breaks the
+     cursive joins. Neutralise the eyebrow tracking under any RTL root. */
+  :global([dir='rtl']) .interlude-eyebrow {
+    letter-spacing: normal;
+  }
+
   .interlude-text {
-    padding-left: clamp(1rem, 2.5vw, 1.75rem);
+    padding-inline-start: clamp(1rem, 2.5vw, 1.75rem);
   }
 
   .interlude-body {
@@ -149,10 +159,10 @@ const { eyebrow, glyph } = Astro.props;
     }
     .interlude-glyph {
       align-items: flex-start;
-      text-align: left;
+      text-align: start;
     }
     .interlude-text {
-      padding-left: 0;
+      padding-inline-start: 0;
     }
   }
 </style>
