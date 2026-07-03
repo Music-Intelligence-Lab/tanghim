@@ -8,35 +8,43 @@ import Showcase from '../components/Showcase.astro';
 import FeatureRow from '../components/FeatureRow.astro';
 import FeatureGrid from '../components/FeatureGrid.astro';
 import Interlude from '../components/Interlude.astro';
+
+// Shared metadata — single source of truth for <title>, description, and social cards.
+const pageTitle = 'Tanghīm — Arabic Maqām Tuning for any DAW';
+const pageDescription =
+  'A free, open-source plugin using data from the Digital Arabic Maqām Archive. Available as VST3, AU, and CLAP for macOS, Windows, and Linux.';
+const siteUrl = 'https://tanghim.app/';
+const ogImage = 'https://tanghim.app/og-image.png';
+const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders on a navy panel.';
 ---
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tanghīm — Arabic Maqām Tuning for Any DAW</title>
+    <title>{pageTitle}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <!-- SEO -->
-    <meta name="description" content="Tanghīm is an open-source Arabic maqām tuning plugin for any DAW — load a maqām, adjust every degree by ear, and tune your instruments via MTS-ESP, MPE, or Mono Pitch Bend." />
-    <link rel="canonical" href="https://tanghim.app/" />
+    <meta name="description" content={pageDescription} />
+    <link rel="canonical" href={siteUrl} />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://tanghim.app/" />
-    <meta property="og:title" content="Tanghīm — Arabic Maqām Tuning for Any DAW" />
-    <meta property="og:description" content="Tanghīm is an open-source Arabic maqām tuning plugin for any DAW — load a maqām, adjust every degree by ear, and tune your instruments via MTS-ESP, MPE, or Mono Pitch Bend." />
-    <meta property="og:image" content="https://tanghim.app/og-image.png" />
+    <meta property="og:url" content={siteUrl} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="The Tanghīm plugin interface showing maqām tuning sliders on a navy panel." />
+    <meta property="og:image:alt" content={ogImageAlt} />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Tanghīm — Arabic Maqām Tuning for Any DAW" />
-    <meta name="twitter:description" content="Tanghīm is an open-source Arabic maqām tuning plugin for any DAW — load a maqām, adjust every degree by ear, and tune your instruments via MTS-ESP, MPE, or Mono Pitch Bend." />
-    <meta name="twitter:image" content="https://tanghim.app/og-image.png" />
-    <meta name="twitter:image:alt" content="The Tanghīm plugin interface showing maqām tuning sliders on a navy panel." />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={pageDescription} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
 
   </head>
   <body class="bg-[var(--brand-navy-900)] min-h-screen flex flex-col">
