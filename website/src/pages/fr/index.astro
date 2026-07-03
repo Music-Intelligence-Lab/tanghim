@@ -2,57 +2,495 @@
 import '../../styles/global.css';
 import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
+import DownloadButtons from '../../components/DownloadButtons.astro';
+import Badge from '../../components/Badge.astro';
+import Showcase from '../../components/Showcase.astro';
+import FeatureRow from '../../components/FeatureRow.astro';
+import FeatureGrid from '../../components/FeatureGrid.astro';
+import Interlude from '../../components/Interlude.astro';
+
+// Shared metadata — single source of truth for <title>, description, and social cards.
+const pageTitle = 'Tanghīm — Accordage du maqām arabe pour toute STAN';
+const pageDescription =
+  'Un greffon libre et open source qui exploite les données du Digital Arabic Maqām Archive. Disponible en VST3, AU et CLAP pour macOS, Windows et Linux.';
+const siteUrl = 'https://tanghim.app/fr/';
+const ogImage = 'https://tanghim.app/og-image.png';
+const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'accordage du maqām sur un panneau bleu nuit.";
 ---
 <!doctype html>
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tanghīm — Français (bientôt)</title>
+    <title>{pageTitle}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="description" content="Tanghīm — greffon d'accordage maqam arabe pour toute STAN. La version française est en cours de préparation." />
-    <link rel="canonical" href="https://tanghim.app/fr/" />
+
+    <!-- SEO -->
+    <meta name="description" content={pageDescription} />
+    <link rel="canonical" href={siteUrl} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={siteUrl} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogImageAlt} />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={pageDescription} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
+
   </head>
   <body class="bg-[var(--brand-navy-900)] min-h-screen flex flex-col">
+    <!-- JS-gate: only hide .reveal elements when JS is running.
+         Without this class, all .reveal elements remain fully visible (no-JS safe). -->
+    <script is:inline>document.body.classList.add('js-ready');</script>
+
     <!-- Skip to main content (keyboard users) -->
-    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <a href="#main-content" class="skip-link">Aller au contenu principal</a>
 
     <Nav />
 
-    <!-- Translation-in-progress banner -->
-    <div role="banner" aria-label="Avis de traduction" class="translation-banner bg-[var(--brand-navy-800)] border-b border-[color-mix(in_srgb,var(--brand-gold)_30%,transparent)] py-3 px-6">
-      <div class="max-w-[860px] mx-auto flex items-center justify-center gap-3 flex-wrap text-center">
-        <span class="text-[var(--brand-gold)] text-[0.875rem] font-semibold">Cette page est en cours de traduction</span>
-        <span class="text-[var(--brand-muted)] text-[0.8rem]" aria-hidden="true">·</span>
-        <a href="/" lang="en" class="text-[var(--brand-muted)] text-[0.875rem] no-underline transition-colors duration-150 hover:text-[var(--brand-text)] hover:underline hover:underline-offset-[2px]">Voir en anglais</a>
-      </div>
-    </div>
+    <main class="flex-1" id="main-content">
 
-    <main class="flex-1 flex flex-col items-center justify-center py-20 px-6 max-[600px]:py-14 max-[600px]:px-5" id="main-content">
+      <!-- ═══════════════════════════════════════════
+           HERO
+           ═══════════════════════════════════════════ -->
+      <section class="page-band pt-10 pb-16 px-6 max-[600px]:pt-8 max-[600px]:pb-12 max-[600px]:px-5" aria-label="Introduction">
+        <div class="hero-inner max-w-[860px] mx-auto flex flex-col items-center gap-11 text-center max-[600px]:gap-8">
 
-      <div class="flex flex-col items-center gap-8 text-center max-w-[540px]">
+          <!-- Text block -->
+          <div class="flex flex-col items-center gap-5">
+            <p class="m-0 text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-[var(--brand-muted)]">Enfin&#8239;!</p>
 
-        <!-- Wordmark -->
-        <p class="m-0 text-[clamp(2.5rem,6vw,4rem)] font-bold tracking-[-0.02em] text-[var(--brand-text)] accent" aria-label="Tanghīm">
-          Tangh<span class="text-[var(--brand-gold)]">ī</span>m
-        </p>
+            <h1 class="m-0 text-[clamp(2rem,5vw,3.25rem)] font-bold leading-[1.15] tracking-[-0.02em] text-[var(--brand-text)] max-w-[20ch] text-balance">
+              <span class="text-[var(--brand-gold)]">Mille ans</span> d'intonation du maqām arabe au bout des doigts
+            </h1>
 
-        <!-- Coming-soon message -->
-        <p class="m-0 text-[1rem] leading-[1.8] text-[var(--brand-muted)]">
-          La version française du site est en cours de préparation.<br />
-          En attendant, vous pouvez consulter le site en anglais ou télécharger le greffon directement.
-        </p>
+            <p class="m-0 text-[clamp(1rem,2.2vw,1.125rem)] leading-[1.65] text-[var(--brand-muted)] max-w-[60ch] text-balance">
+              Tanghīm est un <strong class="text-[var(--brand-text)] font-semibold">greffon MIDI libre et open source</strong> qui apporte les accordages historiques du maqām arabe issus du <strong class="text-[var(--brand-text)] font-semibold">Digital Arabic Maqām Archive</strong> directement dans <strong class="text-[var(--brand-text)] font-semibold">n'importe quelle STAN</strong>
+            </p>
 
-        <!-- Actions -->
-        <div class="flex gap-3 flex-wrap justify-center">
-          <a href="/#download" class="inline-block py-[0.65rem] px-7 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] text-[0.9375rem] font-bold rounded-[0.375rem] no-underline transition-[opacity,transform] duration-150 ease-[ease] hover:opacity-[0.88] hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline">Télécharger</a>
-          <a href="/" class="inline-block py-[0.65rem] px-4 text-[var(--brand-muted)] text-[0.9375rem] font-medium no-underline rounded-[0.375rem] border border-[color-mix(in_srgb,var(--brand-muted)_30%,transparent)] transition-[color,border-color] duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline">Site anglais →</a>
+            <!-- CTAs -->
+            <div class="flex gap-[0.875rem] flex-wrap justify-center items-center mt-1 max-[600px]:gap-[0.625rem]">
+              <a href="#download" class="inline-block py-[0.65rem] px-7 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] text-[0.9375rem] font-bold rounded-[0.375rem] no-underline transition-[opacity,transform] duration-150 ease-[ease] hover:opacity-[0.88] hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline">Télécharger</a>
+            </div>
+          </div>
+
+          <!-- UI screenshot with gold glow -->
+          <div class="relative w-full max-w-[820px]">
+            <div class="hero-glow absolute pointer-events-none z-0" aria-hidden="true"></div>
+            <img
+              src="/tanghim-ui.png"
+              alt="L'interface du greffon Tanghīm : un banc de curseurs d'accordage affichant les degrés du maqām en doré sur un panneau bleu nuit, avec le sélecteur de maqām, la grille de préréglages et les commandes de fréquence de référence."
+              class="relative z-[1] block w-full h-auto rounded-[0.625rem] border border-[color-mix(in_srgb,var(--brand-gold)_22%,transparent)]"
+              width="1756"
+              height="1370"
+              loading="eager"
+            />
+          </div>
+
         </div>
+      </section>
 
-      </div>
+      <!-- ═══════════════════════════════════════════
+           TRUST / CONTEXT STRIP
+           ═══════════════════════════════════════════ -->
+      <section class="page-band trust-strip reveal border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] py-11 px-6" aria-label="Origine et licence">
+        <div class="colophon reveal">
+          <p class="colophon-eyebrow">Origine &amp; licence</p>
+          <p class="colophon-text">
+            Imaginé et conçu par <a href="https://khyamallami.com/" class="colophon-link" target="_blank" rel="noopener noreferrer">Khyam Allami</a> au <a href="https://musicintelligencelab.com/" class="colophon-link" target="_blank" rel="noopener noreferrer">Music Intelligence Lab</a> / <a href="https://www.aub.edu.lb/cams/" class="colophon-link" target="_blank" rel="noopener noreferrer">Center for Advanced Mathematical Sciences</a>, Université américaine de Beyrouth, 2026. Libre et <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="colophon-link" target="_blank" rel="noopener noreferrer">open source</a>, sous licence <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="colophon-link" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a>.
+          </p>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════
+           DiArMaqAr interlude — the archive is the foundation (before features)
+           ═══════════════════════════════════════════ -->
+      <section class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="Qu'est-ce que le Digital Arabic Maqām Archive&#8239;?">
+        <Interlude eyebrow="Le Digital Arabic Maqām Archive">
+          <p>Tanghīm puise ses données dans le <a href="https://diarmaqar.net/" class="interlude-link" target="_blank" rel="noopener noreferrer">Digital Arabic Maqām Archive (DiArMaqAr)</a> — un dépôt open source de systèmes d'accordage et de maqāmāt historiquement documentés, issus de la musique de la région arabophone, chacun avec une attribution bibliographique complète.</p>
+          <p>Le DiArMaqAr a été recherché, conçu et développé par Khyam Allami avec Ibrahim El Khansa au Music Intelligence Lab de l'Université américaine de Beyrouth. Tanghīm interroge son API REST et met les données en cache localement&#8239;: les accordages que vous jouez sont donc les mêmes valeurs sourcées que celles de l'archive. Un bouton de mise à jour vous signale quand l'archive a changé.</p>
+        </Interlude>
+      </section>
+
+      <!-- ═══════════════════════════════════════════
+           Showcase: Tuning Methods — the headline capability
+           (the #features anchor — nav "Features" targets it)
+           ═══════════════════════════════════════════ -->
+      <Showcase
+        id="features"
+        title="L'accordage du maqām arabe, <strong>vos sons</strong>"
+        subtitle="Trois méthodes d'accordage, du synthé logiciel au matériel."
+      >
+        <p>MTS-ESP réaccorde automatiquement et instantanément les synthés compatibles depuis le greffon <em>émetteur</em> principal, via la mémoire partagée. Notre greffon <em>récepteur</em> dédié permet le pitch bend par note grâce au MPE (MIDI Polyphonic Expression), ou le pitch bend monophonique pour les synthés à canal MIDI unique.</p>
+        <div class="badge-row">
+          <Badge variant="mts">MTS-ESP</Badge>
+          <Badge variant="mpe">MPE</Badge>
+          <Badge variant="monopb">Mono PB</Badge>
+        </div>
+      </Showcase>
+
+      <!-- ═══════════════════════════════════════════
+           MTS-ESP interlude — captions the tuning-methods showcase above
+           ═══════════════════════════════════════════ -->
+      <section class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="Qu'est-ce que MTS-ESP&#8239;?">
+        <Interlude eyebrow="Qu'est-ce que MTS-ESP ?">
+          <p>MTS-ESP est un protocole d'accordage développé par <a href="https://github.com/ODDSound/MTS-ESP" class="interlude-link" target="_blank" rel="noopener noreferrer">ODDSound</a>. Un seul greffon émetteur définit l'accordage, et n'importe quel nombre d'instruments compatibles s'y connectent automatiquement, se réaccordant ensemble sans aucune configuration manuelle. L'accordage se met à jour en temps réel&#8239;: un changement de maqām ou de transposition suit donc chaque instrument connecté pendant qu'il joue.</p>
+        </Interlude>
+      </section>
+
+      <!-- Showcase: Slider Bank — edit by ear -->
+      <Showcase
+        title="Réglez à l'<strong>oreille</strong> et jouez"
+        subtitle="Des données d'accordage théoriques, en pratique"
+        image="/shot-ears.png"
+        imageAlt="Le banc de curseurs de Tanghīm : douze curseurs, un par degré chromatique, affichant les valeurs en cents, les libellés IPN, le solfège et les noms PAO, avec les degrés du maqām surlignés en doré."
+      >
+        <p>Douze curseurs, un par degré chromatique, offrent un moyen simple et immédiat d'explorer les accordages. Chaque curseur comporte des repères d'aimantation pour explorer les différents intervalles, tout en vous laissant régler chaque note à l'oreille.</p>
+      </Showcase>
+
+      <!-- Showcase: Maqam Selection & Presets -->
+      <Showcase
+        title="Choisissez votre maqām puis <strong>modulez</strong>"
+        subtitle="Des préréglages mappables en MIDI et automatisables."
+        image="/shot-modulate.png"
+        imageAlt="La grille de préréglages 4×2 de Tanghīm avec huit préréglages de maqām nommés — le maqām rāst surligné en doré comme préréglage actif."
+      >
+        <p>Enregistrez jusqu'à huit préréglages de n'importe quel maqām, dans n'importe quelle transposition disponible, et passez de l'un à l'autre en mappant votre contrôleur en MIDI, en envoyant des messages Program Change, ou via l'automation de la STAN.</p>
+      </Showcase>
+
+      <!-- Showcase: Oscillator — audition instantly (Osc only) -->
+      <Showcase
+        title="Écoutez-le <strong>instantanément</strong>"
+        subtitle="Auditionnez n'importe quel accordage sans charger d'instrument."
+      >
+        <p>L'oscillateur intégré à onde triangulaire (Osc) vous permet d'entendre un accordage immédiatement, sans charger le moindre instrument externe — vous pouvez ainsi explorer un maqām dès que vous le sélectionnez.</p>
+        <div class="badge-row">
+          <Badge variant="osc">Osc</Badge>
+        </div>
+      </Showcase>
+
+      <!-- ═══════════════════════════════════════════
+           Showcase: full-width Diwānayn view — the expanded two-octave layout
+           ═══════════════════════════════════════════ -->
+      <Showcase
+        title="Diwānayn&#8239;: de <strong>Yegāh à Saham</strong>"
+        subtitle="Élargissez à pleine largeur pour une vue sur deux octaves."
+        image="/shot-diwanayn.png"
+        imageAlt="Le greffon Tanghīm élargi à pleine largeur, son banc de curseurs déployant un système d'accordage sur les deux dawāwīn, de G2 à Ab4 — chaque degré nommé avec les noms PAO et le solfège."
+      >
+        <p>Élargissez le greffon et le banc de curseurs grandit avec lui, déployant le système d'accordage sur les deux dawāwīn — les registres d'octave inférieur et supérieur de la théorie du maqām arabe. Chaque degré est visible d'un coup, avec ses noms de notes et son solfège, pour voir le système entier.</p>
+      </Showcase>
+
+      <!-- ═══════════════════════════════════════════
+           MUSICOLOGY STRIP (dawāwīn) — body-only, pairs with the showcase above
+           ═══════════════════════════════════════════ -->
+      <section class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="Les deux dawāwīn">
+        <Interlude eyebrow="Le dīwān de la théorie du maqām arabe">
+          <p>La théorie du maqām arabe donne à chacune de ses notes un nom perso-arabo-ottoman unique — <em>rāst</em>, <em>dūgāh</em>, <em>sīkāh</em>, et ainsi de suite — répartis sur deux <span lang="ar">دواوين</span> (<em>dawāwīn</em>), un <em>dīwān</em> inférieur et un supérieur (octave). Élargissez Tanghīm à pleine largeur pour voir les systèmes d'accordage et les maqāmāt sur les deux octaves.</p>
+        </Interlude>
+      </section>
+
+      <!-- ═══════════════════════════════════════════
+           FEATURE ROWS (each its own alternating band)
+           ═══════════════════════════════════════════ -->
+
+      <!-- Feature: Heptatonic mode -->
+      <FeatureRow
+        title="Le mode heptatonique pour <strong>jouer vite</strong>"
+        image="/tanghim-ui.png"
+        imageAlt="L'interface de Tanghīm avec le mode heptatonique actif, les touches blanches réagencées pour jouer les degrés du maqām dans l'ordre à partir de la tonique."
+      >
+        <p>Le mode heptatonique (Hept) réagence le clavier pour que chaque maqām soit jouable sur les seules touches diatoniques (blanches) — les touches blanches jouent les degrés du maqām dans l'ordre, à partir de la tonique. N'importe quel maqām devient facile à entendre et à produire, sans doigtés complexes à apprendre.</p>
+      </FeatureRow>
+
+      <!-- Feature: Reference frequency (reversed) -->
+      <FeatureRow
+        title="Réglez votre <strong>hauteur de référence</strong>"
+        image="/tanghim-ui.png"
+        imageAlt="L'interface de Tanghīm montrant la commande de fréquence de référence — un bouton en arc avec une saisie en Hz, un affichage en cents et des boutons par demi-ton."
+        reverse
+      >
+        <p>Réglez la hauteur de référence de l'accordage à l'oreille, en Hz précis ou en cents, pour correspondre à vos enregistrements préférés ou à votre goût. La référence est conservée d'un maqām et d'un système d'accordage à l'autre&#8239;: réglez-la une fois et oubliez-la.</p>
+      </FeatureRow>
+
+      <!-- Feature: Save & load .tanghim files -->
+      <FeatureRow
+        title="Enregistrez et rechargez vos <strong>accordages de maqām</strong>"
+        image="/tanghim-ui.png"
+        imageAlt="L'interface de Tanghīm montrant les boutons Enregistrer et Charger, et l'état d'accordage complet prêt à être stocké dans un fichier .tanghim."
+      >
+        <p>Tanghīm vous laisse modifier, enregistrer et recharger les accordages de maqām et les préréglages sous forme de fichiers .tanghim lisibles — y compris les redéfinitions par note d'une octave à l'autre.</p>
+      </FeatureRow>
+
+      <!-- Feature: Grab the MIDI notes (reversed) -->
+      <FeatureRow
+        title="Récupérez et traitez les <strong>notes MIDI</strong>"
+        image="/tanghim-ui.png"
+        imageAlt="L'interface complète de Tanghīm montrant le bouton d'export MIDI par glisser, prêt à faire glisser les notes du maqām courant sous forme de fichier MIDI standard."
+        reverse
+      >
+        <p>Glissez les notes MIDI du maqām courant sous forme de fichier MIDI standard — sur votre timeline, ou comme clip pour alimenter des arpégiateurs et d'autres processeurs MIDI. Un message Program Change est intégré pour que le préréglage se réactive à la lecture.</p>
+      </FeatureRow>
+
+      <!-- ═══════════════════════════════════════════
+           ABLETON CALL-OUT — "it even works in Live"
+           ═══════════════════════════════════════════ -->
+      <section class="page-band ableton-callout reveal border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="Compatibilité Ableton Live">
+        <div class="max-w-[680px] mx-auto flex flex-col gap-4">
+          <h2 class="m-0 text-[clamp(1.25rem,3vw,1.625rem)] font-bold text-[var(--brand-text)] tracking-[-0.01em] text-balance">Une méthode d'accordage du maqām musicalement pertinente pour Ableton Live</h2>
+          <p class="m-0 text-[1rem] leading-[1.7] text-[var(--brand-muted)] max-w-[60ch] text-pretty">
+            Ableton Live n'autorise pas les greffons d'effet MIDI tiers. Pour y remédier, Tanghīm est livré avec deux périphériques Max for Live — un récepteur MPE et un récepteur Mono Pitch Bend — qui acheminent l'accordage à l'intérieur de Live. Aucune configuration supplémentaire&#8239;: installez, chargez, et l'accordage suit.
+          </p>
+          <div class="flex flex-col gap-[0.375rem] pt-1 max-[600px]:gap-[0.625rem]">
+            <a href="/fr/articles/cross-platform" class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline">Lisez l'article pour toute l'histoire →</a>
+            <a href="/fr/docs/ableton" class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline">Guide de configuration Ableton Live →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Feature Grid — everything else at a glance -->
+      <FeatureGrid items={[
+          {
+            title: 'Redéfinitions par note',
+            body: 'Donnez à une même note une intonation différente dans n\'importe quelle octave.',
+          },
+          {
+            title: 'Fréquence de référence',
+            body: "Réglez la hauteur de base de l'accordage au bouton, en Hz précis ou en cents ; conservée d'un système d'accordage à l'autre.",
+          },
+          {
+            title: 'Défileur de plage',
+            body: 'Faites défiler le clavier de 128 notes avec aimantation magnétique sur C, G et A.',
+          },
+          {
+            title: 'Automation de la STAN',
+            body: 'Les cents des curseurs, le décalage de référence et le préréglage sont exposés comme paramètres automatisables.',
+          },
+          {
+            title: 'Enregistrer et charger',
+            body: "Stockez et rappelez des états d'accordage complets sous forme de fichiers .tanghim portables.",
+          },
+          {
+            title: 'Changement par Program Change',
+            body: 'Changez de préréglage depuis votre STAN avec des messages MIDI Program Change.',
+          },
+        ]} />
+
+      <!-- ═══════════════════════════════════════════
+           MUSICOLOGY STRIP (name gloss) — grace note before the CTA
+           ═══════════════════════════════════════════ -->
+      <section class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="À propos du nom">
+        <Interlude eyebrow="À propos du nom" glyph="تنغيم">
+          <p><strong class="accent">Tanghīm</strong> (<span lang="ar">تنغيم</span>) est un <em>maṣdar</em> arabe, ou nom verbal, désignant l'acte d'intoner ou de fixer la hauteur. En linguistique, c'est l'équivalent standard d'<em>intonation</em>, le contour mélodique de la parole.</p>
+          <p>Ici, il désigne l'accordage intonatif — les relations de hauteur qui composent un système — par opposition à l'usage arabe de <span lang="ar">دوزان</span> (<em>dūzān</em>) pour l'accordage mécanique des cordes d'un instrument. <em>Dūzān</em> est un emprunt au turc ottoman <em>düzen</em> (« ordre, arrangement, accord »), du verbe <em>düzmek</em> (« arranger, mettre en ordre »).</p>
+        </Interlude>
+      </section>
+
+      <!-- ═══════════════════════════════════════════
+           FINAL CTA BAND
+           DownloadButtons anchor (#download) lives here
+           ═══════════════════════════════════════════ -->
+      <section class="cta-band page-band reveal border-t-2 border-[color-mix(in_srgb,var(--brand-gold)_35%,transparent)] py-20 px-6 max-[600px]:py-14 max-[600px]:px-5" aria-label="Télécharger">
+        <div class="max-w-[860px] mx-auto flex flex-col items-center gap-8 text-center">
+          <h2 class="m-0 text-[clamp(1.5rem,3.5vw,2.25rem)] font-bold text-[var(--brand-text)] tracking-[-0.02em] text-balance max-w-[24ch]">Libre, open source, et prêt pour votre musique.</h2>
+          <DownloadButtons />
+          <a href="/fr/docs" class="cta-secondary inline-block mt-1 py-[0.65rem] px-4 text-[var(--brand-muted)] text-[0.9375rem] font-medium no-underline rounded-[0.375rem] border border-[color-mix(in_srgb,var(--brand-muted)_30%,transparent)] transition-[color,border-color] duration-150 ease-[ease] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline">Lire la documentation</a>
+        </div>
+      </section>
 
     </main>
 
     <Footer />
   </body>
 </html>
+
+<script>
+  // Cross-browser scroll reveals via IntersectionObserver.
+  // Requires body.js-ready (set by inline script above) — without it .reveal
+  // elements are already fully visible, so no observer is needed.
+  // Also skips entirely under prefers-reduced-motion (elements are visible via CSS).
+  if (
+    typeof IntersectionObserver !== 'undefined' &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target); // animate once only
+          }
+        }
+      },
+      { threshold: 0, rootMargin: '0px 0px -160px 0px' }
+    );
+
+    document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+  } else {
+    // Ensure all reveals are visible if observer unavailable or motion reduced
+    document.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-visible'));
+  }
+</script>
+
+<style>
+  /* ── Alternating page bands ───────────────────────────────────────────
+     Every top-level block in <main> carries .page-band and alternates its
+     BACKGROUND TONE down the page, so background never tracks content-type —
+     the info strips (colophon, name gloss, Ableton) each land on whichever
+     tone their position dictates rather than being singled out. Only the base
+     tone is set here; each section keeps its own gold divider border and any
+     gradient wash on top (see .trust-strip / .interlude-band / .ableton-callout
+     below). Two tones, delta kept subtle. */
+  :global(main > .page-band) {
+    position: relative;
+    background-color: var(--brand-navy-900);
+  }
+
+  :global(main > .page-band:nth-child(even)) {
+    background-color: color-mix(in srgb, var(--brand-navy-800) 45%, var(--brand-navy-900));
+  }
+
+  /* Gradient washes layer OVER the alternating base tone (background-image only,
+     so the band's background-color still shows through). Restores the original
+     per-section glows on top of the new zebra rhythm. */
+
+  /* Trust strip / colophon — soft gold wash pooled off-centre to the right. */
+  .trust-strip {
+    background-image: radial-gradient(
+      ellipse 45% 150% at 82% 50%,
+      color-mix(in srgb, var(--brand-gold) 9%, transparent) 0%,
+      transparent 70%
+    );
+  }
+
+  /* Interlude / name gloss — faint radial gold wash anchoring the glyph column
+     (left by default). Adjacent interludes alternate the wash side so their
+     glows don't stack in the same place down the scroll. */
+  .interlude-band {
+    background-image: radial-gradient(
+      ellipse 40% 120% at 12% 50%,
+      color-mix(in srgb, var(--brand-gold) 8%, transparent) 0%,
+      transparent 70%
+    );
+  }
+
+  .interlude-band--right {
+    background-image: radial-gradient(
+      ellipse 40% 120% at 88% 50%,
+      color-mix(in srgb, var(--brand-gold) 8%, transparent) 0%,
+      transparent 70%
+    );
+  }
+
+  /* Colophon — quiet, centred credit + licence framed like a title-page note.
+     Small-caps eyebrow over the credit at small measure. Centred distinguishes
+     it from the left-aligned, glyph-led interlude. */
+  .colophon {
+    max-width: 64ch;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.5rem;
+  }
+
+  .colophon-eyebrow {
+    margin: 0;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: color-mix(in srgb, var(--brand-gold) 85%, var(--brand-text));
+  }
+
+  .colophon-text {
+    margin: 0;
+    font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+    line-height: 1.8;
+    color: color-mix(in srgb, var(--brand-muted) 82%, var(--brand-text));
+    text-wrap: balance;
+  }
+
+  .colophon-link {
+    color: color-mix(in srgb, var(--brand-text) 70%, var(--brand-muted));
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--brand-gold) 45%, transparent);
+    text-underline-offset: 2px;
+    transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  }
+
+  .colophon-link:hover {
+    color: var(--brand-text);
+    text-decoration-color: var(--brand-gold);
+  }
+
+  .colophon-link:focus-visible {
+    outline: 2px solid var(--brand-gold);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* CTA band bottom padding (pb-22 isn't a default Tailwind value) */
+  .cta-band {
+    padding-bottom: 5.5rem;
+  }
+
+  @media (max-width: 600px) {
+    .cta-band {
+      padding-bottom: 4rem;
+    }
+  }
+
+  /* Hero glow radial gradient */
+  .hero-glow {
+    inset: -10% -8%;
+    background: radial-gradient(
+      ellipse 70% 60% at 50% 50%,
+      color-mix(in srgb, var(--brand-gold) 18%, transparent) 0%,
+      color-mix(in srgb, var(--brand-gold) 6%, transparent) 45%,
+      transparent 70%
+    );
+  }
+
+  /* Hero screenshot shadow */
+  .hero-glow + img {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--brand-navy-700) 60%, transparent),
+      0 8px 40px rgba(0, 0, 0, 0.55),
+      0 0 60px color-mix(in srgb, var(--brand-gold) 8%, transparent);
+  }
+
+  /* cta-secondary hover — border color-mix */
+  .cta-secondary:hover {
+    color: var(--brand-text);
+    border-color: color-mix(in srgb, var(--brand-muted) 55%, transparent);
+  }
+
+  /* Hero fade/rise on load — disabled when reduced-motion preferred */
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-inner {
+      animation: hero-rise 1.1s cubic-bezier(0.33, 0, 0.2, 1) both;
+    }
+
+    @keyframes hero-rise {
+      from {
+        opacity: 0;
+        transform: translateY(28px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  }
+</style>

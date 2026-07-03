@@ -28,13 +28,13 @@ const localeBase = currentLocale === 'en' ? '' : `/${currentLocale}`;
 // Nav link labels per locale
 const labels = {
   en: { features: 'Features', docs: 'Docs', article: 'Article', download: 'Download' },
-  ar: { features: 'الميزات', docs: 'التوثيق', article: 'المقالة', download: 'تنزيل' },
+  ar: { features: 'الميزات', docs: 'التوثيق', article: 'المقالة', download: 'تحميل' },
   fr: { features: 'Fonctionnalités', docs: 'Docs', article: 'Article', download: 'Télécharger' },
 };
 const t = labels[currentLocale as keyof typeof labels];
 
-// Download href: FR landing has no #download yet → point to EN
-const downloadHref = currentLocale === 'fr' ? '/#download' : `${localeBase}/#download`;
+// Download href: every locale's landing has its own #download anchor.
+const downloadHref = `${localeBase}/#download`;
 
 // lang attribute for Arabic labels (so Tajawal applies)
 const arLang = currentLocale === 'ar' ? 'ar' : undefined;
