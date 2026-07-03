@@ -14,7 +14,7 @@
 //   body slot:    the gloss prose (HTML allowed)
 
 interface Props {
-  eyebrow: string;
+  eyebrow?: string;
   glyph?: string;
 }
 
@@ -28,7 +28,7 @@ const { eyebrow, glyph } = Astro.props;
     </div>
   )}
   <div class="interlude-text">
-    <p class="interlude-eyebrow">{eyebrow}</p>
+    {eyebrow && <p class="interlude-eyebrow">{eyebrow}</p>}
     <div class="interlude-body">
       <slot />
     </div>

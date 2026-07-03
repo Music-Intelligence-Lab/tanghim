@@ -13,7 +13,7 @@ const { variant } = Astro.props;
 // which reads the matching `--badge-*` token.
 ---
 
-<span class={`inline-flex items-center py-[0.2em] px-[0.65em] rounded-full text-[0.78rem] font-semibold tracking-[0.03em] whitespace-nowrap border border-current transition-[opacity,box-shadow] duration-150 ease-[ease] badge-${variant}`}>
+<span class={`inline-flex items-center justify-center py-[0.2em] px-[1.1em] min-w-[5.5em] rounded-[3px] text-[0.78rem] font-semibold tracking-[0.03em] whitespace-nowrap border border-current transition-[opacity,box-shadow] duration-150 ease-[ease] badge-${variant}`}>
   <slot />
 </span>
 
