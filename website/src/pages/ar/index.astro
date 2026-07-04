@@ -10,12 +10,12 @@ import FeatureGrid from '../../components/FeatureGrid.astro';
 import Interlude from '../../components/Interlude.astro';
 
 // Shared metadata — single source of truth for <title>, description, and social cards.
-const pageTitle = 'Tanghīm — تنغيم المقام العربي لأي برنامج تسجيل';
+const pageTitle = 'تنغيم — ضبط المقامات العربية لأي برنامج تسجيل';
 const pageDescription =
-  'إضافة مجانية ومفتوحة المصدر تعتمد بيانات الأرشيف الرقمي للمقام العربي. متوفّرة بصيغ VST3 وAU وCLAP لأنظمة macOS وWindows وLinux.';
+  'إضافة مجانية ومفتوحة المصدر تعتمد بيانات أرشيف المقام العربي الرقمي. متوفّرة بصيغ VST3 وAU وCLAP لأنظمة macOS وWindows وLinux.';
 const siteUrl = 'https://tanghim.app/ar/';
 const ogImage = 'https://tanghim.app/og-image.png';
-const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغيم المقام على لوحة كحلية.';
+const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق التنغيم على لوحة كحلية.';
 ---
 <!doctype html>
 <html lang="ar" dir="rtl">
@@ -53,14 +53,14 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
     <script is:inline>document.body.classList.add('js-ready');</script>
 
     <!-- Skip to main content (keyboard users) -->
-    <a href="#main-content" class="skip-link" lang="ar">تخطَّ إلى المحتوى الرئيسي</a>
+    <a href="#main-content" class="skip-link" lang="ar">الانتقال إلى المحتوى الرئيسي</a>
 
     <Nav />
 
     <main class="flex-1" id="main-content">
 
       <!-- ═══════════════════════════════════════════
-           HERO
+           HERO  (type intentionally NOT bumped — see global.css note)
            ═══════════════════════════════════════════ -->
       <section class="page-band pt-10 pb-16 px-6 max-[600px]:pt-8 max-[600px]:pb-12 max-[600px]:px-5" aria-label="مقدمة">
         <div class="hero-inner max-w-[860px] mx-auto flex flex-col items-center gap-11 text-center max-[600px]:gap-8">
@@ -70,11 +70,11 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
             <p class="m-0 text-[0.8rem] font-semibold text-[var(--brand-muted)]" lang="ar">أخيراً</p>
 
             <h1 class="m-0 text-[clamp(2rem,5vw,3.25rem)] font-bold leading-[1.35] text-[var(--brand-text)] max-w-[24ch] text-balance" lang="ar">
-              <span class="text-[var(--brand-gold)]">ألف عام</span> من تنغيم المقام العربي في متناول يديك
+              <span class="text-[var(--brand-gold)]">ألف عام</span> من تنغيم المقام العربي بين يديك
             </h1>
 
             <p class="m-0 text-[clamp(1rem,2.2vw,1.125rem)] leading-[1.85] text-[var(--brand-muted)] max-w-[60ch] text-balance" lang="ar">
-              <span lang="en">Tanghīm</span> <strong class="text-[var(--brand-text)] font-semibold">إضافة MIDI مجانية ومفتوحة المصدر</strong> تجلب تنغيمات المقام العربي التاريخية من <strong class="text-[var(--brand-text)] font-semibold">الأرشيف الرقمي للمقام العربي</strong> مباشرةً إلى <strong class="text-[var(--brand-text)] font-semibold">أي برنامج تسجيل</strong>
+              <span class="brand-name">تنغيم</span> <strong class="text-[var(--brand-text)] font-semibold">إضافة MIDI مجانية ومفتوحة المصدر</strong> تجلب تناغيم المقامات العربية التاريخية من <strong class="text-[var(--brand-text)] font-semibold">أرشيف المقام العربي الرقمي</strong> إلى أي برنامج تسجيل مباشرةً
             </p>
 
             <!-- CTAs -->
@@ -88,7 +88,7 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
             <div class="hero-glow absolute pointer-events-none z-0" aria-hidden="true"></div>
             <img
               src="/tanghim-ui.png"
-              alt="واجهة إضافة Tanghīm: مجموعة من مزالق التنغيم تعرض درجات المقام بالذهبي على لوحة كحلية، مع منتقي المقام وشبكة الإعدادات المسبقة وعناصر التحكم بالتردد المرجعي."
+              alt="واجهة إضافة تنغيم: مزالق التنغيم تعرض درجات المقام بالذهبي على لوحة كحلية، مع منتقي المقام وشبكة الإعدادات المسبقة وعناصر التحكم بالتردد المرجعي."
               class="relative z-[1] block w-full h-auto rounded-[0.625rem] border border-[color-mix(in_srgb,var(--brand-gold)_22%,transparent)]"
               width="1756"
               height="1370"
@@ -114,23 +114,22 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
       <!-- ═══════════════════════════════════════════
            DiArMaqAr interlude — the archive is the foundation (before features)
            ═══════════════════════════════════════════ -->
-      <section class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="ما هو الأرشيف الرقمي للمقام العربي؟">
-        <Interlude eyebrow="الأرشيف الرقمي للمقام العربي">
-          <p>يستمد <span lang="en">Tanghīm</span> بياناته من <a href="https://diarmaqar.net/" class="interlude-link" target="_blank" rel="noopener noreferrer">الأرشيف الرقمي للمقام العربي (DiArMaqAr)</a> — وهو مستودع مفتوح المصدر لأنظمة التنغيم والمقامات الموثّقة تاريخياً من موسيقى المنطقة الناطقة بالعربية، مع توثيق مرجعي كامل لكل منها.</p>
-          <p>الأرشيف من بحث وتصميم وتطوير خيّام اللامي مع إبراهيم الخنسا في مختبر ذكاء الموسيقى بالجامعة الأمريكية في بيروت. يستعلم <span lang="en">Tanghīm</span> من واجهته البرمجية (REST API) ويخزّن البيانات محلياً، فتكون النغمات التي تعزفها مطابقة للقيم الموثّقة في الأرشيف. وهناك زر تحديث يخبرك عندما يتغيّر الأرشيف.</p>
+      <section class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="ما هو أرشيف المقام العربي الرقمي؟">
+        <Interlude eyebrow="أرشيف المقام العربي الرقمي">
+          <p>يستمد <span class="brand-name">تنغيم</span> بياناته من <a href="https://diarmaqar.net/" class="interlude-link" target="_blank" rel="noopener noreferrer">أرشيف المقام العربي الرقمي (DiArMaqAr)</a> — مستودع مفتوح المصدر لأنظمة التنغيم والمقامات الموثّقة تاريخياً من موسيقى المنطقة الناطقة بالعربية، مع توثيق مرجعي كامل لكلٍّ منها.</p>
+          <p>الأرشيف من بحث وتصميم وتطوير خيّام اللامي مع إبراهيم الخنسا في مختبر ذكاء الموسيقى بالجامعة الأمريكية في بيروت. يستعلم <span class="brand-name">تنغيم</span> من REST API الخاص به ويخزّن البيانات محلياً، فالنغمات المعزوفة مطابقة للقيم الموثّقة في الأرشيف. ويشير زر التحديث إلى تغيّر الأرشيف.</p>
         </Interlude>
       </section>
 
       <!-- ═══════════════════════════════════════════
-           Showcase: Tuning Methods — the headline capability
-           (the #features anchor — nav "Features" targets it)
+           Showcase: Tuning Methods — the headline capability (#features anchor)
            ═══════════════════════════════════════════ -->
       <Showcase
         id="features"
-        title="تنغيم المقام العربي، <strong>بأصواتك أنت</strong>"
+        title="تنغيم المقام العربي، <strong>بأصواتك</strong>"
         subtitle="ثلاث طرق للتنغيم، من السينثات البرمجية إلى الأجهزة."
       >
-        <p lang="ar">يضبط <span lang="en">MTS-ESP</span> السينثات المتوافقة تلقائياً وفوراً من إضافة <em>الإرسال</em> الرئيسية عبر الذاكرة المشتركة. وتتيح إضافة <em>الاستقبال</em> المخصّصة ثني النغمة لكل نوتة على حدة عبر <span lang="en">MPE</span> (تعبير MIDI متعدد الأصوات)، أو ثني النغمة الأحادي للسينثات ذات قناة MIDI واحدة.</p>
+        <p lang="ar">يضبط <span lang="en">MTS-ESP</span> السينثات المتوافقة تلقائياً وفوراً من إضافة <em>الإرسال</em> الرئيسية عبر الذاكرة المشتركة. وتتيح إضافة <em>الاستقبال</em> المخصّصة ثني النغمة لكل نوتة عبر MPE (MIDI Polyphonic Expression)، أو ثني النغمة الأحادي للسينثات ذات قناة MIDI واحدة.</p>
         <div class="badge-row">
           <Badge variant="mts">MTS-ESP</Badge>
           <Badge variant="mpe">MPE</Badge>
@@ -143,36 +142,36 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
            ═══════════════════════════════════════════ -->
       <section class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="ما هو MTS-ESP؟">
         <Interlude eyebrow="ما هو MTS-ESP؟">
-          <p><span lang="en">MTS-ESP</span> بروتوكول تنغيم طوّرته شركة <a href="https://github.com/ODDSound/MTS-ESP" class="interlude-link" target="_blank" rel="noopener noreferrer">ODDSound</a>. تضبط إضافة إرسال واحدة التنغيم، فيتصل بها أي عدد من الآلات المتوافقة تلقائياً، ويُعاد تنغيمها معاً دون أي إعداد يدوي. ويتحدّث التنغيم لحظياً، فيسري تغيير المقام أو التبديل على كل آلة متصلة أثناء العزف.</p>
+          <p><span lang="en">MTS-ESP</span> بروتوكول تنغيم من تطوير <a href="https://github.com/ODDSound/MTS-ESP" class="interlude-link" target="_blank" rel="noopener noreferrer">ODDSound</a>. تضبط إضافة إرسال واحدة التنغيم، فتتصل بها الآلات المتوافقة تلقائياً ويُعاد تنغيمها معاً دون إعداد يدوي. ويتحدّث التنغيم لحظياً، فيسري تغيير المقام أو التصوير على كل آلة متصلة أثناء العزف.</p>
         </Interlude>
       </section>
 
       <!-- Showcase: Slider Bank — edit by ear -->
       <Showcase
-        title="عدّل بـ<strong>أذنيك</strong> واعزف"
-        subtitle="بيانات تنغيم نظرية، في التطبيق العملي"
+        title="التعديل <strong>بالأذن</strong> ثم العزف"
+        subtitle="بيانات التنغيم النظرية، عملياً"
         image="/shot-ears.png"
-        imageAlt="مجموعة مزالق Tanghīm: اثنا عشر مزلاقاً لكل خطوة كروماتية تعرض قراءات السنت وتسميات IPN والسولفيج وأسماء PAO، مع إبهامات درجات المقام المميّزة بالذهبي."
+        imageAlt="مزالق تنغيم: اثنا عشر مزلاقاً لكل خطوة كروماتية تعرض قراءات السنت وتسميات IPN والسولفيج وأسماء PAO، مع درجات المقام المميّزة بالذهبي."
       >
-        <p lang="ar">اثنا عشر مزلاقاً، واحد لكل خطوة كروماتية، يمنحك طريقة بسيطة وفورية لاستكشاف أنظمة التنغيم. ويتضمّن كل مزلاق نقاط انجذاب لاستكشاف الأبعاد المختلفة، مع إمكانية ضبط أي نغمة بأذنك.</p>
+        <p lang="ar">اثنا عشر مزلاقاً، واحد لكل خطوة كروماتية، تتيح استكشاف أنظمة التنغيم ببساطة وفورية. ويتضمّن كل مزلاق نقاط انجذاب لاستكشاف الأبعاد المختلفة، مع ضبط أي نغمة بالأذن.</p>
       </Showcase>
 
       <!-- Showcase: Maqam Selection & Presets -->
       <Showcase
-        title="اختر مقامك ثم <strong>انتقِل</strong>"
+        title="اختيار المقام ثم <strong>الانتقال</strong>"
         subtitle="إعدادات مسبقة قابلة للربط بـ MIDI وللأتمتة"
         image="/shot-modulate.png"
-        imageAlt="شبكة إعدادات Tanghīm المسبقة 4×2 بثمانية إعدادات مقامية مسمّاة — مقام راست مميّز بالذهبي بوصفه الإعداد النشط."
+        imageAlt="شبكة إعدادات تنغيم المسبقة 4×2 بثمانية إعدادات مقامية مسمّاة — مقام راست مميّز بالذهبي بوصفه الإعداد النشط."
       >
-        <p lang="ar">احفظ حتى ثمانية إعدادات مسبقة لأي مقام في أي تبديل متاح، وانتقل بينها عبر ربط وحدة التحكم بـ MIDI، أو بإرسال رسائل Program Change، أو باستخدام أتمتة الـ DAW.</p>
+        <p lang="ar">يتيح <span class="brand-name">تنغيم</span> حفظ حتى ثمانية إعدادات مسبقة لأي مقام في أي تصوير متاح، والتبديل بينها بربط وحدة التحكم بـ MIDI، أو برسائل Program Change، أو بأتمتة الـ DAW.</p>
       </Showcase>
 
       <!-- Showcase: Oscillator — audition instantly (Osc only) -->
       <Showcase
-        title="اسمعه <strong>فوراً</strong>"
-        subtitle="استمع إلى أي تنغيم دون الحاجة إلى أي آلة"
+        title="سماعه <strong>فوراً</strong>"
+        subtitle="الاستماع إلى أي تنغيم دون الحاجة إلى أي آلة"
       >
-        <p lang="ar">يتيح لك المذبذب الداخلي ذو الموجة المثلثية (Osc) سماع التنغيم فوراً، دون الحاجة إلى أي آلة خارجية — فتستكشف المقام لحظة اختياره.</p>
+        <p lang="ar">يتيح المذبذب الداخلي ذو الموجة المثلثية (Osc) سماع التنغيم فوراً دون أي آلة خارجية — فيُستكشف المقام لحظة اختياره.</p>
         <div class="badge-row">
           <Badge variant="osc">Osc</Badge>
         </div>
@@ -182,12 +181,12 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
            Showcase: full-width Diwānayn view — the expanded two-octave layout
            ═══════════════════════════════════════════ -->
       <Showcase
-        title="الديوانان: من <strong>يكاه إلى سهام</strong>"
-        subtitle="وسّع الإضافة إلى العرض الكامل لرؤية الديوانين"
+        title="الديوانان: من <strong>يكاه إلى سهم</strong>"
+        subtitle="توسيع الإضافة إلى العرض الكامل لرؤية الديوانين"
         image="/shot-diwanayn.png"
-        imageAlt="إضافة Tanghīm موسّعة إلى العرض الكامل، ومجموعة مزالقها تنشر نظام تنغيم عبر الديوانين من G2 إلى Ab4 — كل درجة مسمّاة بأسماء PAO والسولفيج."
+        imageAlt="إضافة تنغيم موسّعة إلى العرض الكامل، ومجموعة مزالقها تعرض نظام تنغيم عبر الديوانين من G2 إلى Ab4 — كل درجة مسمّاة بأسماء PAO والسولفيج."
       >
-        <p lang="ar">وسّع الإضافة فتكبر معها مجموعة المزالق، لتعرض نظام التنغيم عبر الديوانين — الأوكتاف الأدنى والأعلى في نظرية المقام العربي. تظهر كل درجة دفعة واحدة، مع أسماء نغماتها وسولفيجها، فترى النظام كاملاً.</p>
+        <p lang="ar">بتوسيع الإضافة تكبر معها مجموعة المزالق، فتعرض نظام التنغيم عبر الديوانين — الأوكتاف الأدنى والأعلى في نظرية المقام العربي. تظهر كل درجة دفعة واحدة، بأسماء نغماتها وسولفيجها، فيبين النظام كاملاً.</p>
       </Showcase>
 
       <!-- ═══════════════════════════════════════════
@@ -195,7 +194,7 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
            ═══════════════════════════════════════════ -->
       <section class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="الديوانان">
         <Interlude eyebrow="ديوان نظرية المقام العربي">
-          <p>تمنح نظرية المقام العربي كل نغمة اسماً فارسياً-عربياً-عثمانياً فريداً — <span lang="ar">راست</span>، <span lang="ar">دوكاه</span>، <span lang="ar">سيكاه</span>، وهكذا — عبر <span lang="ar">ديوانين</span>: ديوان أدنى وديوان أعلى (أوكتاف). وسّع <span lang="en">Tanghīm</span> إلى عرضه الكامل لترى أنظمة التنغيم والمقامات عبر الأوكتافين.</p>
+          <p>تمنح نظرية المقام العربي كل نغمة اسماً فارسياً-عربياً-عثمانياً فريداً — <span lang="ar">راست</span>، <span lang="ar">دوكاه</span>، <span lang="ar">سيكاه</span>، وهكذا — عبر <span lang="ar">ديوانين</span>: ديوان أدنى وأعلى (أوكتاف). وبتوسيع <span class="brand-name">تنغيم</span> إلى عرضه الكامل تظهر أنظمة التنغيم والمقامات عبر الأوكتافين.</p>
         </Interlude>
       </section>
 
@@ -207,38 +206,38 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
       <FeatureRow
         title="الوضع السباعي <strong>للعزف السريع</strong>"
         image="/tanghim-ui.png"
-        imageAlt="واجهة Tanghīm والوضع السباعي مفعّل، وقد أُعيد توزيع المفاتيح البيضاء لتعزف درجات المقام بالترتيب من درجة الأساس."
+        imageAlt="واجهة تنغيم والوضع السباعي مفعّل، وقد أُعيد توزيع المفاتيح البيضاء لتعزف درجات المقام بالترتيب من درجة الأساس."
       >
-        <p lang="ar">يعيد الوضع السباعي (Hept) توزيع لوحة المفاتيح ليصبح كل مقام قابلاً للعزف على المفاتيح البيضاء (الدياتونية) وحدها — فتعزف المفاتيح البيضاء درجات المقام بالترتيب من درجة الأساس. وهكذا يصبح أي مقام سهل السماع والعزف، دون مواضع أصابع معقّدة.</p>
+        <p lang="ar">يعيد الوضع السباعي (Hept) توزيع لوحة المفاتيح ليصبح كل مقام قابلاً للعزف على المفاتيح البيضاء (الدياتونية) وحدها — فتعزف المفاتيح البيضاء درجات المقام بالترتيب من درجة الأساس. فيغدو أي مقام سهل السماع والعزف، دون مواضع أصابع معقّدة.</p>
       </FeatureRow>
 
       <!-- Feature: Reference frequency (reversed) -->
       <FeatureRow
-        title="اضبط <strong>النغمة المرجعية</strong>"
+        title="ضبط <strong>النغمة المرجعية</strong>"
         image="/tanghim-ui.png"
-        imageAlt="واجهة Tanghīm تعرض عنصر التحكم بالتردد المرجعي — مقبض قوسي مع إدخال Hz، وقراءة بالسنت، وأزرار بخطوة نصف نغمة."
+        imageAlt="واجهة تنغيم تعرض عنصر التحكم بالتردد المرجعي — مقبض قوسي مع إدخال Hz، وقراءة بالسنت، وأزرار بخطوة نصف نغمة."
         reverse
       >
-        <p lang="ar">اضبط النغمة المرجعية للتنغيم بالأذن، أو بقيمة Hz دقيقة، أو بالسنت، لتطابق تسجيلاتك المفضّلة أو ذوقك الخاص. وتبقى النغمة المرجعية ثابتة عبر المقامات وأنظمة التنغيم، فتضبطها مرة وتنساها.</p>
+        <p lang="ar">تُضبط النغمة المرجعية للتنغيم بالأذن، أو بقيمة Hz دقيقة، أو بالسنت، لتطابق تسجيلاتك المفضّلة أو ذوقك. وتبقى ثابتة عبر المقامات وأنظمة التنغيم، فتُضبط مرة وتُنسى.</p>
       </FeatureRow>
 
       <!-- Feature: Save & load .tanghim files -->
       <FeatureRow
-        title="احفظ واسترجع <strong>تنغيمات مقاماتك</strong>"
+        title="حفظ واسترجاع <strong>تناغيم مقاماتك</strong>"
         image="/tanghim-ui.png"
-        imageAlt="واجهة Tanghīm تعرض زرَّي الحفظ والتحميل وحالة التنغيم الكاملة جاهزة للتخزين كملف .tanghim."
+        imageAlt="واجهة تنغيم تعرض زرَّي الحفظ والاسترجاع وحالة التنغيم الكاملة جاهزة للتخزين كملف .tanghim."
       >
-        <p lang="ar">يتيح لك <span lang="en">Tanghīm</span> تعديل تنغيمات المقامات وإعداداتها المسبقة وحفظها وإعادة فتحها كملفات ‎.tanghim‎ سهلة القراءة — بما في ذلك تجاوزات كل نوتة عبر الأوكتافات المختلفة.</p>
+        <p lang="ar">يتيح <span class="brand-name">تنغيم</span> تعديل تناغيم المقامات وإعداداتها المسبقة وحفظها وإعادة فتحها كملفات ‎.tanghim‎ سهلة القراءة — بما فيها تجاوزات كل نوتة عبر الأوكتافات المختلفة.</p>
       </FeatureRow>
 
       <!-- Feature: Grab the MIDI notes (reversed) -->
       <FeatureRow
-        title="خذ <strong>نوتات MIDI</strong> وعالِجها"
+        title="التقاط <strong>نوتات MIDI</strong> ومعالجتها"
         image="/tanghim-ui.png"
-        imageAlt="واجهة Tanghīm الكاملة تعرض زر سحب تصدير MIDI، جاهزاً لسحب نوتات المقام الحالي كملف MIDI قياسي."
+        imageAlt="واجهة تنغيم الكاملة تعرض زر سحب تصدير MIDI، جاهزاً لسحب نوتات المقام الحالي كملف MIDI قياسي."
         reverse
       >
-        <p lang="ar">اسحب نوتات MIDI للمقام الحالي كملف MIDI قياسي — إلى مسارك الزمني، أو كمقطع يغذّي مولّدات الأربيجيو وغيرها من معالجات MIDI. وتُضمَّن رسالة Program Change ليُعاد تفعيل الإعداد المسبق عند التشغيل.</p>
+        <p lang="ar">تُسحب نوتات MIDI للمقام الحالي كملف MIDI قياسي — إلى مسارك الزمني، أو كمقطع يغذّي مولّدات الأربيجيو وغيرها من معالجات MIDI. وتُضمَّن رسالة Program Change ليُعاد تفعيل الإعداد المسبق عند التشغيل.</p>
       </FeatureRow>
 
       <!-- ═══════════════════════════════════════════
@@ -246,13 +245,13 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
            ═══════════════════════════════════════════ -->
       <section class="page-band ableton-callout reveal border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="التوافق مع Ableton Live">
         <div class="max-w-[680px] mx-auto flex flex-col gap-4">
-          <h2 class="m-0 text-[clamp(1.25rem,3vw,1.625rem)] font-bold text-[var(--brand-text)] text-balance" lang="ar">طريقة تنغيم مقامي ذات معنى موسيقي في Ableton Live</h2>
-          <p class="m-0 text-[1rem] leading-[1.85] text-[var(--brand-muted)] max-w-[60ch] text-pretty" lang="ar">
-            لا يسمح Ableton Live بإضافات مؤثّرات MIDI من جهات خارجية. ولحل ذلك، يأتي <span lang="en">Tanghīm</span> مع جهازَي Max for Live — مستقبل MPE ومستقبل Mono Pitch Bend — يوصلان التنغيم داخل Live. دون أي إعداد إضافي: ثبّت الجهاز وأضِفه، فيتبع التنغيم.
+          <h2 class="m-0 text-[clamp(1.5rem,3.2vw,1.9rem)] font-bold text-[var(--brand-text)] text-balance" lang="ar">طريقة تنغيم مقامي ذات معنى موسيقي في Ableton Live</h2>
+          <p class="m-0 text-[1.1rem] leading-[1.9] text-[var(--brand-muted)] max-w-[60ch] text-pretty" lang="ar">
+            لا يسمح Ableton Live بإضافات مؤثّرات MIDI من جهات خارجية. لذا يأتي <span class="brand-name">تنغيم</span> بجهازَي Max for Live — مستقبل MPE ومستقبل Mono Pitch Bend — يوصّلان التنغيم داخل Live. دون إعداد إضافي: التثبيت ثم إضافة الجهاز، فيتبع التنغيم.
           </p>
           <div class="flex flex-col gap-[0.375rem] pt-1 max-[600px]:gap-[0.625rem]">
-            <a href="/ar/articles/cross-platform" class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline" lang="ar">اقرأ المقال لمعرفة القصة ←</a>
-            <a href="/ar/docs/ableton" class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline" lang="ar">دليل إعداد Ableton Live ←</a>
+            <a href="/ar/articles/cross-platform" class="text-[0.95rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline" lang="ar">قراءة المقال لمعرفة القصة ←</a>
+            <a href="/ar/docs/ableton" class="text-[0.95rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline" lang="ar">دليل إعداد Ableton Live ←</a>
           </div>
         </div>
       </section>
@@ -261,27 +260,27 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
       <FeatureGrid items={[
           {
             title: 'تجاوزات لكل نوتة',
-            body: 'امنح النغمة نفسها تنغيماً مختلفاً في أي أوكتاف.',
+            body: 'لكل نوتة تنغيم مختلف في أي أوكتاف.',
           },
           {
             title: 'التردد المرجعي',
-            body: 'اضبط نغمة أساس التنغيم بالمقبض، أو بقيمة Hz دقيقة، أو بالسنت؛ وتبقى ثابتة عبر أنظمة التنغيم.',
+            body: 'ضبط نغمة الأساس بالمقبض، أو بقيمة Hz دقيقة، أو بالسنت؛ وتثبت عبر أنظمة التنغيم.',
           },
           {
             title: 'أداة التمرير',
-            body: 'حرّك لوحة المفاتيح ذات الـ 128 نوتة مع انجذاب مغناطيسي إلى C وG وA.',
+            body: 'تمرير لوحة المفاتيح ذات الـ 128 نوتة مع انجذاب مغناطيسي إلى C وG وA.',
           },
           {
             title: 'أتمتة الـ DAW',
-            body: 'سنتات المزالق والإزاحة المرجعية والإعداد المسبق، جميعها معروضة كمعاملات قابلة للأتمتة.',
+            body: 'سنتات المزالق والإزاحة المرجعية والإعداد المسبق، معروضة كمعاملات قابلة للأتمتة.',
           },
           {
             title: 'الحفظ والاسترجاع',
-            body: 'خزّن واسترجع حالات التنغيم الكاملة كملفات ‎.tanghim‎ محمولة.',
+            body: 'تخزين حالات التنغيم الكاملة واسترجاعها كملفات ‎.tanghim‎ محمولة.',
           },
           {
             title: 'التبديل بـ Program Change',
-            body: 'بدّل الإعدادات المسبقة من الـ DAW برسائل MIDI Program Change.',
+            body: 'تبديل الإعدادات المسبقة من الـ DAW برسائل MIDI Program Change.',
           },
         ]} />
 
@@ -290,20 +289,19 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
            ═══════════════════════════════════════════ -->
       <section class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="حول الاسم">
         <Interlude eyebrow="حول الاسم" glyph="تنغيم">
-          <p><strong class="accent">Tanghīm</strong> (تنغيم) مصدر عربي يدل على فعل التنغيم وضبط طبقة الصوت. وهو في اللغة المقابل المعياري لكلمة <span lang="en">intonation</span>، أي تلوين نغمة الكلام.</p>
-          <p>وهنا يعني ضبط طبقات الصوت — أي العلاقات النغمية التي يتكوّن منها النظام — تمييزاً له عن <span lang="ar">دوزان</span> المستخدَمة في العربية للضبط الميكانيكي لأوتار الآلة. وكلمة دوزان مستعارة من التركية العثمانية <span lang="tr">düzen</span> (نظام وترتيب وضبط)، من الفعل <span lang="tr">düzmek</span> بمعنى يرتّب وينظّم.</p>
+          <p><span class="brand-name">تنغيم</span> مصدر عربي يدل على فعل التنغيم وضبط طبقة الصوت، وهو في اللغة المقابل المعياري لـ<span lang="en">intonation</span>: تلوين نغمة الكلام.</p>
+          <p>وهنا يعني ضبط طبقات الصوت — العلاقات النغمية التي يتكوّن منها النظام — تمييزاً له عن <span lang="ar">دوزان</span> المستعملة في العربية لضبط أوتار الآلة ميكانيكياً. و<span lang="ar">دوزان</span> مستعارة من التركية العثمانية <span lang="tr">düzen</span> (نظام وترتيب وضبط)، من الفعل <span lang="tr">düzmek</span>: يرتّب وينظّم.</p>
         </Interlude>
       </section>
 
       <!-- ═══════════════════════════════════════════
-           FINAL CTA BAND
-           DownloadButtons anchor (#download) lives here
+           FINAL CTA BAND — DownloadButtons anchor (#download) lives here
            ═══════════════════════════════════════════ -->
       <section class="cta-band page-band reveal border-t-2 border-[color-mix(in_srgb,var(--brand-gold)_35%,transparent)] py-20 px-6 max-[600px]:py-14 max-[600px]:px-5" aria-label="التحميل">
         <div class="max-w-[860px] mx-auto flex flex-col items-center gap-8 text-center">
-          <h2 class="m-0 text-[clamp(1.5rem,3.5vw,2.25rem)] font-bold text-[var(--brand-text)] text-balance max-w-[24ch]" lang="ar">مجاني ومفتوح المصدر، وجاهز لموسيقاك.</h2>
+          <h2 class="m-0 text-[clamp(1.7rem,3.6vw,2.55rem)] font-bold text-[var(--brand-text)] text-balance max-w-[24ch]" lang="ar">مجاني ومفتوح المصدر، وجاهز لموسيقاك.</h2>
           <DownloadButtons />
-          <a href="/ar/docs" class="cta-secondary inline-block mt-1 py-[0.65rem] px-4 text-[var(--brand-muted)] text-[0.9375rem] font-medium no-underline rounded-[0.375rem] border border-[color-mix(in_srgb,var(--brand-muted)_30%,transparent)] transition-[color,border-color] duration-150 ease-[ease] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline" lang="ar">اقرأ التوثيق</a>
+          <a href="/ar/docs" class="cta-secondary inline-block mt-1 py-[0.65rem] px-4 text-[var(--brand-muted)] text-[1rem] font-medium no-underline rounded-[0.375rem] border border-[color-mix(in_srgb,var(--brand-muted)_30%,transparent)] transition-[color,border-color] duration-150 ease-[ease] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline" lang="ar">قراءة التوثيق</a>
         </div>
       </section>
 
@@ -344,12 +342,8 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
 <style>
   /* ── Alternating page bands ───────────────────────────────────────────
      Every top-level block in <main> carries .page-band and alternates its
-     BACKGROUND TONE down the page, so background never tracks content-type —
-     the info strips (colophon, name gloss, Ableton) each land on whichever
-     tone their position dictates rather than being singled out. Only the base
-     tone is set here; each section keeps its own gold divider border and any
-     gradient wash on top (see .trust-strip / .interlude-band / .ableton-callout
-     below). Two tones, delta kept subtle. */
+     BACKGROUND TONE down the page, so background never tracks content-type.
+     Two tones, delta kept subtle. */
   :global(main > .page-band) {
     position: relative;
     background-color: var(--brand-navy-900);
@@ -358,10 +352,6 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
   :global(main > .page-band:nth-child(even)) {
     background-color: color-mix(in srgb, var(--brand-navy-800) 45%, var(--brand-navy-900));
   }
-
-  /* Gradient washes layer OVER the alternating base tone (background-image only,
-     so the band's background-color still shows through). Restores the original
-     per-section glows on top of the new zebra rhythm. */
 
   /* Trust strip / colophon — soft gold wash pooled off-centre to the right. */
   .trust-strip {
@@ -372,9 +362,8 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
     );
   }
 
-  /* Interlude / name gloss — faint radial gold wash anchoring the glyph column
-     (left by default). Adjacent interludes alternate the wash side so their
-     glows don't stack in the same place down the scroll. */
+  /* Interlude / name gloss — faint radial gold wash anchoring the glyph column.
+     Adjacent interludes alternate the wash side so glows don't stack down the scroll. */
   .interlude-band {
     background-image: radial-gradient(
       ellipse 40% 120% at 12% 50%,
@@ -391,9 +380,7 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
     );
   }
 
-  /* Colophon — quiet, centred credit + licence framed like a title-page note.
-     Small-caps eyebrow over the credit at small measure. Centred distinguishes
-     it from the left-aligned, glyph-led interlude. */
+  /* Colophon — quiet, centred credit + licence framed like a title-page note. */
   .colophon {
     max-width: 64ch;
     margin: 0 auto;
@@ -406,7 +393,7 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
 
   .colophon-eyebrow {
     margin: 0;
-    font-size: 0.68rem;
+    font-size: 0.78rem;
     font-weight: 600;
     text-transform: uppercase;
     /* Arabic must not be letter-spaced — tracking breaks the cursive joins. */
@@ -416,7 +403,7 @@ const ogImageAlt = 'واجهة إضافة Tanghīm تعرض مزالق تنغي�
 
   .colophon-text {
     margin: 0;
-    font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+    font-size: clamp(1.05rem, 1.6vw, 1.18rem);
     line-height: 1.9;
     color: color-mix(in srgb, var(--brand-muted) 82%, var(--brand-text));
     text-wrap: balance;
