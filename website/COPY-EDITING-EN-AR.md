@@ -63,6 +63,45 @@ Everything below serves that sentence.
 Same facts; the second version is shorter, concrete (`نسخة على جهازك`), teaches (`REST API`
 glossed), and reads like a person explaining, not a manual.
 
+### A worked example (faithful translation → native prose)
+
+This one is subtler: both versions are *correct*, but only the second reads like a native
+writer. The source is the “On the name” gloss — an etymological aside explaining that
+**Tanghīm** is a maṣdar meaning *intonation* (the speech sense) and, here, musical tuning
+(as distinct from *dūzān*, mechanical string tuning).
+
+> **Faithful (mirrors the English structure):** `تنغيم مصدرٌ عربي له معنيان: في الكلام، هو تنغيم
+> الصوت — أي المنحنى اللحني الذي ترتفع به النبرة وتنخفض أثناء النطق (وهو ما يُعرف في علم اللغة بـintonation).
+> وفي الموسيقى، هو ضبط العلاقات بين درجات الصوت. وهذا المعنى الموسيقي هو المقصود هنا: العلاقات النغمية التي
+> يتكوّن منها النظام…`
+>
+> **Native (leaner, music-first, in-register):** `تنغيم مصدر عربي يدل على فعل ضبط النغمات الموسيقية
+> وعلاقاتها، وفي الدراسات اللغوية يعني المنحنى اللحني للكلام (intonation). يشير الاسم هنا إلى ضبط النغمات
+> التي يتكوّن منها الديوان الموسيقي، تمييزاً عن «الدوزان» الذي يُستعمل لضبط أوتار الآلة ميكانيكياً…`
+
+Four things separate them:
+
+1. **Lead with the relevant sense, not the English order.** The product is *musical*, so the
+   musical meaning goes first (`ضبط النغمات الموسيقية`) and the linguistic sense is background
+   colour. Faithfully mirroring the English (speech-sense first, because English anchors the
+   exotic Arabic word to the familiar “intonation”) inverts the emphasis for an Arabic reader.
+
+2. **Don’t over-explain a word the reader already owns.** The faithful version glosses
+   *intonation* with a full mini-lecture — `المنحنى اللحني الذي ترتفع به النبرة وتنخفض أثناء النطق`.
+   That “explain it thoroughly” instinct is right for a *foreign* concept (§1) but patronises for
+   a *native* one. The native version trusts the reader: `المنحنى اللحني للكلام (intonation)` — done.
+
+3. **Announce nothing; let the sentence carry the structure.** `له معنيان: …` is textbook
+   scaffolding. Native prose flows the two senses in one clause without meta-labelling them.
+
+4. **Reach for the domain’s own word.** `الديوان الموسيقي` (the register/octave — a maqām-theory
+   term the reader is learning elsewhere on the page) is more concrete *and* more in-register than
+   the generic `النظام`. Concrete-over-abstract (§2.4) includes preferring the field’s vocabulary.
+
+The meta-lesson: **when the English source over-explains, a faithful translation carries the
+over-explaining across.** Economy is not lost precision — for a native reader, the leaner version
+is the *clearer* one. Translate the meaning and the register, not the sentence structure.
+
 ---
 
 ## 3. Register & vocabulary
