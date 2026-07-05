@@ -206,12 +206,29 @@ body.js-ready .reveal.is-visible {
    rules above both the Tailwind size utilities and the components' own scoped
    font-sizes. The hero is sized on the page itself and intentionally left as-is.
    ──────────────────────────────────────────────────────────────────────────── */
-html:lang(ar) .showcase-title    { font-size: clamp(1.75rem, 4vw, 2.65rem); }
-html:lang(ar) .showcase-subtitle { font-size: clamp(1.05rem, 2.2vw, 1.25rem); }
-html:lang(ar) .showcase-body     { font-size: 1.075rem; }
-html:lang(ar) .row-title         { font-size: clamp(1.45rem, 2.8vw, 2rem); }
-html:lang(ar) .row-body          { font-size: 1.075rem; }
-html:lang(ar) .interlude-eyebrow { font-size: 0.82rem; }
+html:lang(ar) .showcase-title    { font-size: clamp(1.72rem, 4vw, 2.6rem); }
+html:lang(ar) .showcase-subtitle { font-size: clamp(1.08rem, 2.3vw, 1.22rem); }
+html:lang(ar) .showcase-body     { font-size: 1.08rem; }
+html:lang(ar) .row-title         { font-size: clamp(1.44rem, 2.9vw, 2rem); }
+html:lang(ar) .row-body          { font-size: 1.08rem; }
+html:lang(ar) .interlude-eyebrow { font-size: 0.95rem; }
 html:lang(ar) .interlude-body    { font-size: clamp(1.08rem, 1.8vw, 1.2rem); }
+
+/* Line-height: the AR type is ~1.15× the EN size, so inheriting EN's line-height
+   ratio opens the absolute leading wider than EN and reads airier. Tighten the AR
+   ratios proportionally so the rendered leading matches the EN rhythm (still ample
+   for Arabic diacritics). EN baselines: interlude 1.85, showcase/row 1.7, grid 1.65. */
+html:lang(ar) .interlude-body { line-height: 1.65; }
+html:lang(ar) .showcase-body,
+html:lang(ar) .row-body       { line-height: 1.55; }
+html:lang(ar) .grid-card-body { line-height: 1.5; }
 html:lang(ar) .grid-card-title   { font-size: 1.075rem; }
 html:lang(ar) .grid-card-body    { font-size: 1rem; }
+
+/* Arabic script has no italic form — browsers synthesise an oblique slant that
+   mangles the cursive joins. Replace emphasis with an upright gold tint, matching
+   how inline Arabic terms already read on the site. */
+html:lang(ar) em {
+  font-style: normal;
+  color: color-mix(in srgb, var(--brand-gold) 80%, var(--brand-text));
+}
