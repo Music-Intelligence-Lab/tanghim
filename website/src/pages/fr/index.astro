@@ -345,11 +345,17 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
 </html>
 
 <script>
-  // Cross-browser scroll reveals via IntersectionObserver.
-  // Requires body.js-ready (set by inline script above) — without it .reveal
-  // elements are already fully visible, so no observer is needed.
-  // Also skips entirely under prefers-reduced-motion (elements are visible via CSS).
+  // Scroll reveals. Preferred path is the CSS scroll-driven animation
+  // (`animation-timeline: view()`), which needs no JS — so where it's supported
+  // we do nothing and let CSS scrub the reveal by scroll position. The
+  // IntersectionObserver below is the FALLBACK for browsers without it (older
+  // Safari); it fires on entry (no negative rootMargin) so it can't lag behind a
+  // fast trackpad flick. Requires body.js-ready (set by the inline script above).
+  const supportsScrollTimeline =
+    typeof CSS !== 'undefined' && CSS.supports('animation-timeline: view()');
+
   if (
+    !supportsScrollTimeline &&
     typeof IntersectionObserver !== 'undefined' &&
     !window.matchMedia('(prefers-reduced-motion: reduce)').matches
   ) {
@@ -362,12 +368,12 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
           }
         }
       },
-      { threshold: 0, rootMargin: '0px 0px -160px 0px' }
+      { threshold: 0 }
     );
 
     document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
-  } else {
-    // Ensure all reveals are visible if observer unavailable or motion reduced
+  } else if (!supportsScrollTimeline) {
+    // No scroll-timeline AND (no observer or reduced motion): show everything.
     document.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-visible'));
   }
 </script>

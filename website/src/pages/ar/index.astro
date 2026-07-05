@@ -196,7 +196,7 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
            MUSICOLOGY STRIP (dawāwīn) — body-only, pairs with the showcase above
            ═══════════════════════════════════════════ -->
       <section class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5" aria-label="الديوانان">
-        <Interlude eyebrow="ما هو ديوان نظرية المقام العربي؟" expandable expandLabel="توسيع" collapseLabel="طيّ">
+        <Interlude eyebrow="ما هو الديوان في نظريات الموسيقى العربية؟" expandable expandLabel="توسيع" collapseLabel="طيّ">
           <p>تمنح نظرية المقام العربي كل نغمة اسماً فارسياً-عربياً-عثمانياً فريداً — <span lang="ar">راست</span>، <span lang="ar">دوكاه</span>، <span lang="ar">سيكاه</span>، وهكذا — عبر <span lang="ar">ديوانين</span>: ديوان أدنى وأعلى (أوكتاف). وبتوسيع <span class="brand-name">تنغيم</span> إلى عرضها الكامل تظهر أنظمة التنغيم والمقامات عبر الأوكتافين.</p>
         </Interlude>
       </section>
@@ -343,11 +343,17 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
 </html>
 
 <script>
-  // Cross-browser scroll reveals via IntersectionObserver.
-  // Requires body.js-ready (set by inline script above) — without it .reveal
-  // elements are already fully visible, so no observer is needed.
-  // Also skips entirely under prefers-reduced-motion (elements are visible via CSS).
+  // Scroll reveals. Preferred path is the CSS scroll-driven animation
+  // (`animation-timeline: view()`), which needs no JS — so where it's supported
+  // we do nothing and let CSS scrub the reveal by scroll position. The
+  // IntersectionObserver below is the FALLBACK for browsers without it (older
+  // Safari); it fires on entry (no negative rootMargin) so it can't lag behind a
+  // fast trackpad flick. Requires body.js-ready (set by the inline script above).
+  const supportsScrollTimeline =
+    typeof CSS !== 'undefined' && CSS.supports('animation-timeline: view()');
+
   if (
+    !supportsScrollTimeline &&
     typeof IntersectionObserver !== 'undefined' &&
     !window.matchMedia('(prefers-reduced-motion: reduce)').matches
   ) {
@@ -360,12 +366,12 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
           }
         }
       },
-      { threshold: 0, rootMargin: '0px 0px -160px 0px' }
+      { threshold: 0 }
     );
 
     document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
-  } else {
-    // Ensure all reveals are visible if observer unavailable or motion reduced
+  } else if (!supportsScrollTimeline) {
+    // No scroll-timeline AND (no observer or reduced motion): show everything.
     document.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-visible'));
   }
 </script>

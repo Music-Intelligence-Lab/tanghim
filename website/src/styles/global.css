@@ -143,26 +143,65 @@ body {
    No-JS + reduced-motion: elements are always fully visible.
    ─────────────────────────────────────────────────────────────────────────── */
 
-/* Only hide when JS is enabled (body.js-ready set by inline script before paint) */
-body.js-ready .reveal {
-	opacity: 0;
-	transform: translateY(36px);
-	/* Even easing (not front-loaded) so the longer duration is actually felt;
-	   larger travel + 0.9s make the entrance graceful rather than instant. */
-	transition: opacity 0.9s cubic-bezier(0.33, 0, 0.2, 1), transform 0.9s cubic-bezier(0.33, 0, 0.2, 1);
-}
-
-body.js-ready .reveal.is-visible {
-	opacity: 1;
-	transform: translateY(0);
-}
-
-/* Disable ALL reveal animation under reduced-motion — always show content */
-@media (prefers-reduced-motion: reduce) {
+/* ── Preferred path: CSS scroll-driven animation (scroll-linked, not time-based)
+   Where `animation-timeline: view()` is supported (Chrome/Edge 115+, Safari 26+),
+   the reveal is scrubbed by scroll position, so a fast trackpad flick can't
+   outrun it — the element is fully solid almost as soon as it appears, and the
+   progress is tied to the element's transit through the viewport, never a clock.
+   `animation-range: entry 50% cover 40%` holds the reveal until the element is
+   halfway into the viewport, then completes it as it rises toward centre — so
+   sections don't resolve too low/too soon at the bottom edge, but still finish
+   before mid-screen (well ahead of a fast flick). */
+@supports (animation-timeline: view()) {
 	body.js-ready .reveal {
+		animation: reveal-in linear both;
+		animation-timeline: view();
+		animation-range: entry 50% cover 40%;
+	}
+
+	@keyframes reveal-in {
+		from {
+			opacity: 0;
+			transform: translateY(28px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	/* Reduced motion: no entrance, content always solid. */
+	@media (prefers-reduced-motion: reduce) {
+		body.js-ready .reveal {
+			animation: none;
+		}
+	}
+}
+
+/* ── Fallback path: JS IntersectionObserver toggles .is-visible.
+   Used only where scroll-driven animations are unsupported (older Safari). The
+   observer in index pages fires as soon as the element enters the viewport
+   (no negative rootMargin), and the transition is short (0.3s) so it can't lag
+   noticeably behind a fast scroll. */
+@supports not (animation-timeline: view()) {
+	body.js-ready .reveal {
+		opacity: 0;
+		transform: translateY(28px);
+		transition: opacity 0.3s cubic-bezier(0.33, 0, 0.2, 1), transform 0.3s cubic-bezier(0.33, 0, 0.2, 1);
+	}
+
+	body.js-ready .reveal.is-visible {
 		opacity: 1;
-		transform: none;
-		transition: none;
+		transform: translateY(0);
+	}
+
+	/* Disable ALL reveal animation under reduced-motion — always show content */
+	@media (prefers-reduced-motion: reduce) {
+		body.js-ready .reveal {
+			opacity: 1;
+			transform: none;
+			transition: none;
+		}
 	}
 }
 
