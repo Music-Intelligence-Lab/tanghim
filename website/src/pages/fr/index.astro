@@ -102,9 +102,9 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
       <!-- ═══════════════════════════════════════════
            TRUST / CONTEXT STRIP
            ═══════════════════════════════════════════ -->
-      <section class="page-band trust-strip reveal border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] py-11 px-6" aria-label="Origine et licence">
+      <section class="page-band trust-strip reveal border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] py-11 px-6" aria-label="Crédits et licence">
         <div class="colophon reveal">
-          <p class="colophon-eyebrow">Origine &amp; licence</p>
+          <p class="colophon-eyebrow">Crédits &amp; licence</p>
           <p class="colophon-text">
             Imaginé et conçu par <a href="https://khyamallami.com/" class="colophon-link" target="_blank" rel="noopener noreferrer">Khyam Allami</a> au <a href="https://musicintelligencelab.com/" class="colophon-link" target="_blank" rel="noopener noreferrer">Music Intelligence Lab</a> / <a href="https://www.aub.edu.lb/cams/" class="colophon-link" target="_blank" rel="noopener noreferrer">Center for Advanced Mathematical Sciences</a>, Université américaine de Beyrouth, 2026. Libre et <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="colophon-link" target="_blank" rel="noopener noreferrer">open source</a>, sous licence <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="colophon-link" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a>.
           </p>
@@ -114,7 +114,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
       <!-- ═══════════════════════════════════════════
            DiArMaqAr interlude — the archive is the foundation (before features)
            ═══════════════════════════════════════════ -->
-      <section class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="Qu'est-ce que le Digital Arabic Maqām Archive&#8239;?">
+      <section class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5" aria-label="Qu'est-ce que le Digital Arabic Maqām Archive&#8239;?">
         <Interlude eyebrow="Qu'est-ce que le Digital Arabic Maqām Archive ?" expandable expandLabel="Développer" collapseLabel="Réduire">
           <p>Tanghīm puise ses données dans le <a href="https://diarmaqar.net/" class="interlude-link" target="_blank" rel="noopener noreferrer">Digital Arabic Maqām Archive (DiArMaqAr)</a> — un dépôt open source de systèmes d'accordage et de maqāmāt historiquement documentés, issus de la musique de la région arabophone, chacun avec une attribution bibliographique complète.</p>
           <p>Le DiArMaqAr a été recherché, conçu et développé par Khyam Allami avec Ibrahim El Khansa au Music Intelligence Lab de l'Université américaine de Beyrouth. Tanghīm interroge son API REST et met les données en cache localement&#8239;: les accordages que vous jouez sont donc les mêmes valeurs sourcées que celles de l'archive. Un bouton de mise à jour vous signale quand l'archive a changé.</p>
@@ -141,7 +141,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
       <!-- ═══════════════════════════════════════════
            MTS-ESP interlude — captions the tuning-methods showcase above
            ═══════════════════════════════════════════ -->
-      <section class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="Qu'est-ce que MTS-ESP&#8239;?">
+      <section class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5" aria-label="Qu'est-ce que MTS-ESP&#8239;?">
         <Interlude eyebrow="Qu'est-ce que MTS-ESP ?" expandable expandLabel="Développer" collapseLabel="Réduire">
           <p>MTS-ESP est un protocole d'accordage développé par <a href="https://github.com/ODDSound/MTS-ESP" class="interlude-link" target="_blank" rel="noopener noreferrer">ODDSound</a>. Un seul greffon émetteur définit l'accordage, et n'importe quel nombre d'instruments compatibles s'y connectent automatiquement, se réaccordant ensemble sans aucune configuration manuelle. L'accordage se met à jour en temps réel&#8239;: un changement de maqām ou de transposition suit donc chaque instrument connecté pendant qu'il joue.</p>
         </Interlude>
@@ -157,16 +157,6 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
         <p>Douze curseurs, un par degré chromatique, offrent un moyen simple et immédiat d'explorer les accordages. Chaque curseur comporte des repères d'aimantation pour explorer les différents intervalles, tout en vous laissant régler chaque note à l'oreille.</p>
       </Showcase>
 
-      <!-- Showcase: Maqam Selection & Presets -->
-      <Showcase
-        title="Choisissez votre maqām puis <strong>modulez</strong>"
-        subtitle="Des préréglages mappables en MIDI et automatisables."
-        image="/shot-modulate.png"
-        imageAlt="La grille de préréglages 4×2 de Tanghīm avec huit préréglages de maqām nommés — le maqām rāst surligné en doré comme préréglage actif."
-      >
-        <p>Enregistrez jusqu'à huit préréglages de n'importe quel maqām, dans n'importe quelle transposition disponible, et passez de l'un à l'autre en mappant votre contrôleur en MIDI, en envoyant des messages Program Change, ou via l'automation de la STAN.</p>
-      </Showcase>
-
       <!-- Showcase: Oscillator — audition instantly (Osc only) -->
       <Showcase
         title="Écoutez-le <strong>instantanément</strong>"
@@ -176,6 +166,16 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
         <div class="badge-row">
           <Badge variant="osc">Osc</Badge>
         </div>
+      </Showcase>
+
+      <!-- Showcase: Maqam Selection & Presets -->
+      <Showcase
+        title="Choisissez votre maqām puis <strong>modulez</strong>"
+        subtitle="Des préréglages mappables en MIDI et automatisables."
+        image="/shot-modulate.png"
+        imageAlt="La grille de préréglages 4×2 de Tanghīm avec huit préréglages de maqām nommés — le maqām rāst surligné en doré comme préréglage actif."
+      >
+        <p>Enregistrez jusqu'à huit préréglages de n'importe quel maqām, dans n'importe quelle transposition disponible, et passez de l'un à l'autre en mappant votre contrôleur en MIDI, en envoyant des messages Program Change, ou via l'automation de la STAN.</p>
       </Showcase>
 
       <!-- ═══════════════════════════════════════════
@@ -193,7 +193,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
       <!-- ═══════════════════════════════════════════
            MUSICOLOGY STRIP (dawāwīn) — body-only, pairs with the showcase above
            ═══════════════════════════════════════════ -->
-      <section class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="Les deux dawāwīn">
+      <section class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5" aria-label="Les deux dawāwīn">
         <Interlude eyebrow="Qu'est-ce que le dīwān de la théorie du maqām arabe ?" expandable expandLabel="Développer" collapseLabel="Réduire">
           <p>La théorie du maqām arabe donne à chacune de ses notes un nom perso-arabo-ottoman unique — <em>rāst</em>, <em>dūgāh</em>, <em>sīkāh</em>, et ainsi de suite — répartis sur deux <span lang="ar">دواوين</span> (<em>dawāwīn</em>), un <em>dīwān</em> inférieur et un supérieur (octave). Élargissez Tanghīm à pleine largeur pour voir les systèmes d'accordage et les maqāmāt sur les deux octaves.</p>
         </Interlude>
@@ -288,7 +288,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
       <!-- ═══════════════════════════════════════════
            MUSICOLOGY STRIP (name gloss) — grace note before the CTA
            ═══════════════════════════════════════════ -->
-      <section class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="À propos du nom">
+      <section class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5" aria-label="À propos du nom">
         <Interlude eyebrow="À propos du nom" glyph="تنغيم">
           <p><strong class="accent">Tanghīm</strong> (<span lang="ar">تنغيم</span>) est un <em>maṣdar</em> arabe, ou nom verbal, désignant l'acte d'intoner ou de fixer la hauteur. En linguistique, c'est l'équivalent standard d'<em>intonation</em>, le contour mélodique de la parole.</p>
           <p>Ici, il désigne l'accordage intonatif — les relations de hauteur qui composent un système — par opposition à l'usage arabe de <span lang="ar">دوزان</span> (<em>dūzān</em>) pour l'accordage mécanique des cordes d'un instrument. <em>Dūzān</em> est un emprunt au turc ottoman <em>düzen</em> (« ordre, arrangement, accord »), du verbe <em>düzmek</em> (« arranger, mettre en ordre »).</p>

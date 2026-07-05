@@ -55,7 +55,7 @@ const bodyId = `interlude-body-${crypto.randomUUID().slice(0, 8)}`;
         data-expand-label={expandLabel}
         data-collapse-label={collapseLabel}
       >
-        <span class="interlude-chevron" aria-hidden="true">›</span>
+        <span class="interlude-chevron" aria-hidden="true"></span>
       </button>
     </div>
   ) : (
@@ -230,13 +230,13 @@ const bodyId = `interlude-body-${crypto.randomUUID().slice(0, 8)}`;
     display: block;
     width: 2.5rem;
     height: 2px;
-    margin-bottom: 1rem;
+    margin-bottom: 0.6rem;
     background: color-mix(in srgb, var(--brand-gold) 55%, transparent);
     border-radius: 1px;
   }
 
   .interlude-title {
-    margin: 0 0 0.9rem;
+    margin: 0 0 0.55rem;
     font-size: clamp(1.05rem, 2vw, 1.35rem);
     font-weight: 600;
     text-transform: uppercase;
@@ -265,9 +265,9 @@ const bodyId = `interlude-body-${crypto.randomUUID().slice(0, 8)}`;
     overflow: hidden;
   }
 
-  /* Chevron toggle button */
+  /* Toggle button */
   .interlude-toggle {
-    margin-top: 1rem;
+    margin-top: 0.6rem;
     width: 2rem;
     height: 2rem;
     display: inline-flex;
@@ -291,12 +291,15 @@ const bodyId = `interlude-body-${crypto.randomUUID().slice(0, 8)}`;
     outline-offset: 2px;
   }
 
+  /* Plus/minus toggle glyph. `+` when collapsed, `−` when expanded. */
   .interlude-chevron {
     display: inline-block;
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     line-height: 1;
-    transform: rotate(90deg); /* › points down when collapsed */
-    transition: transform 0.3s ease;
+  }
+
+  .interlude-chevron::before {
+    content: '+';
   }
 
   /* ── Expand/collapse animation ──────────────────────────────────────────
@@ -326,9 +329,9 @@ const bodyId = `interlude-body-${crypto.randomUUID().slice(0, 8)}`;
     overflow: visible;
   }
 
-  /* Chevron points up when open. */
-  :global(body.js-ready) .interlude-inner--expandable.is-open .interlude-chevron {
-    transform: rotate(270deg);
+  /* Minus glyph when open. */
+  :global(body.js-ready) .interlude-inner--expandable.is-open .interlude-chevron::before {
+    content: '−'; /* U+2212 minus sign */
   }
 
   /* Reduced motion: no transition, and show everything expanded with no toggle. */

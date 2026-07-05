@@ -1,22 +1,24 @@
 ---
-import '../styles/global.css';
-import Nav from '../components/Nav.astro';
-import Footer from '../components/Footer.astro';
-import DownloadButtons from '../components/DownloadButtons.astro';
-import Badge from '../components/Badge.astro';
-import Showcase from '../components/Showcase.astro';
-import FeatureRow from '../components/FeatureRow.astro';
-import FeatureGrid from '../components/FeatureGrid.astro';
-import Interlude from '../components/Interlude.astro';
+import "../styles/global.css";
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import DownloadButtons from "../components/DownloadButtons.astro";
+import Badge from "../components/Badge.astro";
+import Showcase from "../components/Showcase.astro";
+import FeatureRow from "../components/FeatureRow.astro";
+import FeatureGrid from "../components/FeatureGrid.astro";
+import Interlude from "../components/Interlude.astro";
 
 // Shared metadata — single source of truth for <title>, description, and social cards.
-const pageTitle = 'Tanghīm — Arabic Maqām Tuning for any DAW';
+const pageTitle = "Tanghīm — Arabic Maqām Tuning for any DAW";
 const pageDescription =
-  'A free, open-source plugin using data from the Digital Arabic Maqām Archive. Available as VST3, AU, and CLAP for macOS, Windows, and Linux.';
-const siteUrl = 'https://tanghim.app/';
-const ogImage = 'https://tanghim.app/og-image.png';
-const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders on a navy panel.';
+  "A free, open-source plugin using data from the Digital Arabic Maqām Archive. Available as VST3, AU, and CLAP for macOS, Windows, and Linux.";
+const siteUrl = "https://Tanghīm.app/";
+const ogImage = "https://Tanghīm.app/og-image.png";
+const ogImageAlt =
+  "The Tanghīm plugin interface showing maqām tuning sliders on a navy panel.";
 ---
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -45,12 +47,13 @@ const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders 
     <meta name="twitter:description" content={pageDescription} />
     <meta name="twitter:image" content={ogImage} />
     <meta name="twitter:image:alt" content={ogImageAlt} />
-
   </head>
   <body class="bg-[var(--brand-navy-900)] min-h-screen flex flex-col">
     <!-- JS-gate: only hide .reveal elements when JS is running.
          Without this class, all .reveal elements remain fully visible (no-JS safe). -->
-    <script is:inline>document.body.classList.add('js-ready');</script>
+    <script is:inline>
+      document.body.classList.add("js-ready");
+    </script>
 
     <!-- Skip to main content (keyboard users) -->
     <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -58,34 +61,64 @@ const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders 
     <Nav />
 
     <main class="flex-1" id="main-content">
-
       <!-- ═══════════════════════════════════════════
            HERO
            ═══════════════════════════════════════════ -->
-      <section class="page-band pt-10 pb-16 px-6 max-[600px]:pt-8 max-[600px]:pb-12 max-[600px]:px-5" aria-label="Introduction">
-        <div class="hero-inner max-w-[860px] mx-auto flex flex-col items-center gap-11 text-center max-[600px]:gap-8">
-
+      <section
+        class="page-band pt-10 pb-16 px-6 max-[600px]:pt-8 max-[600px]:pb-12 max-[600px]:px-5"
+        aria-label="Introduction"
+      >
+        <div
+          class="hero-inner max-w-[860px] mx-auto flex flex-col items-center gap-11 text-center max-[600px]:gap-8"
+        >
           <!-- Text block -->
           <div class="flex flex-col items-center gap-5">
-            <p class="m-0 text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-[var(--brand-muted)]">Finally!</p>
+            <p
+              class="m-0 text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-[var(--brand-muted)]"
+            >
+              Finally!
+            </p>
 
-            <h1 class="m-0 text-[clamp(2rem,5vw,3.25rem)] font-bold leading-[1.15] tracking-[-0.02em] text-[var(--brand-text)] max-w-[18ch] text-balance">
-              A <span class="text-[var(--brand-gold)]">thousand years</span> of Arabic maqām intonation at your fingertips
+            <h1
+              class="m-0 text-[clamp(2rem,5vw,3.25rem)] font-bold leading-[1.15] tracking-[-0.02em] text-[var(--brand-text)] max-w-[18ch] text-balance"
+            >
+              Over a <span class="text-[var(--brand-gold)]">thousand years</span
+              > of Arabic maqām intonation at your fingertips
             </h1>
 
-            <p class="m-0 text-[clamp(1rem,2.2vw,1.125rem)] leading-[1.65] text-[var(--brand-muted)] max-w-[60ch] text-balance">
-              Tanghīm is a <strong class="text-[var(--brand-text)] font-semibold">free, open-source MIDI plugin</strong> that brings historical Arabic maqām tunings from the <strong class="text-[var(--brand-text)] font-semibold">Digital Arabic Maqām Archive</strong> directly to <strong class="text-[var(--brand-text)] font-semibold">any DAW</strong>
+            <p
+              class="m-0 text-[clamp(1rem,2.2vw,1.125rem)] leading-[1.65] text-[var(--brand-muted)] max-w-[60ch] text-balance"
+            >
+              <strong class="text-[var(--brand-gold)] font-bold">Tanghīm</strong
+              > is a <strong class="text-[var(--brand-text)] font-semibold"
+                >free, open-source MIDI plugin</strong
+              > that brings historical and modern Arabic maqām tunings from the <strong
+                class="text-[var(--brand-text)] font-semibold"
+                >Digital Arabic Maqām Archive</strong
+              > directly to <strong
+                class="text-[var(--brand-text)] font-semibold">any DAW</strong
+              >
             </p>
 
             <!-- CTAs -->
-            <div class="flex gap-[0.875rem] flex-wrap justify-center items-center mt-1 max-[600px]:gap-[0.625rem]">
-              <a href="#download" class="inline-block py-[0.65rem] px-7 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] text-[0.9375rem] font-bold rounded-[0.375rem] no-underline transition-[opacity,transform] duration-150 ease-[ease] hover:opacity-[0.88] hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline">Download</a>
+            <div
+              class="flex gap-[0.875rem] flex-wrap justify-center items-center mt-1 max-[600px]:gap-[0.625rem]"
+            >
+              <a
+                href="#download"
+                class="inline-block py-[0.65rem] px-7 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] text-[0.9375rem] font-bold rounded-[0.375rem] no-underline transition-[opacity,transform] duration-150 ease-[ease] hover:opacity-[0.88] hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline"
+                >Download</a
+              >
             </div>
           </div>
 
           <!-- UI screenshot with gold glow -->
           <div class="relative w-full max-w-[820px]">
-            <div class="hero-glow absolute pointer-events-none z-0" aria-hidden="true"></div>
+            <div
+              class="hero-glow absolute pointer-events-none z-0"
+              aria-hidden="true"
+            >
+            </div>
             <img
               src="/tanghim-ui.png"
               alt="The Tanghīm plugin interface: a bank of tuning sliders showing maqām degrees in gold against a navy panel, with maqām selector, preset grid, and reference-frequency controls."
@@ -95,29 +128,113 @@ const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders 
               loading="eager"
             />
           </div>
-
         </div>
       </section>
 
       <!-- ═══════════════════════════════════════════
            TRUST / CONTEXT STRIP
            ═══════════════════════════════════════════ -->
-      <section class="page-band trust-strip reveal border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] py-11 px-6" aria-label="Origin and licence">
+      <section
+        class="page-band trust-strip reveal border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] py-11 px-6"
+        aria-label="Credits and licence"
+      >
         <div class="colophon reveal">
-          <p class="colophon-eyebrow">Origin &amp; licence</p>
+          <p class="colophon-eyebrow">Credits &amp; licence</p>
           <p class="colophon-text">
-            Conceived and designed by <a href="https://khyamallami.com/" class="colophon-link" target="_blank" rel="noopener noreferrer">Khyam Allami</a> at the <a href="https://musicintelligencelab.com/" class="colophon-link" target="_blank" rel="noopener noreferrer">Music Intelligence Lab</a> / <a href="https://www.aub.edu.lb/cams/" class="colophon-link" target="_blank" rel="noopener noreferrer">Center for Advanced Mathematical Sciences</a>, American University of Beirut, 2026. Free and <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="colophon-link" target="_blank" rel="noopener noreferrer">open source</a>, licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="colophon-link" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a>.
+            <strong class="accent">Tanghīm</strong> was conceived and designed by
+            <a
+              href="https://khyamallami.com/"
+              class="colophon-link"
+              target="_blank"
+              rel="noopener noreferrer">Khyam Allami</a
+            > at the <a
+              href="https://musicintelligencelab.com/"
+              class="colophon-link"
+              target="_blank"
+              rel="noopener noreferrer">Music Intelligence Lab</a
+            > / <a
+              href="https://www.aub.edu.lb/cams/"
+              class="colophon-link"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Center for Advanced Mathematical Sciences</a
+            >, American University of Beirut, 2026. It is free and <a
+              href="https://github.com/Music-Intelligence-Lab/Tanghīm"
+              class="colophon-link"
+              target="_blank"
+              rel="noopener noreferrer">open source</a
+            >, licensed under <a
+              href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
+              class="colophon-link"
+              target="_blank"
+              rel="noopener noreferrer">CC BY-NC-SA 4.0</a
+            >.
           </p>
         </div>
       </section>
 
       <!-- ═══════════════════════════════════════════
+           Showcase: Historical lineage — manuscripts → DAW (no image yet)
+           ═══════════════════════════════════════════ -->
+      <Showcase
+        title="From the <strong>9th Century</strong> to your DAW"
+        subtitle="Manuscripts of maqām theory revived."
+      >
+        <p>
+          The intonation of Arabic maqām has always been led by our ears, but it
+          has also been theorised and measured by many great minds over the
+          centuries.
+        </p>
+        <p>
+          al-Mawṣilī, al-Kindī, al-Fārābī, Ibn Sīna, al-Urmawī, Mikhā'īl
+          Meshshāqa, the Cairo Congress Tuning Committees, Amīn al-Dīk, Tawfīq
+          al-Ṣabbāgh and many more…
+        </p>
+        <p>
+          Thanks to the data provided by the <strong
+            >Digital Arabic Maqām Archive (DiArMaqAr)</strong
+          >, all of these systems can now be accessed and modified through <strong
+            class="text-[var(--brand-gold)] font-bold">Tanghīm</strong
+          > in just a couple of clicks.
+        </p>
+      </Showcase>
+
+      <!-- ═══════════════════════════════════════════
            DiArMaqAr interlude — the archive is the foundation (before features)
            ═══════════════════════════════════════════ -->
-      <section class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="What is the Digital Arabic Maqām Archive?">
-        <Interlude eyebrow="What is the Digital Arabic Maqām Archive?" expandable expandLabel="Expand" collapseLabel="Collapse">
-          <p>Tanghīm draws its data from the <a href="https://diarmaqar.net/" class="interlude-link" target="_blank" rel="noopener noreferrer">Digital Arabic Maqām Archive (DiArMaqAr)</a> — an open-source repository of historically documented tuning systems and maqāmāt from the music of the Arabic-speaking region, each with full bibliographic attribution.</p>
-          <p>DiArMaqAr was researched, designed, and developed by Khyam Allami with Ibrahim El Khansa at the Music Intelligence Lab, American University of Beirut. Tanghīm queries its REST API and caches the data locally, so the tunings you play are the same source-attributed values the archive holds. An update button tells you when the archive has changed.</p>
+      <section
+        class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5"
+        aria-label="What is the Digital Arabic Maqām Archive?"
+      >
+        <Interlude
+          eyebrow="What is the Digital Arabic Maqām Archive?"
+          expandable
+          expandLabel="Expand"
+          collapseLabel="Collapse"
+        >
+          <p>
+            <strong class="text-[var(--brand-gold)] font-bold">Tanghīm</strong> draws
+            its data from the <a
+              href="https://diarmaqar.net/"
+              class="interlude-link"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Digital Arabic Maqām Archive (DiArMaqAr)</a
+            > — an open-source repository of historically documented tuning systems
+            and maqāmāt of the Arabic-speaking region, each with full bibliographic
+            attribution.
+          </p>
+          <p>
+            Tanghīm queries DiArMaqAr's REST API and caches the data locally, so
+            the maqāmāt and tunings you play are the same as the archive holds.
+            An update button tells you when the archive has changed.
+          </p>
+          <p>
+            DiArMaqAr was researched, designed, and developed by Khyam Allami
+            with Ibrahim El Khansa at the Music Intelligence Lab/Center for
+            Advanced Mathematical Sciences, American University of Beirut,
+            Lebanon in 2026.
+          </p>
         </Interlude>
       </section>
 
@@ -130,7 +247,19 @@ const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders 
         title="Arabic maqām tuning, <strong>your sounds</strong>"
         subtitle="Three tuning methods, from software synths to hardware."
       >
-        <p>MTS-ESP retunes compatible synths automatically and immediately from the main <em>transmitter</em> plugin over shared memory. Our dedicated <em>receiver</em> plugin enables per-note pitch bend using MPE (MIDI Polyphonic Expression), or Monophonic Pitch Bend for single-MIDI-channel synths.</p>
+        <p>
+          <strong class="text-[var(--brand-gold)] font-bold">Tanghīm</strong> provides
+          three methods to apply Arabic maqām tuning to your instruments. MTS-ESP
+          retunes compatible synths automatically and immediately from the main <strong
+            >transmitter</strong
+          > plugin over shared memory.
+        </p>
+        <p>
+          For non-MTS-ESP enabled instruments, a dedicated <strong
+            >receiver</strong
+          > plugin enables per-note pitch bend using MPE (MIDI Polyphonic Expression),
+          or Monophonic Pitch Bend for single-MIDI-channel synths.
+        </p>
         <div class="badge-row">
           <Badge variant="mts">MTS-ESP</Badge>
           <Badge variant="mpe">MPE</Badge>
@@ -141,9 +270,30 @@ const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders 
       <!-- ═══════════════════════════════════════════
            MTS-ESP interlude — captions the tuning-methods showcase above
            ═══════════════════════════════════════════ -->
-      <section class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="What is MTS-ESP?">
-        <Interlude eyebrow="What is MTS-ESP?" expandable expandLabel="Expand" collapseLabel="Collapse">
-          <p>MTS-ESP is a tuning protocol developed by <a href="https://github.com/ODDSound/MTS-ESP" class="interlude-link" target="_blank" rel="noopener noreferrer">ODDSound</a>. One transmitter plugin sets the tuning, and any number of compatible instruments connect to it automatically, retuning together with no manual setup. The tuning updates in real time, so a change of maqām or transposition follows every connected instrument in real time.</p>
+      <section
+        class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5"
+        aria-label="What is MTS-ESP?"
+      >
+        <Interlude
+          eyebrow="What is MTS-ESP?"
+          expandable
+          expandLabel="Expand"
+          collapseLabel="Collapse"
+        >
+          <p>
+            MTS-ESP is a tuning protocol developed by <a
+              href="https://github.com/ODDSound/MTS-ESP"
+              class="interlude-link"
+              target="_blank"
+              rel="noopener noreferrer">ODDSound</a
+            >. One transmitter plugin sets the tuning, and any number of
+            compatible instruments connect to it automatically, retuning
+            together with no manual setup. The tuning updates in real time, so a
+            change of maqām or transposition is transmitted to every connected
+            instrument. It also allows multiple receiver plugins to share the
+            same real-time change with non-MTS-ESP software and hardware
+            instruments
+          </p>
         </Interlude>
       </section>
 
@@ -154,7 +304,12 @@ const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders 
         image="/shot-ears.png"
         imageAlt="The Tanghīm slider bank: twelve per-chromatic-step sliders showing cents readouts, IPN labels, solfège, and PAO names, with gold-highlighted maqām degree thumbs."
       >
-        <p>Twelve sliders, one per chromatic step, provide a simple and immediate way to explore the tunings. Each slider includes snap markers to explore the different intervals, whilst letting you adjust any note by ear.</p>
+        <p>
+          Twelve sliders, one per chromatic step, provide a simple and immediate
+          way to explore the tunings. Each slider includes snap markers to
+          explore the different intervals, whilst letting you adjust any note by
+          ear.
+        </p>
       </Showcase>
 
       <!-- Showcase: Maqam Selection & Presets -->
@@ -164,40 +319,69 @@ const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders 
         image="/shot-modulate.png"
         imageAlt="The Tanghīm 4×2 preset grid with eight named maqām presets — maqām rāst highlighted in gold as the active preset."
       >
-        <p>Save up to eight presets of any maqām in any available transposition, and switch between them by MIDI-mapping your controller, sending Program Change messages, or using DAW automation.</p>
-      </Showcase>
-
-      <!-- Showcase: Oscillator — audition instantly (Osc only) -->
-      <Showcase
-        title="Hear it <strong>instantly</strong>"
-        subtitle="Audition any tuning with no instrument loaded."
-      >
-        <p>The built-in triangle-wave oscillator (Osc) lets you hear a tuning immediately, with no external instrument loaded — so you can explore a maqām the moment you select it.</p>
-        <div class="badge-row">
-          <Badge variant="osc">Osc</Badge>
-        </div>
+        <p>
+          Save up to eight presets of any maqām, in any available transposition,
+          in any tuning, and switch between them by MIDI-mapping your
+          controller, sending Program Change messages, or using DAW automation.
+        </p>
       </Showcase>
 
       <!-- ═══════════════════════════════════════════
            Showcase: full-width Diwānayn view — the expanded two-octave layout
            ═══════════════════════════════════════════ -->
       <Showcase
-        title="Diwānayn: from <strong>Yegāh to Saham</strong>"
+        title="Dīwānayn from <strong>Yegāh to Saham</strong>"
         subtitle="Expand to full width for a two-octave view."
         image="/shot-diwanayn.png"
         imageAlt="The Tanghīm plugin expanded to full width, its slider bank laying out a tuning system across both dawāwīn from G2 to Ab4 — every degree named with PAO names and solfège."
       >
-        <p>Widen the plugin and the slider bank grows with it, laying out the tuning system across the two dawāwīn — the lower and upper octave registers of Arabic maqām theory. Every degree is visible at once, with its note names and solfège so you can see the whole system.</p>
+        <p>
+          Widen the plugin and the slider bank grows with it, laying out the
+          tuning system across the two dawāwīn — the lower and upper octave
+          registers of Arabic maqām theory. Every degree is visible at once,
+          with its note names and solfège so you can see the whole system.
+        </p>
       </Showcase>
 
       <!-- ═══════════════════════════════════════════
            MUSICOLOGY STRIP (dawāwīn) — body-only, pairs with the showcase above
            ═══════════════════════════════════════════ -->
-      <section class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="The two dawāwīn">
-        <Interlude eyebrow="What is the Diwān of Arabic maqām theory?" expandable expandLabel="Expand" collapseLabel="Collapse">
-          <p>Arabic maqām theory gives unique Persian-Arab-Ottoman names for each of its notes — <em>rāst</em>, <em>dūgāh</em>, <em>sīkāh</em>, and so on — across two <span lang="ar">دواوين</span> (<em>dawāwīn</em>), a lower and an upper <em>dīwān</em> (octave). Expand Tanghīm to its full width to see the tuning systems and maqāmāt across the two octaves.</p>
+      <section
+        class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5"
+        aria-label="The two dawāwīn"
+      >
+        <Interlude
+          eyebrow="What is the Diwān of Arabic maqām theory?"
+          expandable
+          expandLabel="Expand"
+          collapseLabel="Collapse"
+        >
+          <p>
+            Arabic maqām theory gives unique Persian-Arab-Ottoman names for each
+            of its notes — <em>rāst</em>, <em>dūgāh</em>, <em>sīkāh</em>, and so
+            on — across two <span lang="ar">دواوين</span> (<em>dawāwīn</em>), a
+            lower and an upper <em>dīwān</em> (octave). Expand <strong
+              class="text-[var(--brand-gold)] font-bold">Tanghīm</strong
+            > to its full width to see the tuning systems and maqāmāt across the two
+            octaves.
+          </p>
         </Interlude>
       </section>
+
+      <!-- Showcase: Oscillator — audition instantly (Osc only) -->
+      <Showcase
+        title="Hear it <strong>instantly</strong>"
+        subtitle="Audition any tuning with no instrument loaded."
+      >
+        <p>
+          The built-in triangle-wave oscillator (Osc) lets you hear a tuning
+          immediately, with no external instrument loaded — so you can explore a
+          maqām the moment you select it.
+        </p>
+        <div class="badge-row">
+          <Badge variant="osc">Osc</Badge>
+        </div>
+      </Showcase>
 
       <!-- ═══════════════════════════════════════════
            FEATURE ROWS (each its own alternating band)
@@ -209,7 +393,12 @@ const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders 
         image="/tanghim-ui.png"
         imageAlt="The Tanghīm interface with Heptatonic mode active, the white keys remapped to play the maqām degrees in order from the tonic."
       >
-        <p>Heptatonic mode (Hept) remaps the keyboard so every maqām is performable on the diatonic (white) keys alone — the white keys play the maqām degrees in order from the tonic. Any maqām becomes easy to hear and produce, with no complex fingerings to learn.</p>
+        <p>
+          Heptatonic mode (Hept) remaps the keyboard so every maqām is
+          performable on the diatonic (white) keys alone starting from its
+          associated tonic. Any maqām becomes easy to hear and play, with no
+          complex fingerings to learn.
+        </p>
       </FeatureRow>
 
       <!-- Feature: Reference frequency (reversed) -->
@@ -219,16 +408,24 @@ const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders 
         imageAlt="The Tanghīm interface showing the reference-frequency control — an arc knob with a Hz input, cents readout, and semitone-step buttons."
         reverse
       >
-        <p>Set the tuning's reference pitch by ear, exact Hz, or cents to match your favourite recordings or your preference. The reference retains across maqāmāt and tuning systems, so you can set it and forget it.</p>
+        <p>
+          Set the tuning's reference pitch by ear, exact Hz, or cents to match
+          your favourite recordings or your taste. The reference retains across
+          maqāmāt and tuning systems, so you can set it and forget it.
+        </p>
       </FeatureRow>
 
-      <!-- Feature: Save & load .tanghim files -->
+      <!-- Feature: Save & load .Tanghīm files -->
       <FeatureRow
         title="Save and load your <strong>maqām tunings</strong>"
         image="/tanghim-ui.png"
-        imageAlt="The Tanghīm interface showing the Save and Load buttons and the full tuning state ready to store as a .tanghim file."
+        imageAlt="The Tanghīm interface showing the Save and Load buttons and the full tuning state ready to store as a .Tanghīm file."
       >
-        <p>Tanghīm lets you edit, save, and reload maqām tunings and preset settings as human-readable .tanghim files — including per-note overrides across different octaves.</p>
+        <p>
+          Edit, save, and reload your maqām tunings and presets as
+          human-readable .Tanghīm files including the reference pitch and
+          per-note overrides across different octaves.
+        </p>
       </FeatureRow>
 
       <!-- Feature: Grab the MIDI notes (reversed) -->
@@ -238,60 +435,141 @@ const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders 
         imageAlt="The full Tanghīm interface showing the MIDI drag-export button, ready to drag the current maqām's notes out as a standard MIDI file."
         reverse
       >
-        <p>Drag the current maqām's MIDI notes out as a standard MIDI file — onto your timeline, or as a clip to feed arpeggiators and other MIDI processors. A Program Change is embedded so the preset re-arms on playback.</p>
+        <p>
+          Drag the current maqām's MIDI notes out as a standard MIDI file — onto
+          your timeline, or as a clip to feed arpeggiators and other MIDI
+          processors. A Program Change is embedded so the preset re-arms on
+          playback.
+        </p>
       </FeatureRow>
 
       <!-- ═══════════════════════════════════════════
-           ABLETON CALL-OUT — "it even works in Live"
+           ABLETON CALL-OUT
            ═══════════════════════════════════════════ -->
-      <section class="page-band ableton-callout reveal border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="Ableton Live compatibility">
+      <section
+        class="page-band ableton-callout reveal border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5"
+        aria-label="Ableton Live compatibility"
+      >
         <div class="max-w-[680px] mx-auto flex flex-col gap-4">
-          <h2 class="m-0 text-[clamp(1.25rem,3vw,1.625rem)] font-bold text-[var(--brand-text)] tracking-[-0.01em] text-balance">A musically meaningful maqām tuning method for Ableton Live</h2>
-          <p class="m-0 text-[1rem] leading-[1.7] text-[var(--brand-muted)] max-w-[60ch] text-pretty">
-            Ableton Live doesn't allow third-party MIDI-effect plug-ins. To solve this, Tanghīm ships with two Max for Live devices — an MPE Receiver and a Mono Pitch Bend Receiver — that deliver the tuning inside Live. No extra configuration: install, load, and the tuning follows.
+          <h2
+            class="m-0 text-[clamp(1.25rem,3vw,1.625rem)] font-bold text-[var(--brand-text)] tracking-[-0.01em] text-balance"
+          >
+            A practical maqām tuning method for Ableton Live
+          </h2>
+          <p
+            class="m-0 text-[1rem] leading-[1.7] text-[var(--brand-muted)] max-w-[60ch] text-pretty"
+          >
+            Ableton Live doesn't allow third-party MIDI-effect plug-ins. To
+            solve this, <strong class="text-[var(--brand-gold)] font-bold"
+              >Tanghīm</strong
+            > ships with two Max for Live devices — an MPE Receiver and a Mono Pitch
+            Bend Receiver — that deliver the tuning inside Live. No extra configuration,
+            just install, load, and the tuning follows.
           </p>
-          <div class="flex flex-col gap-[0.375rem] pt-1 max-[600px]:gap-[0.625rem]">
-            <a href="/articles/cross-platform" class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline">Read the article for the story →</a>
-            <a href="/docs/ableton" class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline">Ableton Live setup guide →</a>
+          <div
+            class="flex flex-col gap-[0.375rem] pt-1 max-[600px]:gap-[0.625rem]"
+          >
+            <a
+              href="/docs/ableton"
+              class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline"
+              >Ableton Live setup guide →</a
+            >
           </div>
         </div>
       </section>
 
+      <!-- ═══════════════════════════════════════════
+           PROBLEMS OF TUNING CALL-OUT
+           ═══════════════════════════════════════════ -->
+<!--      <section
+        class="page-band ableton-callout reveal border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5"
+        aria-label="Ableton Live compatibility"
+      >
+        <div class="max-w-[680px] mx-auto flex flex-col gap-4">
+          <h2
+            class="m-0 text-[clamp(1.25rem,3vw,1.625rem)] font-bold text-[var(--brand-text)] tracking-[-0.01em] text-balance"
+          >
+            The problems of tuning in modern music production
+          </h2>
+          <p
+            class="m-0 text-[1rem] leading-[1.7] text-[var(--brand-muted)] max-w-[60ch] text-pretty"
+          >
+            Since the 1980s many artists, musicians and researchers have been
+            trying to find methods to allow musical tuning systems from the
+            world's cultures into our analogue and digital music technology
+            landscape. Until today, the music technology industry has still not
+            agreed upon a method to allow the musical cultures of the world to
+            exist inside sonic production workflows in a musical and meaningful
+            way.
+          </p>
+          <div
+            class="flex flex-col gap-[0.375rem] pt-1 max-[600px]:gap-[0.625rem]"
+          >
+            <a
+              href="/articles/cross-platform"
+              class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline"
+              >Read the article for the full story →</a
+            >
+          </div>
+        </div>
+      </section>
+ -->      
+
       <!-- Feature Grid — everything else at a glance -->
-      <FeatureGrid items={[
+<!--             
+      <FeatureGrid
+        items={[
           {
-            title: 'Per-note overrides',
-            body: 'Give the same note a different intonation in any octave.',
+            title: "Per-note overrides",
+            body: "Give the same note a different intonation in any octave.",
           },
           {
-            title: 'Reference frequency',
+            title: "Reference frequency",
             body: "Set the tuning's base pitch by knob, exact Hz, or in cents; retains across tuning systems.",
           },
           {
-            title: 'Range scroller',
-            body: 'Pan the 128-note keyboard with magnetic snap to C, G, and A.',
+            title: "Range scroller",
+            body: "Pan the 128-note keyboard with magnetic snap to C, G, and A.",
           },
           {
-            title: 'DAW automation',
-            body: 'Slider cents, reference offset, and preset are exposed as automatable parameters.',
+            title: "DAW automation",
+            body: "Slider cents, reference offset, and preset are exposed as automatable parameters.",
           },
           {
-            title: 'Save & load',
-            body: 'Store and recall complete tuning states as portable .tanghim files.',
+            title: "Save & load",
+            body: "Store and recall complete tuning states as portable .Tanghīm files.",
           },
           {
-            title: 'Program-change switching',
-            body: 'Switch presets from your DAW with MIDI Program Change messages.',
+            title: "Program-change switching",
+            body: "Switch presets from your DAW with MIDI Program Change messages.",
           },
-        ]} />
+        ]}
+      />
+-->
 
       <!-- ═══════════════════════════════════════════
            MUSICOLOGY STRIP (name gloss) — grace note before the CTA
            ═══════════════════════════════════════════ -->
-      <section class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="On the name">
+      <section
+        class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5"
+        aria-label="On the name"
+      >
         <Interlude eyebrow="On the name" glyph="تنغيم">
-          <p><strong class="accent">Tanghīm</strong> is an Arabic <em>maṣdar</em>, or verbal noun, denoting the act of intoning or setting pitch. In linguistics it is the standard equivalent of <em>intonation</em>, the melodic contour of speech.</p>
-          <p>Here it names intonational tuning — the pitch relationships that make up a system — as distinct from the Arabic usage of <span lang="ar">دوزان</span> (<em>dūzān</em>) for the mechanical tuning of an instrument's strings. Dūzān is a borrowing from Ottoman Turkish <em>düzen</em> (“order, arrangement, tuning”), from the verb <em>düzmek</em> (“to arrange, put in order”).</p>
+          <p>
+            <strong class="accent">Tanghīm</strong> is an Arabic <em>maṣdar</em
+            >, or verbal noun, denoting the act of intoning or setting pitch. In
+            linguistics it is the standard equivalent of <em>intonation</em>,
+            the melodic contour of speech.
+          </p>
+          <p>
+            Here it names intonational tuning — the pitch relationships that
+            make up a system — as distinct from the Arabic usage of <span
+              lang="ar">دوزان</span
+            > (<em>dūzān</em>) for the mechanical tuning of an instrument's
+            strings. Dūzān is a borrowing from Ottoman Turkish <em>düzen</em> (“order,
+            arrangement, tuning”), from the verb <em>düzmek</em> (“to arrange, put
+            in order”).
+          </p>
         </Interlude>
       </section>
 
@@ -299,14 +577,26 @@ const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders 
            FINAL CTA BAND
            DownloadButtons anchor (#download) lives here
            ═══════════════════════════════════════════ -->
-      <section class="cta-band page-band reveal border-t-2 border-[color-mix(in_srgb,var(--brand-gold)_35%,transparent)] py-20 px-6 max-[600px]:py-14 max-[600px]:px-5" aria-label="Download">
-        <div class="max-w-[860px] mx-auto flex flex-col items-center gap-8 text-center">
-          <h2 class="m-0 text-[clamp(1.5rem,3.5vw,2.25rem)] font-bold text-[var(--brand-text)] tracking-[-0.02em] text-balance max-w-[24ch]">Free, open-source, and ready for your music.</h2>
+      <section
+        class="cta-band page-band reveal border-t-2 border-[color-mix(in_srgb,var(--brand-gold)_35%,transparent)] py-20 px-6 max-[600px]:py-14 max-[600px]:px-5"
+        aria-label="Download"
+      >
+        <div
+          class="max-w-[860px] mx-auto flex flex-col items-center gap-8 text-center"
+        >
+          <h2
+            class="m-0 text-[clamp(1.5rem,3.5vw,2.25rem)] font-bold text-[var(--brand-text)] tracking-[-0.02em] text-balance max-w-[24ch]"
+          >
+            Free, open-source, and ready for your music.
+          </h2>
           <DownloadButtons />
-          <a href="/docs" class="cta-secondary inline-block mt-1 py-[0.65rem] px-4 text-[var(--brand-muted)] text-[0.9375rem] font-medium no-underline rounded-[0.375rem] border border-[color-mix(in_srgb,var(--brand-muted)_30%,transparent)] transition-[color,border-color] duration-150 ease-[ease] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline">Read the docs</a>
+          <a
+            href="/docs"
+            class="cta-secondary inline-block mt-1 py-[0.65rem] px-4 text-[var(--brand-muted)] text-[0.9375rem] font-medium no-underline rounded-[0.375rem] border border-[color-mix(in_srgb,var(--brand-muted)_30%,transparent)] transition-[color,border-color] duration-150 ease-[ease] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline"
+            >Read the docs</a
+          >
         </div>
       </section>
-
     </main>
 
     <Footer />
@@ -319,25 +609,27 @@ const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders 
   // elements are already fully visible, so no observer is needed.
   // Also skips entirely under prefers-reduced-motion (elements are visible via CSS).
   if (
-    typeof IntersectionObserver !== 'undefined' &&
-    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    typeof IntersectionObserver !== "undefined" &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches
   ) {
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
+            entry.target.classList.add("is-visible");
             observer.unobserve(entry.target); // animate once only
           }
         }
       },
-      { threshold: 0, rootMargin: '0px 0px -160px 0px' }
+      { threshold: 0, rootMargin: "0px 0px -160px 0px" },
     );
 
-    document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+    document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
   } else {
     // Ensure all reveals are visible if observer unavailable or motion reduced
-    document.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-visible'));
+    document
+      .querySelectorAll(".reveal")
+      .forEach((el) => el.classList.add("is-visible"));
   }
 </script>
 
@@ -356,7 +648,11 @@ const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders 
   }
 
   :global(main > .page-band:nth-child(even)) {
-    background-color: color-mix(in srgb, var(--brand-navy-800) 45%, var(--brand-navy-900));
+    background-color: color-mix(
+      in srgb,
+      var(--brand-navy-800) 45%,
+      var(--brand-navy-900)
+    );
   }
 
   /* Gradient washes layer OVER the alternating base tone (background-image only,
@@ -424,9 +720,15 @@ const ogImageAlt = 'The Tanghīm plugin interface showing maqām tuning sliders 
   .colophon-link {
     color: color-mix(in srgb, var(--brand-text) 70%, var(--brand-muted));
     text-decoration: underline;
-    text-decoration-color: color-mix(in srgb, var(--brand-gold) 45%, transparent);
+    text-decoration-color: color-mix(
+      in srgb,
+      var(--brand-gold) 45%,
+      transparent
+    );
     text-underline-offset: 2px;
-    transition: color 0.15s ease, text-decoration-color 0.15s ease;
+    transition:
+      color 0.15s ease,
+      text-decoration-color 0.15s ease;
   }
 
   .colophon-link:hover {
