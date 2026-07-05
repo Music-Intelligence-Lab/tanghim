@@ -16,23 +16,56 @@
 interface Props {
   eyebrow?: string;
   glyph?: string;
+  expandable?: boolean;
+  /** Localised toggle labels; required when expandable. */
+  expandLabel?: string;
+  collapseLabel?: string;
 }
 
-const { eyebrow, glyph } = Astro.props;
+const { eyebrow, glyph, expandable = false, expandLabel = 'Expand', collapseLabel = 'Collapse' } = Astro.props;
+
+// Expandable only applies to no-glyph explainer interludes.
+const isExpandable = expandable && !glyph;
+
+// Stable unique id for aria-controls (crypto.randomUUID is available at build time in Astro/Node).
+const bodyId = `interlude-body-${crypto.randomUUID().slice(0, 8)}`;
 ---
 
-<div class:list={['interlude-inner reveal', { 'interlude-inner--no-glyph': !glyph }]}>
+<div class:list={['interlude-inner reveal', { 'interlude-inner--no-glyph': !glyph, 'interlude-inner--expandable': isExpandable }]}>
   {glyph && (
     <div class="interlude-glyph" aria-hidden="true">
       <span lang="ar" class="interlude-glyph-word">{glyph}</span>
     </div>
   )}
-  <div class="interlude-text">
-    {eyebrow && <p class="interlude-eyebrow">{eyebrow}</p>}
-    <div class="interlude-body">
-      <slot />
+  {isExpandable ? (
+    <div class="interlude-text interlude-text--expandable">
+      <span class="interlude-accent-line" aria-hidden="true"></span>
+      {eyebrow && <h2 class="interlude-title">{eyebrow}</h2>}
+      <div id={bodyId} class="interlude-collapse">
+        <div class="interlude-body interlude-body--centered">
+          <slot />
+        </div>
+      </div>
+      <button
+        type="button"
+        class="interlude-toggle"
+        aria-expanded="false"
+        aria-controls={bodyId}
+        aria-label={expandLabel}
+        data-expand-label={expandLabel}
+        data-collapse-label={collapseLabel}
+      >
+        <span class="interlude-chevron" aria-hidden="true">›</span>
+      </button>
     </div>
-  </div>
+  ) : (
+    <div class="interlude-text">
+      {eyebrow && <p class="interlude-eyebrow">{eyebrow}</p>}
+      <div class="interlude-body">
+        <slot />
+      </div>
+    </div>
+  )}
 </div>
 
 <style>
@@ -171,5 +204,98 @@ const { eyebrow, glyph } = Astro.props;
     .interlude-text {
       padding-inline-start: 0;
     }
+  }
+
+  /* ── Expandable "What is X?" interludes ─────────────────────────────────
+     Centered, symmetric explainer: short gold accent line, eyebrow-as-title,
+     center-justified body clamped to 2 lines until expanded, chevron toggle.
+     Replaces the left gold rule (which doesn't suit centered content). */
+  .interlude-inner--expandable {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 720px;
+    text-align: center;
+  }
+
+  /* No left rule on the expandable variant — the no-glyph border rule must not
+     apply here. */
+  .interlude-inner--expandable .interlude-text--expandable {
+    border-inline-start: none;
+    padding-inline-start: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .interlude-accent-line {
+    display: block;
+    width: 2.5rem;
+    height: 2px;
+    margin-bottom: 1rem;
+    background: color-mix(in srgb, var(--brand-gold) 55%, transparent);
+    border-radius: 1px;
+  }
+
+  .interlude-title {
+    margin: 0 0 0.9rem;
+    font-size: clamp(1.05rem, 2vw, 1.35rem);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--brand-gold);
+    line-height: 1.3;
+  }
+
+  /* Arabic titles must not be letter-spaced (breaks cursive joins). */
+  :global([dir='rtl']) .interlude-title {
+    letter-spacing: normal;
+    text-transform: none;
+  }
+
+  .interlude-body--centered {
+    text-align: center;
+    margin-inline: auto;
+  }
+
+  /* Collapsed: clamp the body to 2 lines with an ellipsis. The collapse wrapper
+     animates in Task 3; here it just holds the clamp. */
+  .interlude-collapse .interlude-body--centered {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  /* Chevron toggle button */
+  .interlude-toggle {
+    margin-top: 1rem;
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--brand-gold) 55%, transparent);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--brand-gold);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .interlude-toggle:hover {
+    background: color-mix(in srgb, var(--brand-gold) 12%, transparent);
+    border-color: var(--brand-gold);
+  }
+
+  .interlude-toggle:focus-visible {
+    outline: 2px solid var(--brand-gold);
+    outline-offset: 2px;
+  }
+
+  .interlude-chevron {
+    display: inline-block;
+    font-size: 1.1rem;
+    line-height: 1;
+    transform: rotate(90deg); /* › points down when collapsed */
+    transition: transform 0.3s ease;
   }
 </style>
