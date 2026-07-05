@@ -14,9 +14,19 @@ const footerText = {
     releasesLink: 'Downloads',
     externalGroup: 'Related',
     diarmaqarLink: 'Digital Arabic Maqām Archive (DiArMaqAr)',
-    credit: 'Conceived and designed by Khyam Allami · Music Intelligence Lab, AUB (2026).',
-    openSource: 'Open source — ',
-    viewOnGitHub: 'view on GitHub',
+    milLink: 'Music Intelligence Lab',
+    camsLink: 'Center for Advanced Mathematical Sciences',
+    // Credit sentence, split around its links (Khyam Allami / MIL / CAMS / open source / licence).
+    creditBy: 'Conceived and designed by ',
+    creditName: 'Khyam Allami',
+    creditAt: ' at the ',
+    milName: 'Music Intelligence Lab',
+    camsName: 'Center for Advanced Mathematical Sciences',
+    creditInstitution: ', American University of Beirut, 2026. Free and ',
+    openSourceName: 'open source',
+    creditLicensed: ', licensed under ',
+    licenseName: 'CC BY-NC-SA 4.0',
+    creditEnd: '.',
   },
   ar: {
     docGroup: 'التوثيق',
@@ -26,9 +36,19 @@ const footerText = {
     releasesLink: 'التحميلات',
     externalGroup: 'روابط ذات صلة',
     diarmaqarLink: 'أرشيف المقام العربي الرقمي (DiArMaqAr)',
-    credit: 'من تصميم وتطوير خيّام اللامي · مختبر الذكاء الموسيقي، الجامعة الأمريكية في بيروت (2026).',
-    openSource: 'مفتوح المصدر — ',
-    viewOnGitHub: 'عرض على GitHub',
+    milLink: 'مختبر الذكاء الموسيقي',
+    camsLink: 'مركز العلوم الرياضية المتقدمة',
+    // Credit sentence, split around its links.
+    creditBy: 'من تصميم وتطوير ',
+    creditName: 'خيّام اللامي',
+    creditAt: ' في ',
+    milName: 'مختبر الذكاء الموسيقي',
+    camsName: 'مركز العلوم الرياضية المتقدمة',
+    creditInstitution: '، الجامعة الأمريكية في بيروت، 2026. مجانية و',
+    openSourceName: 'مفتوحة المصدر',
+    creditLicensed: '، ومرخّصة بموجب ',
+    licenseName: 'CC BY-NC-SA 4.0',
+    creditEnd: '.',
   },
   fr: {
     docGroup: 'Documentation',
@@ -38,49 +58,57 @@ const footerText = {
     releasesLink: 'Téléchargements',
     externalGroup: 'Liens connexes',
     diarmaqarLink: 'Digital Arabic Maqām Archive (DiArMaqAr)',
-    credit: 'Conçu et développé par Khyam Allami · Music Intelligence Lab, AUB (2026).',
-    openSource: 'Open source — ',
-    viewOnGitHub: 'voir sur GitHub',
+    milLink: 'Music Intelligence Lab',
+    camsLink: 'Center for Advanced Mathematical Sciences',
+    // Credit sentence, split around its links.
+    creditBy: 'Conçu et développé par ',
+    creditName: 'Khyam Allami',
+    creditAt: ' au ',
+    milName: 'Music Intelligence Lab',
+    camsName: 'Center for Advanced Mathematical Sciences',
+    creditInstitution: ', Université américaine de Beyrouth, 2026. Libre et ',
+    openSourceName: 'open source',
+    creditLicensed: ', sous licence ',
+    licenseName: 'CC BY-NC-SA 4.0',
+    creditEnd: '.',
   },
 };
 const t = footerText[currentLocale as keyof typeof footerText];
 const arLang = currentLocale === 'ar' ? 'ar' : undefined;
+
+// Shared inline-link class for the credit sentence (underlined variant).
+const creditLink =
+  'footer-link text-[var(--brand-muted)] underline underline-offset-[2px] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]';
 ---
 <footer class="bg-[var(--brand-navy-800)] pt-12 pb-8 px-6 border-t border-[color-mix(in_srgb,var(--brand-gold)_15%,transparent)]">
   <div class="max-w-[1200px] mx-auto flex flex-col gap-10">
     <!-- Link groups -->
     <div class="flex gap-12 flex-wrap">
       <div class="flex flex-col gap-2">
-        <span lang={arLang} class="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--brand-muted)] mb-1">{t.docGroup}</span>
+        <span lang={arLang} class="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--brand-gold)] mb-1">{t.docGroup}</span>
         <a href={`${localeBase}/docs`} lang={arLang} class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]">{t.docsLink}</a>
         <a href={`${localeBase}/articles/cross-platform`} lang={arLang} class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]">{t.articleLink}</a>
       </div>
 
       <div class="flex flex-col gap-2">
-        <span lang={arLang} class="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--brand-muted)] mb-1">{t.projectGroup}</span>
+        <span lang={arLang} class="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--brand-gold)] mb-1">{t.projectGroup}</span>
         <a href="https://github.com/Music-Intelligence-Lab/tanghim" lang="en" class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">GitHub</a>
         <a href="https://github.com/Music-Intelligence-Lab/tanghim/releases" lang={arLang} class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">{t.releasesLink}</a>
       </div>
 
       <div class="flex flex-col gap-2">
-        <span lang={arLang} class="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--brand-muted)] mb-1">{t.externalGroup}</span>
+        <span lang={arLang} class="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[var(--brand-gold)] mb-1">{t.externalGroup}</span>
         <a href="https://diarmaqar.net" lang={arLang} class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">{t.diarmaqarLink}</a>
-        <a href="https://khyamallami.com" lang="en" class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">khyamallami.com</a>
+        <a href="https://musicintelligencelab.com/" lang={arLang} class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">{t.milLink}</a>
+        <a href="https://www.aub.edu.lb/cams/" lang={arLang} class="footer-link text-[var(--brand-muted)] no-underline text-[0.9rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">{t.camsLink}</a>
       </div>
     </div>
 
     <!-- Credit + open source -->
     <div class="border-t border-[color-mix(in_srgb,var(--brand-muted)_15%,transparent)] pt-6 flex flex-col gap-3">
-      {currentLocale === 'en' ? (
-        <p class="text-[0.85rem] text-[var(--brand-muted)] m-0 leading-[1.6]">
-          Conceived and designed by Khyam Allami at the <a href="https://musicintelligencelab.com/" class="footer-link text-[var(--brand-muted)] underline underline-offset-[2px] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">Music Intelligence Lab</a>/<a href="https://www.aub.edu.lb/cams/" class="footer-link text-[var(--brand-muted)] underline underline-offset-[2px] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">Center for Advanced Mathematical Sciences</a>, American University of Beirut, 2026. Free and <a href="https://github.com/Music-Intelligence-Lab/tanghim" class="footer-link text-[var(--brand-muted)] underline underline-offset-[2px] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">open source</a>, licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="footer-link text-[var(--brand-muted)] underline underline-offset-[2px] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a>.
-        </p>
-      ) : (
-        <p lang={arLang} class="text-[0.85rem] text-[var(--brand-muted)] m-0 leading-[1.6]">
-          {t.credit}
-          {' '}{t.openSource}<a href="https://github.com/Music-Intelligence-Lab/tanghim" lang={undefined} class="footer-link text-[var(--brand-muted)] underline underline-offset-[2px] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)]" target="_blank" rel="noopener noreferrer">{t.viewOnGitHub}</a>.
-        </p>
-      )}
+      <p lang={arLang} class="text-[0.85rem] text-[var(--brand-muted)] m-0 leading-[1.6]">
+        {t.creditBy}<a href="https://khyamallami.com" class={creditLink} target="_blank" rel="noopener noreferrer">{t.creditName}</a>{t.creditAt}<a href="https://musicintelligencelab.com/" class={creditLink} target="_blank" rel="noopener noreferrer">{t.milName}</a>/<a href="https://www.aub.edu.lb/cams/" class={creditLink} target="_blank" rel="noopener noreferrer">{t.camsName}</a>{t.creditInstitution}<a href="https://github.com/Music-Intelligence-Lab/tanghim" class={creditLink} target="_blank" rel="noopener noreferrer">{t.openSourceName}</a>{t.creditLicensed}<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class={creditLink} target="_blank" rel="noopener noreferrer">{t.licenseName}</a>{t.creditEnd}
+      </p>
     </div>
   </div>
 </footer>

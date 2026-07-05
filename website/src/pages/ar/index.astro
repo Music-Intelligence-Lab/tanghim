@@ -8,6 +8,10 @@ import Showcase from '../../components/Showcase.astro';
 import FeatureRow from '../../components/FeatureRow.astro';
 import FeatureGrid from '../../components/FeatureGrid.astro';
 import Interlude from '../../components/Interlude.astro';
+import Lightbox from '../../components/Lightbox.astro';
+import { viewFullSizeLabel } from '../../lib/lightboxLabels';
+
+const viewFullSize = viewFullSizeLabel(Astro.url.pathname);
 
 // Shared metadata — single source of truth for <title>, description, and social cards.
 const pageTitle = 'تنغيم — ضبط المقامات العربية لأي محطة عمل صوتيات رقمية';
@@ -86,14 +90,16 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
           <!-- UI screenshot with gold glow -->
           <div class="relative w-full max-w-[820px]">
             <div class="hero-glow absolute pointer-events-none z-0" aria-hidden="true"></div>
-            <img
-              src="/tanghim-ui.png"
-              alt="واجهة إضافة تنغيم: مزالق التنغيم تعرض درجات المقام بالذهبي على لوحة كحلية، مع منتقي المقام وشبكة الإعدادات المسبقة وعناصر التحكم بالتردد المرجعي."
-              class="relative z-[1] block w-full h-auto rounded-[0.625rem] border border-[color-mix(in_srgb,var(--brand-gold)_22%,transparent)]"
-              width="1756"
-              height="1370"
-              loading="eager"
-            />
+            <button type="button" class="lightbox-trigger" data-lightbox aria-label={viewFullSize}>
+              <img
+                src="/tanghim-ui.png"
+                alt="واجهة إضافة تنغيم: مزالق التنغيم تعرض درجات المقام بالذهبي على لوحة كحلية، مع منتقي المقام وشبكة الإعدادات المسبقة وعناصر التحكم بالتردد المرجعي."
+                class="block w-full h-auto rounded-[0.625rem] border border-[color-mix(in_srgb,var(--brand-gold)_22%,transparent)]"
+                width="1756"
+                height="1370"
+                loading="eager"
+              />
+            </button>
           </div>
 
         </div>
@@ -106,7 +112,7 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
         <div class="colophon reveal">
           <p class="colophon-eyebrow" lang="ar">الاعتمادات والترخيص</p>
           <p class="colophon-text" lang="ar">
-            <span class="brand-name">تنغيم</span> فكرة وتصميم <a href="https://khyamallami.com/" class="colophon-link" target="_blank" rel="noopener noreferrer">خيّام اللامي</a> في <a href="https://musicintelligencelab.com/" class="colophon-link" target="_blank" rel="noopener noreferrer">مختبر الذكاء الموسيقي</a> / <a href="https://www.aub.edu.lb/cams/" class="colophon-link" target="_blank" rel="noopener noreferrer">مركز العلوم الرياضية المتقدمة</a> بالجامعة الأمريكية في بيروت، 2026. وهي مجانية و<a href="https://github.com/Music-Intelligence-Lab/tanghim" class="colophon-link" target="_blank" rel="noopener noreferrer">مفتوحة المصدر</a>، ومرخّصة بموجب <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="colophon-link" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a>.
+            <span class="brand-name">تنغيم</span> فكرة وتصميم <a href="https://khyamallami.com/" class="colophon-link" target="_blank" rel="noopener noreferrer">خيّام اللامي</a> في <a href="https://musicintelligencelab.com/" class="colophon-link" target="_blank" rel="noopener noreferrer">مختبر الذكاء الموسيقي</a> / <a href="https://www.aub.edu.lb/cams/" class="colophon-link" target="_blank" rel="noopener noreferrer">مركز العلوم الرياضية المتقدمة</a> بالجامعة الأمريكية في بيروت، 2026. مجانية و<a href="https://github.com/Music-Intelligence-Lab/tanghim" class="colophon-link" target="_blank" rel="noopener noreferrer">مفتوحة المصدر</a>، ومرخّصة بموجب <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="colophon-link" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a>.
           </p>
         </div>
       </section>
@@ -116,9 +122,9 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
            ═══════════════════════════════════════════ -->
       <Showcase
         title="من <strong>القرن التاسع</strong> إلى محطة عملكم"
-        subtitle="مخطوطات نظرية المقام تحيا من جديد."
+        subtitle="مخطوطات نظريات المقام العربي تحيا من جديد."
       >
-        <p lang="ar">قاد سمعُنا دائماً تنغيم المقام العربي وضبط درجاته، لكنه كان أيضاً موضع تنظير وقياس على يد كثير من العقول الكبيرة عبر القرون.</p>
+        <p lang="ar">قاد سمعُنا دائماً تنغيم المقام العربي وضبط نغماته لكنه كان أيضاً موضع تنظير وقياس على يد كثير من العقول الكبيرة عبر القرون.</p>
         <p lang="ar">المَوصِلي، الكِندي، الفارابي، ابن سينا، الأُرمَوي، ميخائيل مشاقة، لجان التنغيم في مؤتمر القاهرة، أمين الديك، توفيق الصبّاغ، وكثيرون غيرهم…</p>
         <p lang="ar">وبفضل بيانات <strong>أرشيف المقام العربي الرقمي (DiArMaqAr)</strong>، صار الوصول إلى كل هذه الأنظمة وتعديلها ممكناً عبر <span class="brand-name">تنغيم</span> ببضع نقرات.</p>
       </Showcase>
@@ -139,7 +145,7 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
            ═══════════════════════════════════════════ -->
       <Showcase
         id="features"
-        title="تنغيم المقام العربي، <strong>بأصواتك</strong>"
+        title="تنغيم المقام العربي، <strong>بأصواتكم</strong>"
         subtitle="ثلاث طرق للتنغيم، من السنثسيزرات المبرمجة إلى الصلبة."
       >
         <p lang="ar">تقدّم <span class="brand-name">تنغيم</span> ثلاث طرق لتطبيق تنغيم المقام العربي على آلاتكم. يضبط <span lang="en">MTS-ESP</span> السنثسيزرات المتوافقة تلقائياً وفوراً من إضافة <em>الإرسال</em> الرئيسية عبر الذاكرة المشتركة.</p>
@@ -184,7 +190,7 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
            Showcase: full-width Diwānayn view — the expanded two-octave layout
            ═══════════════════════════════════════════ -->
       <Showcase
-        title="الديوانان: من <strong>يكاه إلى سهم</strong>"
+        title="الديوانان من <strong>يكاه إلى سهم</strong>"
         subtitle="توسيع الإضافة إلى العرض الكامل لرؤية الديوانين"
         image="/shot-diwanayn.png"
         imageAlt="إضافة تنغيم موسّعة إلى العرض الكامل، ومجموعة مزالقها تعرض نظام تنغيم عبر الديوانين من G2 إلى Ab4 — كل درجة مسمّاة بأسماء PAO والسولفيج."
@@ -339,6 +345,7 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
     </main>
 
     <Footer />
+    <Lightbox />
   </body>
 </html>
 
