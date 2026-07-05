@@ -29,4 +29,4 @@ See [Ableton Live](/docs/ableton) for setup details.
 | Windows | VST3, CLAP |
 | Linux | VST3, CLAP |
 
-Tanghīm was conceived and designed by [Khyam Allami](https://khyamallami.com) as part of postdoctoral research at the [Music Intelligence Lab](https://musicintelligencelab.com/), American University of Beirut, 2026.
+Tanghīm was conceived and designed by [Khyam Allami](https://khyamallami.com) as part of postdoctoral research at the [Music Intelligence Lab](https://musicintelligencelab.com/), American University of Beirut, Lebanon, 2026.

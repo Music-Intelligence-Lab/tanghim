@@ -180,9 +180,12 @@ const bodyId = `interlude-body-${crypto.randomUUID().slice(0, 8)}`;
     font-weight: 600;
   }
 
+  /* Term highlight: a brighter tint that lifts an introduced term out of the
+     muted body. Upright (no italic) so it reads consistently across scripts —
+     Arabic has no italic form, so LTR and RTL now match. */
   .interlude-body :global(em) {
     color: color-mix(in srgb, var(--brand-text) 78%, var(--brand-muted));
-    font-style: italic;
+    font-style: normal;
   }
 
   /* Arabic has no italic form — the synthesised slant breaks cursive joins.
