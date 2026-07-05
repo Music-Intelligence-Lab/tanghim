@@ -7,12 +7,12 @@ A tuning system (tanghīm) is an ordered sequence of pitch classes within an oct
 
 ## Starting Note Names
 
-Each tuning system has one or more **starting note names** — the name for the foundational pitch from which the tuning begins. Starting note names are not arbitrary transpositions; they reflect the historical and practical origins of each system:
+Each tuning system has one or more **starting note names**: the name for the foundational pitch from which the tuning begins. Starting note names are not arbitrary transpositions; they reflect the historical and practical origins of each system:
 
 - **Oud-based systems** (e.g. al-Kindī, al-Fārābī, Ibn Sīnā) typically start on **ʿushayrān**, reflecting oud tuning in perfect fourths.
 - **Monochord and sonometer systems** (e.g. Cairo Congress 1932) typically start on **yegāh** or **rāst**, reflecting theoretical measurement approaches.
 
-The starting note name matters because it determines the available maqāmāt, transposition possibilities, and modulation characteristics of the system. Changing the starting note name changes which maqamat are available and how they can be transposed — it is functionally the same as switching to a different tuning system entirely.
+The starting note name matters because it determines the available maqāmāt, transposition possibilities, and modulation characteristics of the system. Changing the starting note name changes which maqamat are available and how they can be transposed; it is functionally the same as switching to a different tuning system entirely.
 
 ## Caching
 

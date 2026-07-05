@@ -18,4 +18,4 @@ The exported file contains all scale degrees played simultaneously as a chord (S
 
 If a **preset is active** when you export, a MIDI Program Change message is embedded at the start of the file. When the clip plays back through Tanghim, the preset will automatically activate before the notes sound.
 
-The MIDI drag button is always visible in the status bar — it is inactive (grey) when no maqam is selected, and active (gold) when a maqam is selected.
+The MIDI drag button is always visible in the status bar: it is inactive (grey) when no maqam is selected, and active (gold) when a maqam is selected.

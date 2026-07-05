@@ -14,7 +14,7 @@ import { viewFullSizeLabel } from '../../lib/lightboxLabels';
 const viewFullSize = viewFullSizeLabel(Astro.url.pathname);
 
 // Shared metadata — single source of truth for <title>, description, and social cards.
-const pageTitle = 'Tanghīm — Accordage du maqām arabe pour toute STAN';
+const pageTitle = 'Tanghīm : accordage du maqām arabe pour toute STAN';
 const pageDescription =
   'Un greffon libre et open source qui exploite les données du Digital Arabic Maqām Archive. Disponible en VST3, AU et CLAP pour macOS, Windows et Linux.';
 const siteUrl = 'https://tanghim.app/fr/';
@@ -134,7 +134,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
            ═══════════════════════════════════════════ -->
       <section class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5" aria-label="Qu'est-ce que le Digital Arabic Maqām Archive&#8239;?">
         <Interlude eyebrow="Qu'est-ce que le Digital Arabic Maqām Archive ?" expandable expandLabel="Développer" collapseLabel="Réduire">
-          <p>Tanghīm puise ses données dans le <a href="https://diarmaqar.net/" class="interlude-link" target="_blank" rel="noopener noreferrer">Digital Arabic Maqām Archive (DiArMaqAr)</a> — un dépôt open source de systèmes d'accordage et de maqāmāt historiquement documentés, issus de la musique de la région arabophone, chacun avec une attribution bibliographique complète.</p>
+          <p>Tanghīm puise ses données dans le <a href="https://diarmaqar.net/" class="interlude-link" target="_blank" rel="noopener noreferrer">Digital Arabic Maqām Archive (DiArMaqAr)</a>, un dépôt open source de systèmes d'accordage et de maqāmāt historiquement documentés, issus de la musique de la région arabophone, chacun avec une attribution bibliographique complète.</p>
           <p>Tanghīm interroge l'API REST du DiArMaqAr et met les données en cache localement&#8239;: les maqāmāt et les accordages que vous jouez sont donc les mêmes que ceux de l'archive. Un bouton de mise à jour vous signale quand l'archive a changé.</p>
           <p>Le DiArMaqAr a été recherché, conçu et développé par Khyam Allami avec Ibrahim El Khansa au Music Intelligence Lab / Center for Advanced Mathematical Sciences de l'Université américaine de Beyrouth, au Liban, en 2026.</p>
         </Interlude>
@@ -193,7 +193,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
         title="Choisissez votre maqām puis <strong>modulez</strong>"
         subtitle="Des préréglages mappables en MIDI et automatisables."
         image="/shot-modulate.png"
-        imageAlt="La grille de préréglages 4×2 de Tanghīm avec huit préréglages de maqām nommés — le maqām rāst surligné en doré comme préréglage actif."
+        imageAlt="La grille de préréglages 4×2 de Tanghīm avec huit préréglages de maqām nommés, le maqām rāst surligné en doré comme préréglage actif."
       >
         <p>Enregistrez jusqu'à huit préréglages de n'importe quel maqām, dans n'importe quelle transposition disponible, dans n'importe quel accordage, et passez de l'un à l'autre en mappant votre contrôleur en MIDI, en envoyant des messages Program Change, ou via l'automation de la STAN.</p>
       </Showcase>
@@ -205,9 +205,9 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
         title="Diwānayn&#8239;: de <strong>Yegāh à Saham</strong>"
         subtitle="Élargissez à pleine largeur pour une vue sur deux octaves."
         image="/shot-diwanayn.png"
-        imageAlt="Le greffon Tanghīm élargi à pleine largeur, son banc de curseurs déployant un système d'accordage sur les deux dawāwīn, de G2 à Ab4 — chaque degré nommé avec les noms PAO et le solfège."
+        imageAlt="Le greffon Tanghīm élargi à pleine largeur, son banc de curseurs déployant un système d'accordage sur les deux dawāwīn, de G2 à Ab4, chaque degré nommé avec les noms PAO et le solfège."
       >
-        <p>Élargissez le greffon et le banc de curseurs grandit avec lui, déployant le système d'accordage sur les deux dawāwīn — les registres d'octave inférieur et supérieur de la théorie du maqām arabe. Chaque degré est visible d'un coup, avec ses noms de notes et son solfège, pour voir le système entier.</p>
+        <p>Élargissez le greffon et le banc de curseurs grandit avec lui, déployant le système d'accordage sur les deux dawāwīn, les registres d'octave inférieur et supérieur de la théorie du maqām arabe. Chaque degré est visible d'un coup, avec ses noms de notes et son solfège, pour voir le système entier.</p>
       </Showcase>
 
       <!-- ═══════════════════════════════════════════
@@ -215,7 +215,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
            ═══════════════════════════════════════════ -->
       <section class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5" aria-label="Les deux dawāwīn">
         <Interlude eyebrow="Qu'est-ce que le dīwān de la théorie du maqām arabe ?" expandable expandLabel="Développer" collapseLabel="Réduire">
-          <p>La théorie du maqām arabe donne à chacune de ses notes un nom perso-arabo-ottoman unique — <em>rāst</em>, <em>dūgāh</em>, <em>sīkāh</em>, et ainsi de suite — répartis sur deux <span lang="ar">دواوين</span> (<em>dawāwīn</em>), un <em>dīwān</em> inférieur et un supérieur (octave). Élargissez Tanghīm à pleine largeur pour voir les systèmes d'accordage et les maqāmāt sur les deux octaves.</p>
+          <p>La théorie du maqām arabe donne à chacune de ses notes un nom perso-arabo-ottoman unique (<em>rāst</em>, <em>dūgāh</em>, <em>sīkāh</em>, et ainsi de suite), répartis sur deux <span lang="ar">دواوين</span> (<em>dawāwīn</em>), un <em>dīwān</em> inférieur et un supérieur (octave). Élargissez Tanghīm à pleine largeur pour voir les systèmes d'accordage et les maqāmāt sur les deux octaves.</p>
         </Interlude>
       </section>
 
@@ -224,7 +224,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
         title="Écoutez-le <strong>instantanément</strong>"
         subtitle="Auditionnez n'importe quel accordage sans charger d'instrument."
       >
-        <p>L'oscillateur intégré à onde triangulaire (Osc) vous permet d'entendre un accordage immédiatement, sans charger le moindre instrument externe — vous pouvez ainsi explorer un maqām dès que vous le sélectionnez.</p>
+        <p>L'oscillateur intégré à onde triangulaire (Osc) vous permet d'entendre un accordage immédiatement, sans charger le moindre instrument externe, vous pouvez ainsi explorer un maqām dès que vous le sélectionnez.</p>
         <div class="badge-row">
           <Badge variant="osc">Osc</Badge>
         </div>
@@ -240,14 +240,14 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
         image="/tanghim-ui.png"
         imageAlt="L'interface de Tanghīm avec le mode heptatonique actif, les touches blanches réagencées pour jouer les degrés du maqām dans l'ordre à partir de la tonique."
       >
-        <p>Le mode heptatonique (Hept) réagence le clavier pour que chaque maqām soit jouable sur les seules touches diatoniques (blanches) — les touches blanches jouent les degrés du maqām dans l'ordre, à partir de la tonique. N'importe quel maqām devient facile à entendre et à produire, sans doigtés complexes à apprendre.</p>
+        <p>Le mode heptatonique (Hept) réagence le clavier pour que chaque maqām soit jouable sur les seules touches diatoniques (blanches) : les touches blanches jouent les degrés du maqām dans l'ordre, à partir de la tonique. N'importe quel maqām devient facile à entendre et à produire, sans doigtés complexes à apprendre.</p>
       </FeatureRow>
 
       <!-- Feature: Reference frequency (reversed) -->
       <FeatureRow
         title="Réglez votre <strong>hauteur de référence</strong>"
         image="/tanghim-ui.png"
-        imageAlt="L'interface de Tanghīm montrant la commande de fréquence de référence — un bouton en arc avec une saisie en Hz, un affichage en cents et des boutons par demi-ton."
+        imageAlt="L'interface de Tanghīm montrant la commande de fréquence de référence : un bouton en arc avec une saisie en Hz, un affichage en cents et des boutons par demi-ton."
         reverse
       >
         <p>Réglez la hauteur de référence de l'accordage à l'oreille, en Hz précis ou en cents, pour correspondre à vos enregistrements préférés ou à votre goût. La référence est conservée d'un maqām et d'un système d'accordage à l'autre&#8239;: réglez-la une fois et oubliez-la.</p>
@@ -259,7 +259,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
         image="/tanghim-ui.png"
         imageAlt="L'interface de Tanghīm montrant les boutons Enregistrer et Charger, et l'état d'accordage complet prêt à être stocké dans un fichier .tanghim."
       >
-        <p>Tanghīm vous laisse modifier, enregistrer et recharger les accordages de maqām et les préréglages sous forme de fichiers .tanghim lisibles — y compris les redéfinitions par note d'une octave à l'autre.</p>
+        <p>Tanghīm vous laisse modifier, enregistrer et recharger les accordages de maqām et les préréglages sous forme de fichiers .tanghim lisibles, y compris les redéfinitions par note d'une octave à l'autre.</p>
       </FeatureRow>
 
       <!-- Feature: Grab the MIDI notes (reversed) -->
@@ -269,7 +269,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
         imageAlt="L'interface complète de Tanghīm montrant le bouton d'export MIDI par glisser, prêt à faire glisser les notes du maqām courant sous forme de fichier MIDI standard."
         reverse
       >
-        <p>Glissez les notes MIDI du maqām courant sous forme de fichier MIDI standard — sur votre timeline, ou comme clip pour alimenter des arpégiateurs et d'autres processeurs MIDI. Un message Program Change est intégré pour que le préréglage se réactive à la lecture.</p>
+        <p>Glissez les notes MIDI du maqām courant sous forme de fichier MIDI standard, sur votre timeline, ou comme clip pour alimenter des arpégiateurs et d'autres processeurs MIDI. Un message Program Change est intégré pour que le préréglage se réactive à la lecture.</p>
       </FeatureRow>
 
       <!-- ═══════════════════════════════════════════
@@ -279,7 +279,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
         <div class="max-w-[680px] mx-auto flex flex-col gap-4">
           <h2 class="m-0 text-[clamp(1.25rem,3vw,1.625rem)] font-bold text-[var(--brand-text)] tracking-[-0.01em] text-balance">Une méthode d'accordage du maqām musicalement pertinente pour Ableton Live</h2>
           <p class="m-0 text-[1rem] leading-[1.7] text-[var(--brand-muted)] max-w-[60ch] text-pretty">
-            Ableton Live n'autorise pas les greffons d'effet MIDI tiers. Pour y remédier, Tanghīm est livré avec deux périphériques Max for Live — un récepteur MPE et un récepteur Mono Pitch Bend — qui acheminent l'accordage à l'intérieur de Live. Aucune configuration supplémentaire&#8239;: installez, chargez, et l'accordage suit.
+            Ableton Live n'autorise pas les greffons d'effet MIDI tiers. Pour y remédier, Tanghīm est livré avec deux périphériques Max for Live (un récepteur MPE et un récepteur Mono Pitch Bend) qui acheminent l'accordage à l'intérieur de Live. Aucune configuration supplémentaire&#8239;: installez, chargez, et l'accordage suit.
           </p>
           <div class="flex flex-col gap-[0.375rem] pt-1 max-[600px]:gap-[0.625rem]">
             <a href="/fr/docs/ableton" class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline">Guide de configuration Ableton Live →</a>
@@ -339,7 +339,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
       <section class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5" aria-label="À propos du nom">
         <Interlude eyebrow="À propos du nom" glyph="تنغيم">
           <p><strong class="accent">Tanghīm</strong> (<span lang="ar">تنغيم</span>) est un <em>maṣdar</em> arabe, ou nom verbal, désignant l'acte d'intoner ou de fixer la hauteur. En linguistique, c'est l'équivalent standard d'<em>intonation</em>, le contour mélodique de la parole.</p>
-          <p>Ici, il désigne l'accordage intonatif — les relations de hauteur qui composent un système — par opposition à l'usage arabe de <span lang="ar">دوزان</span> (<em>dūzān</em>) pour l'accordage mécanique des cordes d'un instrument. <em>Dūzān</em> est un emprunt au turc ottoman <em>düzen</em> (« ordre, arrangement, accord »), du verbe <em>düzmek</em> (« arranger, mettre en ordre »).</p>
+          <p>Ici, il désigne l'accordage intonatif (les relations de hauteur qui composent un système) par opposition à l'usage arabe de <span lang="ar">دوزان</span> (<em>dūzān</em>) pour l'accordage mécanique des cordes d'un instrument. <em>Dūzān</em> est un emprunt au turc ottoman <em>düzen</em> (« ordre, arrangement, accord »), du verbe <em>düzmek</em> (« arranger, mettre en ordre »).</p>
         </Interlude>
       </section>
 

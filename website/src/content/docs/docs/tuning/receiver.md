@@ -1,6 +1,6 @@
 ---
 title: Tanghim Receiver
-description: The Receiver plugin — setup, modes, and pitch bend combining.
+description: "The Receiver plugin: setup, modes, and pitch bend combining."
 ---
 
 The Receiver is a lightweight MIDI effect plugin that enables MPE and Mono Pitch Bend tuning delivery. It reads the MTS-ESP tuning broadcast from Tanghīm and converts it to pitch bend messages that any instrument can understand. See [Tuning Methods](/docs/tuning/methods) for details on when to use MPE vs Mono PB.
@@ -11,7 +11,7 @@ The Receiver is a lightweight MIDI effect plugin that enables MPE and Mono Pitch
 2. Load **Tanghīm Receiver** before each instrument that needs pitch-bend-based tuning.
 3. Choose **MPE** or **Mono PB** mode depending on your instrument (see the [comparison table](/docs/tuning/methods#which-method-should-i-use)).
 4. Set the Receiver's pitch bend range to match your instrument's pitch bend range setting.
-5. The Receiver automatically connects to the Transmitter — the status display shows the active tuning system.
+5. The Receiver automatically connects to the Transmitter, and the status display shows the active tuning system.
 
 You can run multiple Receiver instances simultaneously, each in a different mode for different instruments.
 
@@ -21,7 +21,7 @@ If the player sends pitch bend wheel messages, the Receiver combines them with t
 
 ## Note on Ableton Live
 
-Ableton Live does not support VST3 MIDI effect plugins, so the Receiver cannot be loaded directly in Ableton. A Max for Live device is provided instead — see [Ableton Live](/docs/ableton) for details.
+Ableton Live does not support VST3 MIDI effect plugins, so the Receiver cannot be loaded directly in Ableton. A Max for Live device is provided instead; see [Ableton Live](/docs/ableton) for details.
 
 ## Note on Logic Pro AU
 

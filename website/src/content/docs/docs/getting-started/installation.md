@@ -11,8 +11,8 @@ For Ableton Live, see the dedicated [Ableton Live setup guide](/docs/ableton).
 
 After installation you will have two plugins:
 
-- **Tanghim** (Transmitter) — `.vst3` / `.component` / `.clap`
-- **Tanghim Receiver** — `.vst3` / `.component` / `.clap`
+- **Tanghim** (Transmitter): `.vst3` / `.component` / `.clap`
+- **Tanghim Receiver**: `.vst3` / `.component` / `.clap`
 
 If they did not auto-install, copy the plugin files to the appropriate system directories below, then rescan plugins in your DAW.
 
@@ -42,13 +42,13 @@ AU is not available on Windows.
 | VST3 | `~/.vst3/` |
 | CLAP | `~/.clap/` |
 
-AU is not available on Linux. Some DAWs also check `/usr/lib/vst3/` and `/usr/lib/clap/` — consult your DAW's documentation if the plugin isn't detected.
+AU is not available on Linux. Some DAWs also check `/usr/lib/vst3/` and `/usr/lib/clap/`; consult your DAW's documentation if the plugin isn't detected.
 
 ## MTS-ESP Shared Library (Required)
 
-Tanghīm broadcasts tuning through ODDSound's MTS-ESP system, which relies on a shared system library (`libMTS`) that all MTS-ESP software loads at runtime. **The installers install it for you** — you only need this section if you installed the plugins manually, or if tuning isn't reaching your synth.
+Tanghīm broadcasts tuning through ODDSound's MTS-ESP system, which relies on a shared system library (`libMTS`) that all MTS-ESP software loads at runtime. **The installers install it for you**; you only need this section if you installed the plugins manually, or if tuning isn't reaching your synth.
 
-**Symptom of a missing library:** the MTS-ESP badge lights up in Tanghīm (it looks connected), but no synth is actually retuned — MTS-ESP-native synths (e.g. Surge XT) don't appear in the badge count, and the MPE / Mono PB receivers stay at standard 12-tone tuning.
+**Symptom of a missing library:** the MTS-ESP badge lights up in Tanghīm (it looks connected), but no synth is actually retuned: MTS-ESP-native synths (e.g. Surge XT) don't appear in the badge count, and the MPE / Mono PB receivers stay at standard 12-tone tuning.
 
 If this happens, install the library to the correct system location:
 
@@ -58,7 +58,7 @@ If this happens, install the library to the correct system location:
 | Windows | `C:\Program Files\Common Files\MTS-ESP\LIBMTS.dll` |
 | Linux | `/usr/local/lib/libMTS.so` |
 
-The library file is bundled with each release. It is shared across all MTS-ESP products on your machine — installers only add it if it is not already present and never remove it on uninstall.
+The library file is bundled with each release. It is shared across all MTS-ESP products on your machine; installers only add it if it is not already present and never remove it on uninstall.
 
 ## Data & Preferences
 
@@ -72,7 +72,7 @@ Tanghīm stores cached tuning data, settings, and exported MIDI files locally:
 
 ## Uninstalling
 
-Each release ships a standalone uninstaller that fully removes Tanghīm — both plugins, the Max for Live devices and Max package (if installed), and all local data (cached tuning data, settings, presets, exported MIDI).
+Each release ships a standalone uninstaller that fully removes Tanghīm: both plugins, the Max for Live devices and Max package (if installed), and all local data (cached tuning data, settings, presets, exported MIDI).
 
 | Platform | How to uninstall |
 |---|---|

@@ -29,11 +29,11 @@ rm -rf ~/Library/Audio/Plug-Ins/VST3/Tanghim.vst3
 
 - Click the **Osc** badge (amber) in the top bar to make sure it is enabled.
 - Check that MIDI is reaching the plugin (the slider bank shows gold thumb glows on active notes).
-- The oscillator is quiet by design (−18 dBFS) — check your output volume.
+- The oscillator is quiet by design (−18 dBFS), so check your output volume.
 
 ## Stale tuning data
 
-Click **Check for Updates** in the status bar — the plugin also checks automatically when it loads. If updates are available, the button turns **gold** and reads "Update Available"; click it to download the latest data. You can also click **Clear Cache** (which asks for confirmation) to wipe all cached tuning data and force a fresh fetch on next load. Your presets are preserved.
+Click **Check for Updates** in the status bar; the plugin also checks automatically when it loads. If updates are available, the button turns **gold** and reads "Update Available"; click it to download the latest data. You can also click **Clear Cache** (which asks for confirmation) to wipe all cached tuning data and force a fresh fetch on next load. Your presets are preserved.
 
 ## MIDI preset device not responding
 

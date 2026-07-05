@@ -15,12 +15,12 @@ Tanghīm exposes its key tuning parameters to your DAW's automation system. You 
 
 ## Usage Tips
 
-- **Automating sliders** (`Slider 1`–`Slider 12`) lets you smoothly glide tuning between positions — useful for creative effects or gradual intonation shifts during a performance.
+- **Automating sliders** (`Slider 1`–`Slider 12`) lets you smoothly glide tuning between positions, useful for creative effects or gradual intonation shifts during a performance.
 - **Automating the preset parameter** is a straightforward way to switch between maqamat at defined points in a song without MIDI preset mapping.
 - **Automating the reference frequency** lets you create pitch drifts or transpose the entire tuning smoothly over time.
 - All automation updates are applied at audio-rate for glitch-free transitions.
-- Automation and manual slider adjustments coexist — the last value written (whether from automation or the UI) takes effect.
+- Automation and manual slider adjustments coexist: the last value written (whether from automation or the UI) takes effect.
 
 ## MIDI CC Mapping
 
-Most DAWs allow you to map MIDI CC messages to plugin parameters. You can control any of the above parameters from a hardware MIDI controller's knobs or faders. Consult your DAW's documentation for how to set up MIDI CC → parameter mapping (sometimes called "MIDI Learn" on the DAW side — this is separate from Tanghīm's own [MIDI Preset Mapping](/docs/performance/midi-preset-mapping) feature).
+Most DAWs allow you to map MIDI CC messages to plugin parameters. You can control any of the above parameters from a hardware MIDI controller's knobs or faders. Consult your DAW's documentation for how to set up MIDI CC → parameter mapping (sometimes called "MIDI Learn" on the DAW side; this is separate from Tanghīm's own [MIDI Preset Mapping](/docs/performance/midi-preset-mapping) feature).

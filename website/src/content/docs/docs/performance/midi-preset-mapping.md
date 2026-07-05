@@ -10,7 +10,7 @@ You can map MIDI notes to presets so you can switch between maqamat during perfo
 1. In the status bar, select your **MIDI input device** and **channel** from the dropdowns.
 2. **Shift+click** a preset slot to enter learn mode.
 3. Play the desired MIDI note on your controller.
-4. The note is now mapped — a badge appears on the preset showing the assigned note.
+4. The note is now mapped: a badge appears on the preset showing the assigned note.
 
 ## Clearing a Mapping
 
