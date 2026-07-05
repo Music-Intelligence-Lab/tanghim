@@ -152,6 +152,13 @@ const { eyebrow, glyph } = Astro.props;
     font-style: italic;
   }
 
+  /* Arabic has no italic form — the synthesised slant breaks cursive joins.
+     Under RTL, emphasise with an upright gold tint instead. */
+  :global([dir='rtl']) .interlude-body :global(em) {
+    font-style: normal;
+    color: color-mix(in srgb, var(--brand-gold) 80%, var(--brand-text));
+  }
+
   @media (max-width: 720px) {
     .interlude-inner {
       grid-template-columns: 1fr;
