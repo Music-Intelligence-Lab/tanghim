@@ -70,11 +70,11 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
             <p class="m-0 text-[0.75rem] font-semibold uppercase tracking-[0.12em] text-[var(--brand-muted)]">Enfin&#8239;!</p>
 
             <h1 class="m-0 text-[clamp(2rem,5vw,3.25rem)] font-bold leading-[1.15] tracking-[-0.02em] text-[var(--brand-text)] max-w-[20ch] text-balance">
-              <span class="text-[var(--brand-gold)]">Mille ans</span> d'intonation du maqām arabe au bout des doigts
+              <span class="text-[var(--brand-gold)]">Plus de mille ans</span> d'intonation du maqām arabe au bout des doigts
             </h1>
 
             <p class="m-0 text-[clamp(1rem,2.2vw,1.125rem)] leading-[1.65] text-[var(--brand-muted)] max-w-[60ch] text-balance">
-              Tanghīm est un <strong class="text-[var(--brand-text)] font-semibold">greffon MIDI libre et open source</strong> qui apporte les accordages historiques du maqām arabe issus du <strong class="text-[var(--brand-text)] font-semibold">Digital Arabic Maqām Archive</strong> directement dans <strong class="text-[var(--brand-text)] font-semibold">n'importe quelle STAN</strong>
+              Tanghīm est un <strong class="text-[var(--brand-text)] font-semibold">greffon MIDI libre et open source</strong> qui apporte les accordages historiques et modernes du maqām arabe issus du <strong class="text-[var(--brand-text)] font-semibold">Digital Arabic Maqām Archive</strong> directement dans <strong class="text-[var(--brand-text)] font-semibold">n'importe quelle STAN</strong>
             </p>
 
             <!-- CTAs -->
@@ -112,12 +112,25 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
       </section>
 
       <!-- ═══════════════════════════════════════════
+           Showcase: Historical lineage — manuscripts → DAW (no image yet)
+           ═══════════════════════════════════════════ -->
+      <Showcase
+        title="Du <strong>9ᵉ siècle</strong> à votre STAN"
+        subtitle="Les manuscrits de la théorie du maqām, ressuscités."
+      >
+        <p>L'intonation du maqām arabe a toujours été guidée par nos oreilles, mais elle a aussi été théorisée et mesurée par de nombreux grands esprits au fil des siècles.</p>
+        <p>al-Mawṣilī, al-Kindī, al-Fārābī, Ibn Sīna, al-Urmawī, Mikhā'īl Meshshāqa, les commissions d'accordage du Congrès du Caire, Amīn al-Dīk, Tawfīq al-Ṣabbāgh, et bien d'autres…</p>
+        <p>Grâce aux données fournies par le <strong>Digital Arabic Maqām Archive (DiArMaqAr)</strong>, tous ces systèmes peuvent désormais être consultés et modifiés dans Tanghīm en quelques clics.</p>
+      </Showcase>
+
+      <!-- ═══════════════════════════════════════════
            DiArMaqAr interlude — the archive is the foundation (before features)
            ═══════════════════════════════════════════ -->
       <section class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5" aria-label="Qu'est-ce que le Digital Arabic Maqām Archive&#8239;?">
         <Interlude eyebrow="Qu'est-ce que le Digital Arabic Maqām Archive ?" expandable expandLabel="Développer" collapseLabel="Réduire">
           <p>Tanghīm puise ses données dans le <a href="https://diarmaqar.net/" class="interlude-link" target="_blank" rel="noopener noreferrer">Digital Arabic Maqām Archive (DiArMaqAr)</a> — un dépôt open source de systèmes d'accordage et de maqāmāt historiquement documentés, issus de la musique de la région arabophone, chacun avec une attribution bibliographique complète.</p>
-          <p>Le DiArMaqAr a été recherché, conçu et développé par Khyam Allami avec Ibrahim El Khansa au Music Intelligence Lab de l'Université américaine de Beyrouth. Tanghīm interroge son API REST et met les données en cache localement&#8239;: les accordages que vous jouez sont donc les mêmes valeurs sourcées que celles de l'archive. Un bouton de mise à jour vous signale quand l'archive a changé.</p>
+          <p>Tanghīm interroge l'API REST du DiArMaqAr et met les données en cache localement&#8239;: les maqāmāt et les accordages que vous jouez sont donc les mêmes que ceux de l'archive. Un bouton de mise à jour vous signale quand l'archive a changé.</p>
+          <p>Le DiArMaqAr a été recherché, conçu et développé par Khyam Allami avec Ibrahim El Khansa au Music Intelligence Lab / Center for Advanced Mathematical Sciences de l'Université américaine de Beyrouth, au Liban, en 2026.</p>
         </Interlude>
       </section>
 
@@ -130,7 +143,8 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
         title="L'accordage du maqām arabe, <strong>vos sons</strong>"
         subtitle="Trois méthodes d'accordage, du synthé logiciel au matériel."
       >
-        <p>MTS-ESP réaccorde automatiquement et instantanément les synthés compatibles depuis le greffon <em>émetteur</em> principal, via la mémoire partagée. Notre greffon <em>récepteur</em> dédié permet le pitch bend par note grâce au MPE (MIDI Polyphonic Expression), ou le pitch bend monophonique pour les synthés à canal MIDI unique.</p>
+        <p>Tanghīm propose trois méthodes pour appliquer l'accordage du maqām arabe à vos instruments. MTS-ESP réaccorde automatiquement et instantanément les synthés compatibles depuis le greffon <em>émetteur</em> principal, via la mémoire partagée.</p>
+        <p>Pour les instruments non compatibles MTS-ESP, un greffon <em>récepteur</em> dédié permet le pitch bend par note grâce au MPE (MIDI Polyphonic Expression), ou le pitch bend monophonique pour les synthés à canal MIDI unique.</p>
         <div class="badge-row">
           <Badge variant="mts">MTS-ESP</Badge>
           <Badge variant="mpe">MPE</Badge>
@@ -143,7 +157,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
            ═══════════════════════════════════════════ -->
       <section class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5" aria-label="Qu'est-ce que MTS-ESP&#8239;?">
         <Interlude eyebrow="Qu'est-ce que MTS-ESP ?" expandable expandLabel="Développer" collapseLabel="Réduire">
-          <p>MTS-ESP est un protocole d'accordage développé par <a href="https://github.com/ODDSound/MTS-ESP" class="interlude-link" target="_blank" rel="noopener noreferrer">ODDSound</a>. Un seul greffon émetteur définit l'accordage, et n'importe quel nombre d'instruments compatibles s'y connectent automatiquement, se réaccordant ensemble sans aucune configuration manuelle. L'accordage se met à jour en temps réel&#8239;: un changement de maqām ou de transposition suit donc chaque instrument connecté pendant qu'il joue.</p>
+          <p>MTS-ESP est un protocole d'accordage développé par <a href="https://github.com/ODDSound/MTS-ESP" class="interlude-link" target="_blank" rel="noopener noreferrer">ODDSound</a>. Un seul greffon émetteur définit l'accordage, et n'importe quel nombre d'instruments compatibles s'y connectent automatiquement, se réaccordant ensemble sans aucune configuration manuelle. L'accordage se met à jour en temps réel&#8239;: un changement de maqām ou de transposition est transmis à chaque instrument connecté. Le protocole permet aussi à plusieurs greffons récepteurs de partager ce même changement en temps réel avec des instruments logiciels et matériels non compatibles MTS-ESP.</p>
         </Interlude>
       </section>
 
@@ -157,17 +171,6 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
         <p>Douze curseurs, un par degré chromatique, offrent un moyen simple et immédiat d'explorer les accordages. Chaque curseur comporte des repères d'aimantation pour explorer les différents intervalles, tout en vous laissant régler chaque note à l'oreille.</p>
       </Showcase>
 
-      <!-- Showcase: Oscillator — audition instantly (Osc only) -->
-      <Showcase
-        title="Écoutez-le <strong>instantanément</strong>"
-        subtitle="Auditionnez n'importe quel accordage sans charger d'instrument."
-      >
-        <p>L'oscillateur intégré à onde triangulaire (Osc) vous permet d'entendre un accordage immédiatement, sans charger le moindre instrument externe — vous pouvez ainsi explorer un maqām dès que vous le sélectionnez.</p>
-        <div class="badge-row">
-          <Badge variant="osc">Osc</Badge>
-        </div>
-      </Showcase>
-
       <!-- Showcase: Maqam Selection & Presets -->
       <Showcase
         title="Choisissez votre maqām puis <strong>modulez</strong>"
@@ -175,7 +178,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
         image="/shot-modulate.png"
         imageAlt="La grille de préréglages 4×2 de Tanghīm avec huit préréglages de maqām nommés — le maqām rāst surligné en doré comme préréglage actif."
       >
-        <p>Enregistrez jusqu'à huit préréglages de n'importe quel maqām, dans n'importe quelle transposition disponible, et passez de l'un à l'autre en mappant votre contrôleur en MIDI, en envoyant des messages Program Change, ou via l'automation de la STAN.</p>
+        <p>Enregistrez jusqu'à huit préréglages de n'importe quel maqām, dans n'importe quelle transposition disponible, dans n'importe quel accordage, et passez de l'un à l'autre en mappant votre contrôleur en MIDI, en envoyant des messages Program Change, ou via l'automation de la STAN.</p>
       </Showcase>
 
       <!-- ═══════════════════════════════════════════
@@ -198,6 +201,17 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
           <p>La théorie du maqām arabe donne à chacune de ses notes un nom perso-arabo-ottoman unique — <em>rāst</em>, <em>dūgāh</em>, <em>sīkāh</em>, et ainsi de suite — répartis sur deux <span lang="ar">دواوين</span> (<em>dawāwīn</em>), un <em>dīwān</em> inférieur et un supérieur (octave). Élargissez Tanghīm à pleine largeur pour voir les systèmes d'accordage et les maqāmāt sur les deux octaves.</p>
         </Interlude>
       </section>
+
+      <!-- Showcase: Oscillator — audition instantly (Osc only) -->
+      <Showcase
+        title="Écoutez-le <strong>instantanément</strong>"
+        subtitle="Auditionnez n'importe quel accordage sans charger d'instrument."
+      >
+        <p>L'oscillateur intégré à onde triangulaire (Osc) vous permet d'entendre un accordage immédiatement, sans charger le moindre instrument externe — vous pouvez ainsi explorer un maqām dès que vous le sélectionnez.</p>
+        <div class="badge-row">
+          <Badge variant="osc">Osc</Badge>
+        </div>
+      </Showcase>
 
       <!-- ═══════════════════════════════════════════
            FEATURE ROWS (each its own alternating band)
@@ -251,13 +265,29 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
             Ableton Live n'autorise pas les greffons d'effet MIDI tiers. Pour y remédier, Tanghīm est livré avec deux périphériques Max for Live — un récepteur MPE et un récepteur Mono Pitch Bend — qui acheminent l'accordage à l'intérieur de Live. Aucune configuration supplémentaire&#8239;: installez, chargez, et l'accordage suit.
           </p>
           <div class="flex flex-col gap-[0.375rem] pt-1 max-[600px]:gap-[0.625rem]">
-            <a href="/fr/articles/cross-platform" class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline">Lisez l'article pour toute l'histoire →</a>
             <a href="/fr/docs/ableton" class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline">Guide de configuration Ableton Live →</a>
           </div>
         </div>
       </section>
 
+      <!-- ═══════════════════════════════════════════
+           PROBLEMS OF TUNING CALL-OUT
+           ═══════════════════════════════════════════ -->
+<!--      <section class="page-band ableton-callout reveal border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="Compatibilité Ableton Live">
+        <div class="max-w-[680px] mx-auto flex flex-col gap-4">
+          <h2 class="m-0 text-[clamp(1.25rem,3vw,1.625rem)] font-bold text-[var(--brand-text)] tracking-[-0.01em] text-balance">Les problèmes de l'accordage dans la production musicale moderne</h2>
+          <p class="m-0 text-[1rem] leading-[1.7] text-[var(--brand-muted)] max-w-[60ch] text-pretty">
+            Depuis les années 1980, de nombreux artistes, musiciens et chercheurs tentent de trouver des méthodes pour faire entrer les systèmes d'accordage musicaux des cultures du monde dans notre paysage technologique, analogique et numérique. À ce jour, l'industrie des technologies musicales ne s'est toujours pas accordée sur une méthode permettant aux cultures musicales du monde d'exister au sein des flux de production sonore de façon musicale et signifiante.
+          </p>
+          <div class="flex flex-col gap-[0.375rem] pt-1 max-[600px]:gap-[0.625rem]">
+            <a href="/fr/articles/cross-platform" class="text-[0.9rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline">Lisez l'article pour toute l'histoire →</a>
+          </div>
+        </div>
+      </section>
+ -->
+
       <!-- Feature Grid — everything else at a glance -->
+<!--
       <FeatureGrid items={[
           {
             title: 'Redéfinitions par note',
@@ -284,6 +314,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
             body: 'Changez de préréglage depuis votre STAN avec des messages MIDI Program Change.',
           },
         ]} />
+-->
 
       <!-- ═══════════════════════════════════════════
            MUSICOLOGY STRIP (name gloss) — grace note before the CTA

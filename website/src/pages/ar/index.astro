@@ -70,11 +70,11 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
             <p class="m-0 text-[0.95rem] font-semibold text-[var(--brand-muted)]" lang="ar">أخيراً</p>
 
             <h1 class="m-0 text-[clamp(2rem,5vw,3.25rem)] font-bold leading-[1.35] text-[var(--brand-text)] max-w-[24ch] text-balance" lang="ar">
-              <span class="text-[var(--brand-gold)]">ألف عام</span> من تنغيم المقام العربي بين يديك
+              <span class="text-[var(--brand-gold)]">أكثر من ألف عام</span> من تنغيم المقام العربي بين يديك
             </h1>
 
             <p class="m-0 text-[clamp(1rem,2.2vw,1.125rem)] leading-[1.85] text-[var(--brand-muted)] max-w-[60ch] text-balance" lang="ar">
-              <span class="brand-name">تنغيم</span> هي <strong class="text-[var(--brand-text)] font-semibold">إضافة توسيعية (بلاجِن) مجانية ومفتوحة المصدر</strong> تجلب تناغيم المقامات العربية التاريخية من <strong class="text-[var(--brand-text)] font-semibold">أرشيف المقام العربي الرقمي</strong> مباشرةً إلى <strong class="text-[var(--brand-text)] font-semibold">أي محطة عمل صوتيات رقمية</strong> (Digital Audio Workstation)
+              <span class="brand-name">تنغيم</span> هي <strong class="text-[var(--brand-text)] font-semibold">إضافة توسيعية (بلاجِن) مجانية ومفتوحة المصدر</strong> تجلب تناغيم المقامات العربية التاريخية والحديثة من <strong class="text-[var(--brand-text)] font-semibold">أرشيف المقام العربي الرقمي</strong> مباشرةً إلى <strong class="text-[var(--brand-text)] font-semibold">أي محطة عمل صوتيات رقمية</strong> (Digital Audio Workstation)
             </p>
 
             <!-- CTAs -->
@@ -112,13 +112,25 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
       </section>
 
       <!-- ═══════════════════════════════════════════
+           Showcase: Historical lineage — manuscripts → DAW (no image yet)
+           ═══════════════════════════════════════════ -->
+      <Showcase
+        title="من <strong>القرن التاسع</strong> إلى محطة عملكم"
+        subtitle="مخطوطات نظرية المقام تُبعث من جديد."
+      >
+        <p lang="ar">قاد سمعُنا دائماً تنغيم المقام العربي وضبط درجاته، لكنه كان أيضاً موضع تنظير وقياس على يد كثير من العقول الكبيرة عبر القرون.</p>
+        <p lang="ar">المَوصِلي، الكِندي، الفارابي، ابن سينا، الأُرمَوي، ميخائيل مشاقة، لجان التنغيم في مؤتمر القاهرة، أمين الديك، توفيق الصبّاغ، وكثيرون غيرهم…</p>
+        <p lang="ar">وبفضل بيانات <strong>أرشيف المقام العربي الرقمي (DiArMaqAr)</strong>، صارت كل هذه الأنظمة متاحة للوصول والتعديل عبر <span class="brand-name">تنغيم</span> ببضع نقرات.</p>
+      </Showcase>
+
+      <!-- ═══════════════════════════════════════════
            DiArMaqAr interlude — the archive is the foundation (before features)
            ═══════════════════════════════════════════ -->
       <section class="page-band interlude-band reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5" aria-label="ما هو أرشيف المقام العربي الرقمي؟">
         <Interlude eyebrow="ما هو أرشيف المقام العربي الرقمي؟" expandable expandLabel="توسيع" collapseLabel="طيّ">
           <p>تأخذ <span class="brand-name">تنغيم</span> بياناتها من <a href="https://diarmaqar.net/" class="interlude-link" target="_blank" rel="noopener noreferrer">أرشيف المقام العربي الرقمي (DiArMaqAr)</a> — وهو أرشيف مفتوح المصدر يجمع أنظمة التنغيم والمقامات الموثّقة تاريخياً في موسيقى المنطقة الناطقة بالعربية، مع توثيق مصدر كل منها.</p>
           <p>تتّصل <span class="brand-name">تنغيم</span> بواجهة الأرشيف البرمجية (REST API) وتحفظ نسخة من بياناته على جهازك، لتكون النغمات المعزوفة مطابقة تماماً لِما في الأرشيف. ويُنبّهك زر التحديث كلما تغيّر الأرشيف.</p>
-          <p>الأرشيف من بحث وتصميم وتطوير خيّام اللامي مع إبراهيم الخنسا في مختبر الذكاء الموسيقي بالجامعة الأمريكية في بيروت.</p>
+          <p>الأرشيف من بحث وتصميم وتطوير خيّام اللامي مع إبراهيم الخنسا في مختبر الذكاء الموسيقي / مركز العلوم الرياضية المتقدمة بالجامعة الأمريكية في بيروت، لبنان، عام 2026.</p>
         </Interlude>
       </section>
 
@@ -130,7 +142,8 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
         title="تنغيم المقام العربي، <strong>بأصواتك</strong>"
         subtitle="ثلاث طرق للتنغيم، من السنثسيزرات المبرمجة إلى الصلبة."
       >
-        <p lang="ar">يضبط <span lang="en">MTS-ESP</span> السنثسيزرات المتوافقة تلقائياً وفوراً من إضافة <em>الإرسال</em> الرئيسية عبر الذاكرة المشتركة. وتتيح إضافة <em>الاستقبال</em> المخصّصة ثني النغمة (Pitch Bend) لكل نوتة عبر MPE (MIDI Polyphonic Expression)، أو ثني النغمة الأحادي (Mono Pitch Bend) للسنثسيزرات ذات قناة MIDI واحدة.</p>
+        <p lang="ar">تقدّم <span class="brand-name">تنغيم</span> ثلاث طرق لتطبيق تنغيم المقام العربي على آلاتكم. يضبط <span lang="en">MTS-ESP</span> السنثسيزرات المتوافقة تلقائياً وفوراً من إضافة <em>الإرسال</em> الرئيسية عبر الذاكرة المشتركة.</p>
+        <p lang="ar">أمّا الآلات غير المتوافقة مع MTS-ESP، فتتيح لها إضافة <em>الاستقبال</em> المخصّصة ثني النغمة (Pitch Bend) لكل نوتة عبر MPE (MIDI Polyphonic Expression)، أو ثني النغمة الأحادي (Mono Pitch Bend) للسنثسيزرات ذات قناة MIDI واحدة.</p>
         <div class="badge-row">
           <Badge variant="mts">MTS-ESP</Badge>
           <Badge variant="mpe">MPE</Badge>
@@ -143,7 +156,7 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
            ═══════════════════════════════════════════ -->
       <section class="page-band interlude-band interlude-band--right reveal border-t border-[color-mix(in_srgb,var(--brand-gold)_14%,transparent)] py-8 px-6 max-[600px]:py-6 max-[600px]:px-5" aria-label="ما هو MTS-ESP؟">
         <Interlude eyebrow="ما هو MTS-ESP؟" expandable expandLabel="توسيع" collapseLabel="طيّ">
-          <p><span lang="en">MTS-ESP</span> بروتوكول تنغيم من تطوير شركة <a href="https://github.com/ODDSound/MTS-ESP" class="interlude-link" target="_blank" rel="noopener noreferrer">ODDSound</a>. تُرسِل إضافةٌ توسيعية أساسية واحدة التنغيمَ إلى الآلات المبرمجة المتوافقة تلقائياً، ويُعاد تنغيمها دون أي إعداد يدوي. يُحدَّث التنغيم لحظياً، فيسري تغيير المقام أو التصوير على كل آلة متصلة في الوقت الفعلي.</p>
+          <p><span lang="en">MTS-ESP</span> بروتوكول تنغيم من تطوير شركة <a href="https://github.com/ODDSound/MTS-ESP" class="interlude-link" target="_blank" rel="noopener noreferrer">ODDSound</a>. تُرسِل إضافةٌ توسيعية أساسية واحدة التنغيمَ إلى الآلات المبرمجة المتوافقة تلقائياً، ويُعاد تنغيمها دون أي إعداد يدوي. يُحدَّث التنغيم لحظياً، فيسري تغيير المقام أو التصوير على كل آلة متصلة في الوقت الفعلي. ويتيح البروتوكول أيضاً لعدة إضافات استقبال أن تتشارك التغيير اللحظي نفسه مع الآلات البرمجية والصلبة غير المتوافقة مع MTS-ESP.</p>
         </Interlude>
       </section>
 
@@ -157,17 +170,6 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
         <p lang="ar">اثنا عشر مزلاقاً، واحد لكل نغمة لونية (كروماتيكية)، تفتح أنظمة التنغيم أمامكم ببساطة فورية. ويسمح كل مزلاق باستكشاف أبعاد التنغيم المختلفة، عبر نقاط الانجذاب أو ضبط أي نغمة سماعياً.</p>
       </Showcase>
 
-      <!-- Showcase: Oscillator — audition instantly (Osc only) -->
-      <Showcase
-        title="اسمعوه <strong>فوراً</strong>"
-        subtitle="الاستماع إلى أي تنغيم دون الحاجة إلى أي آلة"
-      >
-        <p lang="ar">يتيح لكم المذبذب الداخلي ذو الموجة المثلثية (Osc) سماع أي تنغيم فوراً دون أي آلة خارجية — فتستكشفون المقام لحظة اختياره.</p>
-        <div class="badge-row">
-          <Badge variant="osc">Osc</Badge>
-        </div>
-      </Showcase>
-
       <!-- Showcase: Maqam Selection & Presets -->
       <Showcase
         title="اختاروا مقامكم <strong>وانتقلوا</strong>"
@@ -175,7 +177,7 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
         image="/shot-modulate.png"
         imageAlt="شبكة إعدادات تنغيم المسبقة 4×2 بثمانية إعدادات مقامية مسمّاة — مقام راست مميّز بالذهبي بوصفه الإعداد النشط."
       >
-        <p lang="ar">تتيح لكم <span class="brand-name">تنغيم</span> حفظ حتى ثمانية إعدادات مسبقة لأي مقام في أي تصوير متاح، والتبديل بينها أثناء العزف: بربط وحدة التحكم بـ MIDI، أو بإرسال رسائل Program Change، أو بأتمتة محطة عمل الصوتيات الرقمية.</p>
+        <p lang="ar">تتيح لكم <span class="brand-name">تنغيم</span> حفظ حتى ثمانية إعدادات مسبقة لأي مقام في أي تصوير متاح، وبأي تنغيم، والتبديل بينها أثناء العزف: بربط وحدة التحكم بـ MIDI، أو بإرسال رسائل Program Change، أو بأتمتة محطة عمل الصوتيات الرقمية.</p>
       </Showcase>
 
       <!-- ═══════════════════════════════════════════
@@ -198,6 +200,17 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
           <p>تمنح نظرية المقام العربي كل نغمة اسماً فارسياً-عربياً-عثمانياً فريداً — <span lang="ar">راست</span>، <span lang="ar">دوكاه</span>، <span lang="ar">سيكاه</span>، وهكذا — عبر <span lang="ar">ديوانين</span>: ديوان أدنى وأعلى (أوكتاف). وبتوسيع <span class="brand-name">تنغيم</span> إلى عرضها الكامل تظهر أنظمة التنغيم والمقامات عبر الأوكتافين.</p>
         </Interlude>
       </section>
+
+      <!-- Showcase: Oscillator — audition instantly (Osc only) -->
+      <Showcase
+        title="اسمعوه <strong>فوراً</strong>"
+        subtitle="الاستماع إلى أي تنغيم دون الحاجة إلى أي آلة"
+      >
+        <p lang="ar">يتيح لكم المذبذب الداخلي ذو الموجة المثلثية (Osc) سماع أي تنغيم فوراً دون أي آلة خارجية — فتستكشفون المقام لحظة اختياره.</p>
+        <div class="badge-row">
+          <Badge variant="osc">Osc</Badge>
+        </div>
+      </Showcase>
 
       <!-- ═══════════════════════════════════════════
            FEATURE ROWS (each its own alternating band)
@@ -251,13 +264,29 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
             لا يسمح Ableton Live بإضافات مؤثّرات MIDI من جهات خارجية. لذا تأتي <span class="brand-name">تنغيم</span> بجهازَي Max for Live — مستقبل MPE ومستقبل Mono Pitch Bend — يوصّلان التنغيم داخل Live. دون أي إعداد إضافي: ثبّتوا الجهاز وأضيفوه، فيسري التنغيم تلقائياً.
           </p>
           <div class="flex flex-col gap-[0.375rem] pt-1 max-[600px]:gap-[0.625rem]">
-            <a href="/ar/articles/cross-platform" class="text-[0.95rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline" lang="ar">قراءة المقال لمعرفة القصة ←</a>
             <a href="/ar/docs/ableton" class="text-[0.95rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline" lang="ar">دليل إعداد Ableton Live ←</a>
           </div>
         </div>
       </section>
 
+      <!-- ═══════════════════════════════════════════
+           PROBLEMS OF TUNING CALL-OUT
+           ═══════════════════════════════════════════ -->
+<!--      <section class="page-band ableton-callout reveal border-t border-[color-mix(in_srgb,var(--brand-muted)_12%,transparent)] py-16 px-6 max-[600px]:py-12 max-[600px]:px-5" aria-label="التوافق مع Ableton Live">
+        <div class="max-w-[680px] mx-auto flex flex-col gap-4">
+          <h2 class="m-0 text-[clamp(1.5rem,3.2vw,1.9rem)] font-bold text-[var(--brand-text)] text-balance" lang="ar">مشكلات التنغيم في الإنتاج الموسيقي الحديث</h2>
+          <p class="m-0 text-[1.1rem] leading-[1.9] text-[var(--brand-muted)] max-w-[60ch] text-pretty" lang="ar">
+            منذ ثمانينيات القرن الماضي، يحاول كثير من الفنانين والموسيقيين والباحثين إيجاد طرق تُدخِل أنظمة التنغيم الموسيقية لثقافات العالم إلى منظومة تقنياتنا الموسيقية التناظرية والرقمية. وحتى اليوم، لم تتّفق صناعة تقنيات الموسيقى بعد على طريقة تتيح لثقافات العالم الموسيقية أن تعيش داخل مسارات الإنتاج الصوتي على نحو موسيقي ذي معنى.
+          </p>
+          <div class="flex flex-col gap-[0.375rem] pt-1 max-[600px]:gap-[0.625rem]">
+            <a href="/ar/articles/cross-platform" class="text-[0.95rem] text-[var(--brand-gold)] no-underline transition-opacity duration-150 ease-[ease] hover:opacity-80 hover:underline hover:underline-offset-[2px] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:rounded-[2px] focus-visible:outline" lang="ar">قراءة المقال لمعرفة القصة ←</a>
+          </div>
+        </div>
+      </section>
+ -->
+
       <!-- Feature Grid — everything else at a glance -->
+<!--
       <FeatureGrid items={[
           {
             title: 'تجاوزات لكل نوتة',
@@ -284,6 +313,7 @@ const ogImageAlt = 'واجهة إضافة تنغيم تعرض مزالق الت�
             body: 'تبديل الإعدادات المسبقة من محطة عمل الصوتيات الرقمية برسائل MIDI Program Change.',
           },
         ]} />
+-->
 
       <!-- ═══════════════════════════════════════════
            MUSICOLOGY STRIP (name gloss) — grace note before the CTA
