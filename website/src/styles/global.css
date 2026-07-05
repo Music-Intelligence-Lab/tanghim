@@ -116,17 +116,22 @@ body {
 :lang(ar) nav {
 	--ar-optical: 2.5px;
 }
-:lang(ar) nav a:not(.nav-wordmark) {
+/* Only the Arabic-script nav links get the display face + optical size bump.
+   Latin-tagged links (GitHub, English, Français) and the wordmark are excluded
+   so they keep Inter's natural metrics. */
+:lang(ar) nav a:not([lang="en"]):not([lang="fr"]):not(.nav-wordmark) {
 	font-size: 0.95em;
 }
-/* Plain links (not the padded Download pill): shift the whole small box down —
-   it only contains text, so this moves the glyphs without side effects. */
-:lang(ar) nav a:not(.nav-wordmark):not(.nav-download) {
+/* The optical nudge must apply ONLY to the Arabic-script links: Arabic
+   letterforms sit high in their em box and look too high without it, but Latin
+   (Inter) is already box-centred — nudging it too shifts Latin off the shared
+   baseline. Exclude [lang="en"]/[lang="fr"] and the padded Download pill. */
+:lang(ar) nav a:not([lang="en"]):not([lang="fr"]):not(.nav-wordmark):not(.nav-download) {
 	position: relative;
 	top: var(--ar-optical);
 }
-/* Download pill: shift only the label inside the pill, not the pill itself,
-   by rebalancing its vertical padding. */
+/* Download pill (Arabic label): shift only the label inside the pill, not the
+   pill itself, by rebalancing its vertical padding. */
 :lang(ar) nav a.nav-download {
 	padding-top: calc(0.4rem + var(--ar-optical));
 	padding-bottom: calc(0.4rem - var(--ar-optical));
