@@ -64,6 +64,19 @@ html {
 	scrollbar-gutter: stable;
 }
 
+/* Clip decorative overflow at the inline-end edge. The hero/showcase/feature
+   glows are absolutely positioned with negative horizontal insets (inset:-…%);
+   on narrower/zoomed viewports they spill past the content column and push the
+   page wider than the viewport, producing a thin scrollable strip on the
+   inline-end side (right under LTR, left under RTL) — visible only on scroll or
+   zoom. Clip it on <main> rather than <body>: the Nav is `position: sticky`, and
+   an overflow clamp on its scroll ancestor would break its stickiness. `clip`
+   (not `hidden`) creates no scroll container, so it can't affect sticky/scroll
+   behaviour of anything. All the offending glows live inside <main>. */
+main {
+	overflow-x: clip;
+}
+
 /* Prevent the browser from auto-correcting scroll position when content above
    the viewport changes size (scroll anchoring) — this caused a scroll jump on
    the landing page as the hero/reveal animations settled. */
