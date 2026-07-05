@@ -298,4 +298,64 @@ const bodyId = `interlude-body-${crypto.randomUUID().slice(0, 8)}`;
     transform: rotate(90deg); /* › points down when collapsed */
     transition: transform 0.3s ease;
   }
+
+  /* ── Expand/collapse animation ──────────────────────────────────────────
+     Default (no JS): fully expanded, no clamp, button hidden — so text is
+     never trapped. The .js-ready gate below re-enables the collapsed state. */
+  .interlude-toggle { display: none; }
+
+  :global(body.js-ready) .interlude-toggle { display: inline-flex; }
+
+  /* With JS: the collapse wrapper uses a max-height transition. Collapsed =
+     a 2-line max-height floor; open = a generous max-height. max-height is
+     used (not grid 1fr) because it eases reliably from a fixed floor. */
+  :global(body.js-ready) .interlude-collapse {
+    max-height: calc(2em * 1.85 + 0.1em); /* ~2 lines at the body line-height */
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+  }
+
+  :global(body.js-ready) .interlude-inner--expandable.is-open .interlude-collapse {
+    max-height: 40rem; /* larger than any interlude body; eases open */
+  }
+
+  /* Release the line-clamp when open so the full prose shows. */
+  :global(body.js-ready) .interlude-inner--expandable.is-open .interlude-collapse .interlude-body--centered {
+    -webkit-line-clamp: unset;
+    display: block;
+    overflow: visible;
+  }
+
+  /* Chevron points up when open. */
+  :global(body.js-ready) .interlude-inner--expandable.is-open .interlude-chevron {
+    transform: rotate(270deg);
+  }
+
+  /* Reduced motion: no transition, and show everything expanded with no toggle. */
+  @media (prefers-reduced-motion: reduce) {
+    :global(body.js-ready) .interlude-collapse { transition: none; max-height: none; }
+    :global(body.js-ready) .interlude-collapse .interlude-body--centered {
+      -webkit-line-clamp: unset; display: block; overflow: visible;
+    }
+    :global(body.js-ready) .interlude-toggle { display: none; }
+  }
 </style>
+
+<script>
+  // Expandable interludes: wire each toggle to its aria-controls target.
+  // Runs only when JS is active; CSS above keeps content visible without it.
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggles = document.querySelectorAll('.interlude-toggle');
+    toggles.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const inner = btn.closest('.interlude-inner--expandable');
+        if (!inner) return;
+        const open = inner.classList.toggle('is-open');
+        btn.setAttribute('aria-expanded', String(open));
+        const expandLabel = btn.getAttribute('data-expand-label') || 'Expand';
+        const collapseLabel = btn.getAttribute('data-collapse-label') || 'Collapse';
+        btn.setAttribute('aria-label', open ? collapseLabel : expandLabel);
+      });
+    });
+  });
+</script>
