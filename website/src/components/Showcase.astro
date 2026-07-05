@@ -7,6 +7,8 @@
 //   imageAlt: string
 //   reverse?: boolean — reserved for future use; layout is always centered
 
+import { viewFullSizeLabel } from '../lib/lightboxLabels';
+
 interface Props {
   title: string;
   subtitle: string;
@@ -17,6 +19,7 @@ interface Props {
 }
 
 const { title, subtitle, image, imageAlt, id } = Astro.props;
+const viewFullSize = viewFullSizeLabel(Astro.url.pathname);
 ---
 
 <div class="page-band py-16 px-6 border-t border-[color-mix(in_srgb,var(--brand-muted)_10%,transparent)]" id={id}>
@@ -34,13 +37,15 @@ const { title, subtitle, image, imageAlt, id } = Astro.props;
     {image && (
       <div class="relative w-full max-w-[820px]">
         <div class="showcase-glow absolute pointer-events-none z-0" aria-hidden="true"></div>
-        <img
-          src={image}
-          alt={imageAlt}
-          class="relative z-[1] block w-full h-auto rounded-[0.5rem] border border-[color-mix(in_srgb,var(--brand-gold)_18%,transparent)]"
-          loading="lazy"
-          decoding="async"
-        />
+        <button type="button" class="lightbox-trigger" data-lightbox aria-label={viewFullSize}>
+          <img
+            src={image}
+            alt={imageAlt}
+            class="block w-full h-auto rounded-[0.5rem] border border-[color-mix(in_srgb,var(--brand-gold)_18%,transparent)]"
+            loading="lazy"
+            decoding="async"
+          />
+        </button>
       </div>
     )}
   </div>

@@ -6,6 +6,8 @@
 //   imageAlt: string
 //   reverse?: boolean — flip text/visual columns
 
+import { viewFullSizeLabel } from '../lib/lightboxLabels';
+
 interface Props {
   title: string;
   image: string;
@@ -14,6 +16,7 @@ interface Props {
 }
 
 const { title, image, imageAlt, reverse = false } = Astro.props;
+const viewFullSize = viewFullSizeLabel(Astro.url.pathname);
 ---
 
 <div class:list={['feature-row page-band py-14 px-6 border-t border-[color-mix(in_srgb,var(--brand-muted)_10%,transparent)]', { 'feature-row--reverse': reverse }]}>
@@ -29,13 +32,15 @@ const { title, image, imageAlt, reverse = false } = Astro.props;
     <!-- Visual column -->
     <div class="feature-row-visual relative">
       <div class="row-glow absolute pointer-events-none z-0" aria-hidden="true"></div>
-      <img
-        src={image}
-        alt={imageAlt}
-        class="relative z-[1] block w-full h-auto rounded-[0.5rem] border border-[color-mix(in_srgb,var(--brand-gold)_15%,transparent)]"
-        loading="lazy"
-        decoding="async"
-      />
+      <button type="button" class="lightbox-trigger" data-lightbox aria-label={viewFullSize}>
+        <img
+          src={image}
+          alt={imageAlt}
+          class="block w-full h-auto rounded-[0.5rem] border border-[color-mix(in_srgb,var(--brand-gold)_15%,transparent)]"
+          loading="lazy"
+          decoding="async"
+        />
+      </button>
     </div>
   </div>
 </div>

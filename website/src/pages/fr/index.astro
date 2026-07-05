@@ -8,6 +8,10 @@ import Showcase from '../../components/Showcase.astro';
 import FeatureRow from '../../components/FeatureRow.astro';
 import FeatureGrid from '../../components/FeatureGrid.astro';
 import Interlude from '../../components/Interlude.astro';
+import Lightbox from '../../components/Lightbox.astro';
+import { viewFullSizeLabel } from '../../lib/lightboxLabels';
+
+const viewFullSize = viewFullSizeLabel(Astro.url.pathname);
 
 // Shared metadata — single source of truth for <title>, description, and social cards.
 const pageTitle = 'Tanghīm — Accordage du maqām arabe pour toute STAN';
@@ -86,14 +90,16 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
           <!-- UI screenshot with gold glow -->
           <div class="relative w-full max-w-[820px]">
             <div class="hero-glow absolute pointer-events-none z-0" aria-hidden="true"></div>
-            <img
-              src="/tanghim-ui.png"
-              alt="L'interface du greffon Tanghīm : un banc de curseurs d'accordage affichant les degrés du maqām en doré sur un panneau bleu nuit, avec le sélecteur de maqām, la grille de préréglages et les commandes de fréquence de référence."
-              class="relative z-[1] block w-full h-auto rounded-[0.625rem] border border-[color-mix(in_srgb,var(--brand-gold)_22%,transparent)]"
-              width="1756"
-              height="1370"
-              loading="eager"
-            />
+            <button type="button" class="lightbox-trigger" data-lightbox aria-label={viewFullSize}>
+              <img
+                src="/tanghim-ui.png"
+                alt="L'interface du greffon Tanghīm : un banc de curseurs d'accordage affichant les degrés du maqām en doré sur un panneau bleu nuit, avec le sélecteur de maqām, la grille de préréglages et les commandes de fréquence de référence."
+                class="block w-full h-auto rounded-[0.625rem] border border-[color-mix(in_srgb,var(--brand-gold)_22%,transparent)]"
+                width="1756"
+                height="1370"
+                loading="eager"
+              />
+            </button>
           </div>
 
         </div>
@@ -341,6 +347,7 @@ const ogImageAlt = "L'interface du greffon Tanghīm montrant les curseurs d'acco
     </main>
 
     <Footer />
+    <Lightbox />
   </body>
 </html>
 

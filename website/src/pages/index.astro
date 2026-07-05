@@ -8,6 +8,10 @@ import Showcase from "../components/Showcase.astro";
 import FeatureRow from "../components/FeatureRow.astro";
 import FeatureGrid from "../components/FeatureGrid.astro";
 import Interlude from "../components/Interlude.astro";
+import Lightbox from "../components/Lightbox.astro";
+import { viewFullSizeLabel } from "../lib/lightboxLabels";
+
+const viewFullSize = viewFullSizeLabel(Astro.url.pathname);
 
 // Shared metadata — single source of truth for <title>, description, and social cards.
 const pageTitle = "Tanghīm — Arabic Maqām Tuning for any DAW";
@@ -119,14 +123,16 @@ const ogImageAlt =
               aria-hidden="true"
             >
             </div>
-            <img
-              src="/tanghim-ui.png"
-              alt="The Tanghīm plugin interface: a bank of tuning sliders showing maqām degrees in gold against a navy panel, with maqām selector, preset grid, and reference-frequency controls."
-              class="relative z-[1] block w-full h-auto rounded-[0.625rem] border border-[color-mix(in_srgb,var(--brand-gold)_22%,transparent)]"
-              width="1756"
-              height="1370"
-              loading="eager"
-            />
+            <button type="button" class="lightbox-trigger" data-lightbox aria-label={viewFullSize}>
+              <img
+                src="/tanghim-ui.png"
+                alt="The Tanghīm plugin interface: a bank of tuning sliders showing maqām degrees in gold against a navy panel, with maqām selector, preset grid, and reference-frequency controls."
+                class="block w-full h-auto rounded-[0.625rem] border border-[color-mix(in_srgb,var(--brand-gold)_22%,transparent)]"
+                width="1756"
+                height="1370"
+                loading="eager"
+              />
+            </button>
           </div>
         </div>
       </section>
@@ -600,6 +606,7 @@ const ogImageAlt =
     </main>
 
     <Footer />
+    <Lightbox />
   </body>
 </html>
 

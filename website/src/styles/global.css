@@ -77,6 +77,46 @@ main {
 	overflow-x: clip;
 }
 
+/* ── Lightbox trigger ────────────────────────────────────────────────────────
+   A transparent, chrome-free button wrapping a clickable screenshot. Behaves as
+   a block so it fills the image's layout slot, preserves the image's own
+   `relative z-[1]` stacking (so the decorative glow sibling still renders
+   behind), and signals clickability with a zoom-in cursor + a subtle hover lift. */
+.lightbox-trigger {
+	display: block;
+	width: 100%;
+	padding: 0;
+	border: none;
+	background: none;
+	cursor: zoom-in;
+	/* Keep the image's own stacking above the absolutely-positioned glow. */
+	position: relative;
+	z-index: 1;
+	border-radius: 0.5rem;
+	transition: transform 0.2s cubic-bezier(0.33, 0, 0.2, 1), filter 0.2s ease;
+}
+
+.lightbox-trigger:hover {
+	transform: scale(1.01);
+	filter: brightness(1.04);
+}
+
+.lightbox-trigger:focus-visible {
+	outline: 2px solid var(--brand-gold);
+	outline-offset: 3px;
+	border-radius: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.lightbox-trigger {
+		transition: none;
+	}
+	.lightbox-trigger:hover {
+		transform: none;
+		filter: none;
+	}
+}
+
 /* Prevent the browser from auto-correcting scroll position when content above
    the viewport changes size (scroll anchoring) — this caused a scroll jump on
    the landing page as the hero/reveal animations settled. */

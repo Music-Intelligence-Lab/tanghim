@@ -1,0 +1,243 @@
+---
+// Lightbox.astro — one shared full-size image overlay for the landing pages.
+//
+// Rendered once per page (before </body>). A single native <dialog> is reused
+// for every screenshot: a delegated click listener reads the source image's
+// src + alt from any [data-lightbox] trigger, fills the dialog <img>, and calls
+// showModal() (focus-trap + Esc + inert background, all native). One image at a
+// time — no gallery. See docs/superpowers/specs/2026-07-06-image-lightbox-design.md
+//
+// Locale is read from the path like Footer.astro, for the close-button aria-label.
+
+const parts = Astro.url.pathname.split('/').filter(Boolean);
+const currentLocale = (parts[0] === 'ar' || parts[0] === 'fr') ? parts[0] : 'en';
+const closeLabels = { en: 'Close', ar: 'إغلاق', fr: 'Fermer' };
+const closeLabel = closeLabels[currentLocale as keyof typeof closeLabels];
+---
+
+<dialog
+  id="lightbox"
+  class="lightbox"
+  aria-label={closeLabel}
+>
+  <button type="button" class="lightbox-close" aria-label={closeLabel}>
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+      <line x1="6" y1="6" x2="18" y2="18" />
+      <line x1="18" y1="6" x2="6" y2="18" />
+    </svg>
+  </button>
+  <div class="lightbox-viewport">
+    <img class="lightbox-img" src="" alt="" />
+  </div>
+</dialog>
+
+<style>
+  .lightbox {
+    /* Reset native dialog box: no border/bg/padding, centred, sized to content. */
+    margin: auto;
+    padding: 0;
+    border: none;
+    background: transparent;
+    max-width: 92vw;
+    max-height: 92vh;
+    overflow: visible;
+  }
+
+  .lightbox::backdrop {
+    background: color-mix(in srgb, var(--brand-navy-900) 88%, black);
+    backdrop-filter: blur(2px);
+  }
+
+  /* Fit state: viewport shrink-wraps the fitted image. */
+  .lightbox-viewport {
+    display: block;
+    overflow: hidden;
+    border-radius: 0.5rem;
+  }
+
+  .lightbox-img {
+    display: block;
+    max-width: 92vw;
+    max-height: 92vh;
+    width: auto;
+    height: auto;
+    border-radius: 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--brand-gold) 22%, transparent);
+    box-shadow:
+      0 8px 48px rgba(0, 0, 0, 0.6),
+      0 0 60px color-mix(in srgb, var(--brand-gold) 8%, transparent);
+    cursor: zoom-in;
+  }
+
+  /* Zoomed state: the viewport becomes a fixed 92vw×92vh clipping window and the
+     image renders at its natural pixel size, panned by translating it with the
+     --pan-x/--pan-y variables set from the pointer position (0→1 across the
+     image maps to showing left→right / top→bottom of the overflow). */
+  .lightbox.is-zoomed {
+    max-width: 92vw;
+    max-height: 92vh;
+  }
+
+  .lightbox.is-zoomed .lightbox-viewport {
+    width: 92vw;
+    height: 92vh;
+    /* Centre the native-size image; panning then translates it from centre. */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+  }
+
+  .lightbox.is-zoomed .lightbox-img {
+    max-width: none;
+    max-height: none;
+    width: auto;   /* natural size */
+    height: auto;
+    flex: none;
+    border: none;
+    border-radius: 0;
+    /* Pan from centre: --pan-x/--pan-y are 0..1 pointer fractions (0.5 = centre).
+       (0.5 - pan) * overflow moves the image ± half the overflow: pan=0 (pointer
+       at left) reveals the LEFT edge, pan=1 (pointer at right) the RIGHT edge,
+       pan=0.5 stays centred. --overflow-x/y (natural size − viewport) come from JS. */
+    transform: translate(
+      calc((0.5 - var(--pan-x, 0.5)) * var(--overflow-x, 0px)),
+      calc((0.5 - var(--pan-y, 0.5)) * var(--overflow-y, 0px))
+    );
+    cursor: zoom-out;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .lightbox-img {
+      transition: transform 0.05s linear;
+    }
+  }
+
+  .lightbox-close {
+    position: absolute;
+    inset-block-start: -0.75rem;
+    /* Logical prop: top-right under LTR, top-left under RTL. */
+    inset-inline-end: -0.75rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--brand-gold) 45%, transparent);
+    border-radius: 50%;
+    background: var(--brand-navy-800);
+    color: var(--brand-gold);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    z-index: 1;
+  }
+
+  .lightbox-close:hover {
+    background: color-mix(in srgb, var(--brand-gold) 14%, var(--brand-navy-800));
+    border-color: var(--brand-gold);
+  }
+
+  .lightbox-close:focus-visible {
+    outline: 2px solid var(--brand-gold);
+    outline-offset: 2px;
+  }
+
+  /* Fade + scale in when opened; disabled under reduced motion. */
+  @media (prefers-reduced-motion: no-preference) {
+    .lightbox[open] {
+      animation: lightbox-in 0.2s cubic-bezier(0.33, 0, 0.2, 1) both;
+    }
+    @keyframes lightbox-in {
+      from { opacity: 0; transform: scale(0.97); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+  }
+</style>
+
+<script>
+  // One delegated listener drives the lightbox for every [data-lightbox] trigger.
+  const dialogEl = document.getElementById('lightbox') as HTMLDialogElement | null;
+  if (dialogEl) {
+    const dialog = dialogEl; // non-null within this block, incl. nested closures
+    const viewport = dialog.querySelector('.lightbox-viewport') as HTMLElement;
+    const dialogImg = dialog.querySelector('.lightbox-img') as HTMLImageElement;
+    const closeBtn = dialog.querySelector('.lightbox-close') as HTMLButtonElement;
+
+    // Open at fit.
+    document.addEventListener('click', (e) => {
+      const trigger = (e.target as HTMLElement)?.closest('[data-lightbox]');
+      if (!trigger) return;
+      const img = trigger.querySelector('img');
+      if (!img) return;
+      // currentSrc reflects the actually-loaded source (responsive/lazy); fall back to src.
+      dialogImg.src = img.currentSrc || img.src;
+      dialogImg.alt = img.alt || '';
+      exitZoom();
+      dialog.showModal(); // native: focus trap, Esc-to-close, inert background
+    });
+
+    // ── Two-state click zoom (fit ↔ native), with pointer-driven panning ──────
+    // Zoomed: the viewport is a fixed 92vw×92vh window and the image renders at
+    // its natural pixel size; moving the pointer maps 0→1 across the window to
+    // showing left→right / top→bottom of the overflow.
+    function enterZoom() {
+      // Apply the zoomed layout first so the viewport is at its real 92vw×92vh
+      // size, then measure it (avoids scrollbar/rounding drift from estimating
+      // via window.innerWidth). Start centred.
+      dialog.style.setProperty('--pan-x', '0.5');
+      dialog.style.setProperty('--pan-y', '0.5');
+      dialog.classList.add('is-zoomed');
+      const rect = viewport.getBoundingClientRect();
+      const overflowX = Math.max(0, dialogImg.naturalWidth - rect.width);
+      const overflowY = Math.max(0, dialogImg.naturalHeight - rect.height);
+      // Nothing to pan into on either axis — the image already fits; stay at fit.
+      if (overflowX <= 0 && overflowY <= 0) {
+        dialog.classList.remove('is-zoomed');
+        return;
+      }
+      dialog.style.setProperty('--overflow-x', overflowX + 'px');
+      dialog.style.setProperty('--overflow-y', overflowY + 'px');
+    }
+
+    function exitZoom() {
+      dialog.classList.remove('is-zoomed');
+      dialog.style.removeProperty('--overflow-x');
+      dialog.style.removeProperty('--overflow-y');
+      dialog.style.removeProperty('--pan-x');
+      dialog.style.removeProperty('--pan-y');
+    }
+
+    // Click the image toggles zoom.
+    dialogImg.addEventListener('click', (e) => {
+      e.stopPropagation(); // don't let the dialog-level backdrop handler close it
+      if (dialog.classList.contains('is-zoomed')) exitZoom();
+      else enterZoom();
+    });
+
+    // Pointer position → pan fractions, only while zoomed.
+    viewport.addEventListener('mousemove', (e) => {
+      if (!dialog.classList.contains('is-zoomed')) return;
+      const rect = viewport.getBoundingClientRect();
+      const px = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+      const py = Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height));
+      dialog.style.setProperty('--pan-x', String(px));
+      dialog.style.setProperty('--pan-y', String(py));
+    });
+
+    // Close on the × button.
+    closeBtn.addEventListener('click', () => dialog.close());
+
+    // Close on backdrop click: the event target is the <dialog> itself only when
+    // the click lands outside the image/close-button (i.e. on the backdrop area).
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+
+    // Reset zoom + clear the src on close so nothing stale carries to the next open.
+    dialog.addEventListener('close', () => {
+      exitZoom();
+      dialogImg.src = '';
+      dialogImg.alt = '';
+    });
+  }
+</script>
