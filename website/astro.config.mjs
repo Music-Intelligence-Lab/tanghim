@@ -34,6 +34,13 @@ export default defineConfig({
 					],
 				},
 				{
+					label: 'FAQ',
+					translations: { ar: 'الأسئلة الشائعة', fr: 'FAQ' },
+					items: [
+						{ slug: 'docs/faq', translations: { ar: 'الأسئلة الشائعة', fr: 'Foire aux questions' } },
+					],
+				},
+				{
 					label: 'The Interface',
 					translations: { ar: 'الواجهة', fr: "L'interface" },
 					items: [
