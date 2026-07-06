@@ -304,6 +304,10 @@ html:lang(ar) .showcase-body     { font-size: 1.08rem; }
 html:lang(ar) .row-title         { font-size: clamp(1.44rem, 2.9vw, 2rem); }
 html:lang(ar) .row-body          { font-size: 1.08rem; }
 html:lang(ar) .interlude-eyebrow { font-size: 0.95rem; }
+/* Expandable-strip title (the "what is X?" questions). Bumped like the other AR
+   headings so it doesn't read small next to the body — Arabic is optically
+   smaller than the Latin clamp(1.05rem, 2vw, 1.35rem) at the same px. */
+html:lang(ar) .interlude-title   { font-size: clamp(1.35rem, 2.6vw, 1.7rem); }
 html:lang(ar) .interlude-body    { font-size: clamp(1.08rem, 1.8vw, 1.2rem); }
 
 /* Line-height: the AR type is ~1.15× the EN size, so inheriting EN's line-height
