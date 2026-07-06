@@ -27,9 +27,9 @@ const localeBase = currentLocale === 'en' ? '' : `/${currentLocale}`;
 
 // Nav link labels per locale
 const labels = {
-  en: { features: 'Features', docs: 'Docs', article: 'Article', download: 'Download' },
-  ar: { features: 'الميزات', docs: 'التوثيق', article: 'المقالة', download: 'تحميل' },
-  fr: { features: 'Fonctionnalités', docs: 'Docs', article: 'Article', download: 'Télécharger' },
+  en: { features: 'Features', article: 'Article', docs: 'Docs', github: 'GitHub', download: 'Download' },
+  ar: { features: 'الميزات', article: 'المقالة', docs: 'التوثيق', github: 'المصدر', download: 'تحميل' },
+  fr: { features: 'Fonctionnalités', article: 'Article', docs: 'Docs', github: 'GitHub', download: 'Télécharger' },
 };
 const t = labels[currentLocale as keyof typeof labels];
 
@@ -58,9 +58,9 @@ const arLang = currentLocale === 'ar' ? 'ar' : undefined;
       </summary>
       <div class="absolute end-0 top-[calc(100%+0.5rem)] bg-[var(--brand-navy-800)] border border-[color-mix(in_srgb,var(--brand-gold)_20%,transparent)] rounded-[0.5rem] p-2 min-w-[180px] flex flex-col gap-[0.125rem]">
         <a href={`${localeBase}/#features`} lang={arLang} class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.features}</a>
-        <a href={`${localeBase}/docs`} lang={arLang} class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.docs}</a>
         <a href={`${localeBase}/articles/cross-platform`} lang={arLang} class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.article}</a>
-        <a href="https://github.com/Music-Intelligence-Lab/tanghim" lang="en" class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href={`${localeBase}/docs`} lang={arLang} class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.docs}</a>
+        <a href="https://github.com/Music-Intelligence-Lab/tanghim" lang={arLang} class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline" target="_blank" rel="noopener noreferrer">{t.github}</a>
         <a href={downloadHref} lang={arLang} class="block mt-1 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] font-semibold text-[0.875rem] px-3 py-2 rounded-[0.375rem] no-underline text-center focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.download}</a>
         <!-- Language switcher (mobile) -->
         <div class="border-t border-[color-mix(in_srgb,var(--brand-muted)_15%,transparent)] mt-1 pt-1 flex gap-1" role="navigation" aria-label="Language">
@@ -79,9 +79,9 @@ const arLang = currentLocale === 'ar' ? 'ar' : undefined;
     <!-- Desktop links -->
     <div class="flex items-center gap-1 max-[720px]:hidden">
       <a href={`${localeBase}/#features`} lang={arLang} class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.features}</a>
-      <a href={`${localeBase}/docs`} lang={arLang} class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.docs}</a>
       <a href={`${localeBase}/articles/cross-platform`} lang={arLang} class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.article}</a>
-      <a href="https://github.com/Music-Intelligence-Lab/tanghim" lang="en" class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href={`${localeBase}/docs`} lang={arLang} class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.docs}</a>
+      <a href="https://github.com/Music-Intelligence-Lab/tanghim" lang={arLang} class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline" target="_blank" rel="noopener noreferrer">{t.github}</a>
       <!-- Language switcher (desktop) -->
       <div class="ms-2 flex items-center gap-0.5 border-s border-[color-mix(in_srgb,var(--brand-muted)_20%,transparent)] ps-3" role="navigation" aria-label="Language">
         {locales.map(({ code, label }) => (
