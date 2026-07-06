@@ -211,7 +211,7 @@ const bodyId = `interlude-body-${crypto.randomUUID().slice(0, 8)}`;
 
   /* ── Expandable "What is X?" interludes ─────────────────────────────────
      Centered, symmetric explainer: short gold accent line, eyebrow-as-title,
-     center-justified body clamped to 2 lines until expanded, chevron toggle.
+     center-justified body clamped to 1 line until expanded, chevron toggle.
      Replaces the left gold rule (which doesn't suit centered content). */
   .interlude-inner--expandable {
     grid-template-columns: minmax(0, 1fr);
@@ -259,12 +259,12 @@ const bodyId = `interlude-body-${crypto.randomUUID().slice(0, 8)}`;
     margin-inline: auto;
   }
 
-  /* Collapsed: clamp the body to 2 lines with an ellipsis. The collapse wrapper
+  /* Collapsed: clamp the body to 1 line with an ellipsis. The collapse wrapper
      animates in Task 3; here it just holds the clamp. */
   .interlude-collapse .interlude-body--centered {
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
     overflow: hidden;
   }
 
@@ -313,10 +313,10 @@ const bodyId = `interlude-body-${crypto.randomUUID().slice(0, 8)}`;
   :global(body.js-ready) .interlude-toggle { display: inline-flex; }
 
   /* With JS: the collapse wrapper uses a max-height transition. Collapsed =
-     a 2-line max-height floor; open = a generous max-height. max-height is
+     a 1-line max-height floor; open = a generous max-height. max-height is
      used (not grid 1fr) because it eases reliably from a fixed floor. */
   :global(body.js-ready) .interlude-collapse {
-    max-height: calc(2em * 1.85 + 0.1em); /* ~2 lines at the body line-height */
+    max-height: calc(1em * 1.85 + 0.1em); /* ~1 line at the body line-height */
     overflow: hidden;
     transition: max-height 0.35s ease;
   }
