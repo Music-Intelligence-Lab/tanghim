@@ -10,7 +10,21 @@ export default defineConfig({
 	integrations: [
 		icon(),
 		starlight({
-			title: 'Tanghīm',
+			// Per-locale site title: the Starlight docs header wordmark + browser
+			// tab title. Arabic uses the Arabic-script brand name تنغيم; EN/FR
+			// keep the Latin "Tanghīm". Keys are BCP-47 tags (not locale-dir keys).
+			title: {
+				en: 'Tanghīm',
+				ar: 'تنغيم',
+				fr: 'Tanghīm',
+			},
+			// Docs header brand mark: the slider mark shown beside the (per-locale)
+			// title text. Its own colours read on both light and dark themes, so a
+			// single src is enough. The lockup wordmark lives in the marketing Nav.
+			logo: {
+				src: './src/assets/slider-mark.svg',
+				alt: 'Tanghīm',
+			},
 			favicon: '/favicon.svg',
 			// Trilingual docs. English is the root locale (no URL prefix → keeps
 			// /docs/... unchanged); Arabic (RTL) and French are prefixed

@@ -161,6 +161,13 @@ body {
 	font-family: var(--font-accent);
 }
 
+/* Starlight docs header wordmark (AR pages): the site-title inherits --sl-font
+   (IBM Plex Sans Arabic body) on :lang(ar). Force the Arabic display face so the
+   docs/FAQ تنغيم wordmark matches the marketing nav's Tajawal wordmark. */
+:lang(ar) .site-title {
+	font-family: var(--font-arabic-display);
+}
+
 /* Arabic nav text (Tajawal): match the English optical size, and nudge down for
    OPTICAL centring. The glyph bounding box measures as centred (txtΔ ≈ EN), but
    Arabic letterforms sit high within their em box, so they LOOK too high. A small

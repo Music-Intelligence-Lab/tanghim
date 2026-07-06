@@ -1,0 +1,11 @@
+<svg viewBox="0 0 30 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <title>Tanghīm</title>
+    <!-- Standalone slider mark (no background) for the Starlight docs header logo.
+         Purple-navy track #5a5d84 + dots, gold thumb #fccd55. Matches the nav
+         wordmark lockups and the favicon. -->
+    <circle cx="8" cy="10" r="1.7" style="fill:rgb(90,93,132);"/>
+    <circle cx="8" cy="16" r="1.7" style="fill:rgb(252,205,85);"/>
+    <circle cx="8" cy="21" r="1.7" style="fill:rgb(90,93,132);"/>
+    <path d="M21,6C21,4.896 20.104,4 19,4C17.896,4 17,4.896 17,6L17,26C17,27.104 17.896,28 19,28C20.104,28 21,27.104 21,26L21,6Z" style="fill:rgb(90,93,132);"/>
+    <circle cx="19" cy="16" r="5.2" style="fill:rgb(252,205,85);"/>
+</svg>
