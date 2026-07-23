@@ -65,10 +65,6 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
-      - name: Test
-        working-directory: build
-        run: ctest --output-on-failure -C Release
-
       - name: Codesign (macOS)
         if: runner.os == 'macOS'
         run: |

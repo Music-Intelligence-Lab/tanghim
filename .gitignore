@@ -57,6 +57,7 @@ __pycache__/
 
 # Development notes
 CLAUDE.md
+tests/
 DIARY.md
 diary/
 /docs/

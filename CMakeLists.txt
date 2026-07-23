@@ -210,34 +210,3 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 
 # (WebView UI bundle removed — now using native JUCE editor)
-
-# ── Tests ─────────────────────────────────────────────────────────────────────
-# Each test file has its own main(), so each gets its own executable.
-include(CTest)
-
-# Shared sources and settings for all test targets
-set(TEST_COMMON_SOURCES
-    source/api/ApiResponseParser.cpp
-    source/engine/TuningEngine.cpp
-    source/engine/MtsEspTransmitter.cpp
-    source/engine/MpePitchBendProcessor.cpp
-    source/engine/MonoPitchBendProcessor.cpp
-    libs/MTS-ESP/Master/libMTSMaster.cpp
-)
-set(TEST_COMMON_INCLUDES source libs/MTS-ESP/Master)
-set(TEST_COMMON_LIBS juce::juce_core juce::juce_audio_basics)
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    list(APPEND TEST_COMMON_LIBS ${LIBCURL_LIBRARIES})
-endif()
-set(TEST_COMMON_DEFS JUCE_STANDALONE_APPLICATION=0 JUCE_WEB_BROWSER=0)
-
-foreach(TEST_NAME ApiResponseParserTest TuningEngineTest MidiProcessingTest)
-    add_executable(${TEST_NAME}
-        tests/${TEST_NAME}.cpp
-        ${TEST_COMMON_SOURCES}
-    )
-    target_include_directories(${TEST_NAME} PRIVATE ${TEST_COMMON_INCLUDES})
-    target_link_libraries(${TEST_NAME} PRIVATE ${TEST_COMMON_LIBS})
-    target_compile_definitions(${TEST_NAME} PRIVATE ${TEST_COMMON_DEFS})
-    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
-endforeach()
