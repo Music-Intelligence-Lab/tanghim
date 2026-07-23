@@ -81,16 +81,16 @@ export default defineConfig({
 					items: [
 						{ slug: 'docs/performance/midi-preset-mapping', translations: { ar: 'ربط الإعدادات المسبقة بـ MIDI', fr: 'Mappage MIDI des préréglages' } },
 						{ slug: 'docs/performance/midi-export', translations: { ar: 'تصدير ملف MIDI', fr: 'Export de fichier MIDI' } },
-						{ slug: 'docs/performance/state-files', translations: { ar: 'حفظ وتحميل ملفات الحالة', fr: "Fichiers d'état" } },
-						{ slug: 'docs/performance/daw-automation', translations: { ar: 'أتمتة الـ DAW', fr: 'Automation DAW' } },
+						{ slug: 'docs/performance/state-files', translations: { ar: 'حفظ وفتح ملفات الحالة', fr: "Fichiers d'état" } },
+						{ slug: 'docs/performance/daw-automation', translations: { ar: 'أتمتة محطة عمل الصوتيات الرقمية', fr: 'Automation DAW' } },
 						{ slug: 'docs/performance/program-change', translations: { ar: 'تبديل الإعدادات بأمر Program Change', fr: 'Changement par Program Change' } },
 					],
 				},
 				{
 					label: 'Ableton Live',
-					translations: { ar: 'أبلتون لايف', fr: 'Ableton Live' },
+					translations: { ar: 'Ableton Live', fr: 'Ableton Live' },
 					items: [
-						{ slug: 'docs/ableton', translations: { ar: 'استخدام تنغيم في أبلتون لايف', fr: 'Tanghim dans Ableton Live' } },
+						{ slug: 'docs/ableton', translations: { ar: 'استخدام تنغيم في Ableton Live', fr: 'Tanghim dans Ableton Live' } },
 					],
 				},
 				{
