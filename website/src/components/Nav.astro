@@ -7,15 +7,15 @@ import wordmarkEn from '../assets/wordmark-en.svg?raw';
 import wordmarkAr from '../assets/wordmark-ar.svg?raw';
 
 // Determine current locale from the first path segment (ar/fr → locale, else en).
-// Uses segment-split so /articles/cross-platform correctly resolves to 'en',
-// not 'ar' (which a startsWith('/ar') check would wrongly match).
+// Uses segment-split so /docs/... correctly resolves to 'en', not 'ar'
+// (which a startsWith('/ar') check would wrongly match).
 const parts = Astro.url.pathname.split('/').filter(Boolean);
 const currentLocale = (parts[0] === 'ar' || parts[0] === 'fr') ? parts[0] : 'en';
 
 // Compute locale-aware href for a target locale.
 // Strips the leading locale prefix from the current path (if any) and prepends
 // the new one — so switching language keeps you on an equivalent page where
-// that page exists (all 4 article + landing placeholders are built).
+// that page exists (landing + docs placeholders are built).
 const pathSuffix = (currentLocale === 'en' ? parts : parts.slice(1)).join('/');
 function localeHref(locale: string): string {
   const base = pathSuffix ? `/${pathSuffix}` : '/';
@@ -33,9 +33,9 @@ const localeBase = currentLocale === 'en' ? '' : `/${currentLocale}`;
 
 // Nav link labels per locale
 const labels = {
-  en: { features: 'Features', article: 'Article', docs: 'Docs', faq: 'FAQ', github: 'GitHub', download: 'Download' },
-  ar: { features: 'الميزات', article: 'المقالة', docs: 'التوثيق', faq: 'الأسئلة الشائعة', github: 'المصدر', download: 'تحميل' },
-  fr: { features: 'Fonctionnalités', article: 'Article', docs: 'Docs', faq: 'FAQ', github: 'GitHub', download: 'Télécharger' },
+  en: { features: 'Features', docs: 'Docs', faq: 'FAQ', github: 'GitHub', download: 'Download', nav: 'Main navigation', openMenu: 'Open menu', language: 'Language' },
+  ar: { features: 'الميزات', docs: 'التوثيق', faq: 'الأسئلة الشائعة', github: 'GitHub', download: 'تحميل', nav: 'التنقل الرئيسي', openMenu: 'فتح القائمة', language: 'اللغة' },
+  fr: { features: 'Fonctionnalités', docs: 'Docs', faq: 'FAQ', github: 'GitHub', download: 'Télécharger', nav: 'Navigation principale', openMenu: 'Ouvrir le menu', language: 'Langue' },
 };
 const t = labels[currentLocale as keyof typeof labels];
 
@@ -50,7 +50,7 @@ const arLang = currentLocale === 'ar' ? 'ar' : undefined;
 const isArabic = currentLocale === 'ar';
 const wordmarkHref = localeBase ? `${localeBase}/` : '/';
 ---
-<nav class="sticky top-0 z-[100] h-14 box-border bg-[var(--brand-navy-900)] border-b border-[color-mix(in_srgb,var(--brand-gold)_20%,transparent)]" aria-label="Main navigation">
+<nav class="sticky top-0 z-[100] h-14 box-border bg-[var(--brand-navy-900)] border-b border-[color-mix(in_srgb,var(--brand-gold)_20%,transparent)]" aria-label={t.nav}>
   <div class="max-w-[1200px] mx-auto px-6 h-full flex items-center justify-between">
     <!-- Wordmark — SVG lockup (slider mark + wordmark): the Latin "Tanghīm"
          lockup for EN/FR; the Arabic "تنغيم" lockup (mark mirrored right) for AR.
@@ -66,7 +66,7 @@ const wordmarkHref = localeBase ? `${localeBase}/` : '/';
 
     <!-- Mobile toggle -->
     <details class="hidden max-[720px]:block relative">
-      <summary class="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-[var(--brand-text)] p-1 rounded-[0.25rem] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline" aria-label="Open menu">
+      <summary class="list-none [&::-webkit-details-marker]:hidden cursor-pointer text-[var(--brand-text)] p-1 rounded-[0.25rem] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[3px] focus-visible:outline" aria-label={t.openMenu}>
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
           <rect y="4" width="22" height="2" rx="1" fill="currentColor"/>
           <rect y="10" width="22" height="2" rx="1" fill="currentColor"/>
@@ -75,13 +75,12 @@ const wordmarkHref = localeBase ? `${localeBase}/` : '/';
       </summary>
       <div class="absolute end-0 top-[calc(100%+0.5rem)] bg-[var(--brand-navy-800)] border border-[color-mix(in_srgb,var(--brand-gold)_20%,transparent)] rounded-[0.5rem] p-2 min-w-[180px] flex flex-col gap-[0.125rem]">
         <a href={`${localeBase}/#features`} lang={arLang} class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.features}</a>
-        <a href={`${localeBase}/articles/cross-platform`} lang={arLang} class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.article}</a>
         <a href={`${localeBase}/docs`} lang={arLang} class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.docs}</a>
         <a href={`${localeBase}/docs/faq`} lang={arLang} class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.faq}</a>
-        <a href="https://github.com/Music-Intelligence-Lab/tanghim" lang={arLang} class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline" target="_blank" rel="noopener noreferrer">{t.github}</a>
+        <a href="https://github.com/Music-Intelligence-Lab/tanghim" lang="en" class="block text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-2 rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline" target="_blank" rel="noopener noreferrer">{t.github}</a>
         <a href={downloadHref} lang={arLang} class="block mt-1 bg-[var(--brand-gold)] text-[var(--brand-navy-900)] font-semibold text-[0.875rem] px-3 py-2 rounded-[0.375rem] no-underline text-center focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.download}</a>
         <!-- Language switcher (mobile) -->
-        <div class="border-t border-[color-mix(in_srgb,var(--brand-muted)_15%,transparent)] mt-1 pt-1 flex gap-1" role="navigation" aria-label="Language">
+        <div class="border-t border-[color-mix(in_srgb,var(--brand-muted)_15%,transparent)] mt-1 pt-1 flex gap-1" role="navigation" aria-label={t.language}>
           {locales.map(({ code, label }) => (
             <a
               href={localeHref(code)}
@@ -97,12 +96,11 @@ const wordmarkHref = localeBase ? `${localeBase}/` : '/';
     <!-- Desktop links -->
     <div class="flex items-center gap-1 max-[720px]:hidden">
       <a href={`${localeBase}/#features`} lang={arLang} class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.features}</a>
-      <a href={`${localeBase}/articles/cross-platform`} lang={arLang} class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.article}</a>
       <a href={`${localeBase}/docs`} lang={arLang} class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.docs}</a>
       <a href={`${localeBase}/docs/faq`} lang={arLang} class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline">{t.faq}</a>
-      <a href="https://github.com/Music-Intelligence-Lab/tanghim" lang={arLang} class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline" target="_blank" rel="noopener noreferrer">{t.github}</a>
+      <a href="https://github.com/Music-Intelligence-Lab/tanghim" lang="en" class="text-[var(--brand-muted)] no-underline text-[0.9rem] px-3 py-[0.4rem] rounded-[0.375rem] transition-colors duration-150 ease-[ease] hover:text-[var(--brand-text)] focus-visible:outline-2 focus-visible:outline-[var(--brand-gold)] focus-visible:outline-offset-[2px] focus-visible:outline" target="_blank" rel="noopener noreferrer">{t.github}</a>
       <!-- Language switcher (desktop) -->
-      <div class="ms-2 flex items-center gap-0.5 border-s border-[color-mix(in_srgb,var(--brand-muted)_20%,transparent)] ps-3" role="navigation" aria-label="Language">
+      <div class="ms-2 flex items-center gap-0.5 border-s border-[color-mix(in_srgb,var(--brand-muted)_20%,transparent)] ps-3" role="navigation" aria-label={t.language}>
         {locales.map(({ code, label }) => (
           <a
             href={localeHref(code)}

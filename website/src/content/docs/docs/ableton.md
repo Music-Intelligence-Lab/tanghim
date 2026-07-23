@@ -3,7 +3,7 @@ title: Using Tanghim in Ableton Live
 description: Max for Live devices and Ableton-specific setup for maqam tuning delivery.
 ---
 
-Ableton Live has specific requirements that affect how Tanghīm works. This page covers everything you need to know. For a broader overview of this design decision, see the [cross-platform article](/articles/cross-platform).
+Ableton Live has specific requirements that affect how Tanghīm works. This page covers everything you need to know.
 
 ## Why Ableton Needs Special Handling
 
