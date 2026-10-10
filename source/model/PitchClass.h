@@ -82,5 +82,26 @@ inline int chromaticIndexForIpnRef (const juce::String& ref)
     if (ref == "A#") return 10;
     if (ref == "B#") return 0;
 
+    // Double accidentals. These appear ONLY in maqam-context spellings (the
+    // per-degree englishName from /maqamat), never in the tuning system's global
+    // ipnReferenceNoteName — measured across all 48 system+startingNote
+    // combinations: 2508 of 470908 context spellings (0.53%) use them, 0 of the
+    // global refs do. Without these, every such degree returns -1 and is silently
+    // skipped by buildVariantsPerSlot() and applyMaqamDegrees().
+    if (ref == "C##") return 2;
+    if (ref == "D##") return 4;
+    if (ref == "E##") return 6;
+    if (ref == "F##") return 7;
+    if (ref == "G##") return 9;
+    if (ref == "A##") return 11;
+    if (ref == "B##") return 1;
+    if (ref == "Cbb") return 10;
+    if (ref == "Dbb") return 0;
+    if (ref == "Ebb") return 2;
+    if (ref == "Fbb") return 3;
+    if (ref == "Gbb") return 5;
+    if (ref == "Abb") return 7;
+    if (ref == "Bbb") return 9;
+
     return -1;
 }

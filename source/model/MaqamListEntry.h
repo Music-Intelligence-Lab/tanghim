@@ -13,6 +13,15 @@ struct MaqamDegrees
     std::vector<juce::String> descending;
     std::vector<juce::String> ascendingEnglishNames;  // e.g., "Db3", "E-b3" (parallel to ascending)
     std::vector<juce::String> ascendingSolfeges;       // e.g., "Reb3", "Mi-b3" (parallel to ascending)
+
+    // 12-EDO reference per degree, supplied by the API as a MATCHED PAIR: the key the
+    // degree is spelled against, and its pitch expressed relative to that same key.
+    // These are maqam-context values and can differ from the tuning system's global
+    // pitch-class data (nim_ajam is globally "A / 57 +90.2" but "Bb / 58 -9.8" in
+    // bayyat al-nawa). Never mix one with the other — see applyMaqamDegrees().
+    std::vector<juce::String> ascendingIpnRefs;        // e.g., "Bb"  (parallel to ascending)
+    std::vector<int>          ascendingMidiNotes;      // e.g., 58    (parallel to ascending)
+    std::vector<double>       ascendingCentsDeviations;// e.g., -9.8  (relative to ascendingMidiNotes)
 };
 
 /**

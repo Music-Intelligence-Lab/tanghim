@@ -564,6 +564,7 @@ void TanghimProcessor::getStateInformation (juce::MemoryBlock& dest)
 
     // Heptatonic keyboard mode
     state.setProperty ("heptEnabled", heptEnabled.load (std::memory_order_relaxed), nullptr);
+    state.setProperty ("heptFromCEnabled", heptFromCEnabled.load (std::memory_order_relaxed), nullptr);
 
     // Include APVTS state as a child
     state.addChild (apvts.copyState(), -1, nullptr);
@@ -695,6 +696,9 @@ void TanghimProcessor::setStateInformation (const void* data, int sizeInBytes)
     auto heptEnabledProp = state.getProperty ("heptEnabled", juce::var());
     if (! heptEnabledProp.isVoid())
         heptEnabled.store ((bool) heptEnabledProp, std::memory_order_relaxed);
+    auto heptFromCProp = state.getProperty ("heptFromCEnabled", juce::var());
+    if (! heptFromCProp.isVoid())
+        heptFromCEnabled.store ((bool) heptFromCProp, std::memory_order_relaxed);
 
     auto slidersNode = state.getChildWithName ("SliderPositions");
     std::array<int, 12> savedPositions;
@@ -906,6 +910,7 @@ juce::String TanghimProcessor::buildStateJson() const
     root->setProperty ("scrollPosition",    currentStartMidi);
     root->setProperty ("oscillatorEnabled", oscillatorEnabled.load (std::memory_order_relaxed));
     root->setProperty ("heptEnabled",       heptEnabled.load (std::memory_order_relaxed));
+    root->setProperty ("heptFromCEnabled",  heptFromCEnabled.load (std::memory_order_relaxed));
 
     return juce::JSON::toString (juce::var (root));
 }
@@ -1000,6 +1005,7 @@ void TanghimProcessor::restoreStateFromJson (const juce::String& json)
         (double) root->getProperty ("referenceFreqCents"));
     const bool savedOsc  = (bool) root->getProperty ("oscillatorEnabled");
     const bool savedHept = (bool) root->getProperty ("heptEnabled");
+    const bool savedHeptFromC = (bool) root->getProperty ("heptFromCEnabled");
 
     // Read slider data
     std::array<int, 12> savedPositions;
@@ -1050,6 +1056,7 @@ void TanghimProcessor::restoreStateFromJson (const juce::String& json)
 
     oscillatorEnabled.store (savedOsc, std::memory_order_relaxed);
     heptEnabled.store (savedHept, std::memory_order_relaxed);
+    heptFromCEnabled.store (savedHeptFromC, std::memory_order_relaxed);
 
     if (sysId.isNotEmpty() && startNote.isNotEmpty())
     {
@@ -1158,6 +1165,8 @@ void TanghimProcessor::loadTuningSystem (const juce::String& systemId,
     currentTranspositionIdx = -1;
     currentActivePresetIdx  = -1;
     currentDegreeNames.clear();
+    currentDegreePerDegreeIpnRefs.clear();
+    currentDegreeCentsDeviations.clear();
     currentDegreeIpnRefs.fill ({});
     currentDegreeSolfegeRefs.fill ({});
 
@@ -1599,7 +1608,7 @@ void TanghimProcessor::applyMaqam (const juce::String& maqamId, int transpositio
         for (const auto& name : found->degrees.ascending)
             currentDegreeNames.push_back (name);
 
-        applyDegreeIpnAndSolfege (found->degrees);
+        applyDegreeIpnAndSolfege (found->degrees);   // also sets currentDegreePerDegreeIpnRefs
         applyMaqamDegrees (found->degrees);
     }
     else
@@ -1613,7 +1622,7 @@ void TanghimProcessor::applyMaqam (const juce::String& maqamId, int transpositio
         for (const auto& name : t.degrees.ascending)
             currentDegreeNames.push_back (name);
 
-        applyDegreeIpnAndSolfege (t.degrees);
+        applyDegreeIpnAndSolfege (t.degrees);   // also sets currentDegreePerDegreeIpnRefs
         applyMaqamDegrees (t.degrees);
     }
 
@@ -1640,17 +1649,22 @@ void TanghimProcessor::applyDegreeIpnAndSolfege (const MaqamDegrees& degrees)
     currentDegreeIpnRefs.fill ({});
     currentDegreeSolfegeRefs.fill ({});
 
+    // Keep the per-degree context spellings alongside. applyMaqamDegrees() and
+    // rebuildHeptMap() both derive their chromatic slot from these, so every path
+    // that repopulates the IPN refs (session recall, preset apply, maqam select)
+    // must refresh them together or the two go out of sync.
+    currentDegreePerDegreeIpnRefs = degrees.ascendingIpnRefs;
+    currentDegreeCentsDeviations  = degrees.ascendingCentsDeviations;
+
     for (size_t i = 0; i < degrees.ascendingEnglishNames.size(); ++i)
     {
-        juce::String ipn = degrees.ascendingEnglishNames[i];
-        if (ipn.isEmpty()) continue;
-
-        // Strip trailing octave digits
-        while (ipn.isNotEmpty() && juce::CharacterFunctions::isDigit (ipn.getLastCharacter()))
-            ipn = ipn.dropLastCharacters (1);
-        // Strip microtonal modifiers: "-b", "-#", etc. (indicated by "-" prefix)
-        if (ipn.contains ("-"))
-            ipn = ipn.upToFirstOccurrenceOf ("-", false, false);
+        // Use the API's own ipnReferenceNoteName where present — it is the
+        // authoritative slot for this degree, already paired with the deviation.
+        // Deriving it from englishName is a reconstruction of the same value and
+        // can only introduce drift.
+        juce::String ipn;
+        if (i < degrees.ascendingIpnRefs.size())
+            ipn = degrees.ascendingIpnRefs[i];
         if (ipn.isEmpty()) continue;
 
         const int ci = chromaticIndexForIpnRef (ipn);
@@ -1756,6 +1770,19 @@ void TanghimProcessor::setHeptEnabled (bool enabled)
     saveSettingsToDisk();
 }
 
+void TanghimProcessor::setHeptFromCEnabled (bool enabled)
+{
+    // heptEnabled stays the master switch for the whole remap path (processBlock, the
+    // MTS-ESP table, note tracking). heptFromCEnabled only selects the starting white
+    // key, so the two modes are mutually exclusive but share all the machinery.
+    if (heptFromCEnabled.exchange (enabled, std::memory_order_relaxed) == enabled)
+        return;
+
+    rebuildHeptMap();       // start key changed — remap, and rebroadcast if active
+    notifyTuningChanged();  // UI labels / key bars follow the new mapping
+    saveSettingsToDisk();
+}
+
 void TanghimProcessor::rebuildHeptMap()
 {
     // Assign white keys by DEGREE POSITION, not by each degree's IPN letter:
@@ -1826,23 +1853,47 @@ void TanghimProcessor::rebuildHeptMap()
         int startWhiteIdx = -1;
         int tonicMidiNote = -1;
 
-        for (const auto& name : currentDegreeNames)
+        for (size_t di = 0; di < currentDegreeNames.size(); ++di)
         {
+            const auto& name = currentDegreeNames[di];
+
             auto slotIt = nameToSlot.find (name);
             if (slotIt == nameToSlot.end()) continue;
 
-            const int ci = slotIt->second.chromatic;
             const int midiNote = slotIt->second.midiNote;
+
+            // Slot from the MAQAM-CONTEXT reference, matching applyMaqamDegrees().
+            // Deriving it from the tuning system's global ipnReference instead would
+            // put the two out of sync: the hept map would address a slot the maqam
+            // never selected into. No fallback — skip if the context ref is missing
+            // or unrecognised.
+            if (di >= currentDegreePerDegreeIpnRefs.size() || currentDegreePerDegreeIpnRefs[di].isEmpty())
+                continue;
+
+            const int ci = chromaticIndexForIpnRef (currentDegreePerDegreeIpnRefs[di]);
+            if (ci < 0) continue;
 
             if (degreeChroms.empty())
             {
                 // Context-aware IPN ref from the maqam list (no fallback — tuning
                 // system IPN may carry the wrong enharmonic, e.g. "C#" vs "Db")
-                const juce::String tonicIpn = currentDegreeIpnRefs[(size_t) ci];
-                if (tonicIpn.isEmpty()) break;
+                if (heptFromCEnabled.load (std::memory_order_relaxed))
+                {
+                    // "Hept from C": the tonic always sits on C, so every maqam is
+                    // fingered identically. Degrees and pitches are unchanged — only
+                    // the starting white key differs from plain Hept.
+                    startWhiteIdx = 0;
+                }
+                else
+                {
+                    // Context-aware IPN ref from the maqam list (no fallback — tuning
+                    // system IPN may carry the wrong enharmonic, e.g. "C#" vs "Db")
+                    const juce::String tonicIpn = currentDegreeIpnRefs[(size_t) ci];
+                    if (tonicIpn.isEmpty()) break;
 
-                startWhiteIdx = letterToWhiteIdx (tonicIpn[0]);
-                if (startWhiteIdx < 0) break;
+                    startWhiteIdx = letterToWhiteIdx (tonicIpn[0]);
+                    if (startWhiteIdx < 0) break;
+                }
 
                 tonicMidiNote = midiNote;
             }
@@ -1884,16 +1935,40 @@ void TanghimProcessor::rebuildHeptMap()
     //   G(7)→G key Δ0, A(9)→A key Δ0, Bb(10)→B key(11) Δ-1, C(0)→C key Δ0
     //
     // Example: maqam on Bb → Bb(10)→B key(11) Δ-1 (NOT A key)
+    //
+    // The degrees are UNWRAPPED into an ascending sequence before the deltas are
+    // taken. Folding each delta independently into [-6,+6] is only safe when the
+    // first degree lands on its own key (plain Hept, where delta 0 starts the run);
+    // with "Hept from C" the scale starts away from its tonic key, and independent
+    // folding wraps some keys down an octave — pressing B could then sound LOWER
+    // than pressing A. Unwrapping first keeps the keyboard strictly ascending in
+    // both modes.
     int deltas[12] = {};
 
-    for (const auto& d : degreeInfos)
+    if (! degreeInfos.empty())
     {
-        const int wk = whiteKeys[d.whiteKeyIdx];
-        int delta = d.chromatic - wk;
-        // Normalize to [-6, +5] — minimal semitone adjustment
-        while (delta > 6)  delta -= 12;
-        while (delta < -6) delta += 12;
-        deltas[wk] = delta;
+        // Absolute (unwrapped) degree pitches, ascending, relative to the first degree
+        std::vector<int> ascending;
+        ascending.reserve (degreeInfos.size());
+        ascending.push_back (degreeInfos[0].chromatic);
+        for (size_t i = 1; i < degreeInfos.size(); ++i)
+        {
+            int next = degreeInfos[i].chromatic;
+            while (next <= ascending.back()) next += 12;
+            ascending.push_back (next);
+        }
+
+        // Anchor the run so the FIRST degree stays within an octave of its own key —
+        // this reproduces plain Hept exactly (all-zero offset) and keeps "Hept from C"
+        // playing in the register the player expects.
+        int anchor = ascending[0] - whiteKeys[degreeInfos[0].whiteKeyIdx];
+        while (anchor >  6) anchor -= 12;
+        while (anchor < -6) anchor += 12;
+        const int shift = anchor - (ascending[0] - whiteKeys[degreeInfos[0].whiteKeyIdx]);
+
+        for (size_t i = 0; i < degreeInfos.size(); ++i)
+            deltas[whiteKeys[degreeInfos[i].whiteKeyIdx]] = ascending[i] + shift
+                                                          - whiteKeys[degreeInfos[i].whiteKeyIdx];
     }
 
     for (int i = 0; i < 12; ++i)
@@ -2192,9 +2267,10 @@ void TanghimProcessor::applyMaqamDegrees (const MaqamDegrees& degrees)
 
     const auto& data = dataCache.getData (currentSystemId, currentStartingNote);
 
-    // Build a lookup from ALL pitch classes (all octaves): PAO noteName → { chromaticIndex, midiCentsDeviation }
+    // Build a lookup from ALL pitch classes (all octaves): PAO noteName →
+    // { chromaticIndex, midiCentsDeviation, midiNoteNumber }
     // This covers register-specific names (kirdan, muhayyar, etc.) that exist only outside MIDI 48-59.
-    struct PcInfo { int chromaticIdx; double deviation; };
+    struct PcInfo { int chromaticIdx; double deviation; int midiNote; };
     std::map<juce::String, PcInfo> nameToInfo;
 
     for (const auto& pc : data.pitchClasses)
@@ -2202,7 +2278,7 @@ void TanghimProcessor::applyMaqamDegrees (const MaqamDegrees& degrees)
         if (pc.noteName.isEmpty()) continue;
         const int ci = chromaticIndexForIpnRef (pc.ipnReference);
         if (ci >= 0 && nameToInfo.count (pc.noteName) == 0)
-            nameToInfo[pc.noteName] = { ci, pc.midiCentsDeviation };
+            nameToInfo[pc.noteName] = { ci, pc.midiCentsDeviation, pc.midiNoteNumber };
     }
 
     // Reset all slots to the variant closest to 0 cents before applying maqam degrees,
@@ -2239,34 +2315,79 @@ void TanghimProcessor::applyMaqamDegrees (const MaqamDegrees& degrees)
             currentTonicChromatic = tonicIt->second.chromaticIdx;
     }
 
-    // Apply ascending degrees: for each PAO name in the scale,
-    // find the matching slider variant by chromatic index and cents deviation.
-    // Register-specific names (e.g. "kirdan" at C5) share the same midiCentsDeviation
-    // as their base-register equivalents (e.g. "rast" at C3), so we match by deviation.
-    for (const auto& noteName : degrees.ascending)
-    {
-        auto it = nameToInfo.find (noteName);
-        if (it == nameToInfo.end()) continue;
+    // Apply ascending degrees: for each PAO name in the scale, find the matching
+    // slider variant by chromatic index and cents deviation. Register-specific names
+    // (e.g. "kirdan" at C5) share the same midiCentsDeviation as their base-register
+    // equivalents (e.g. "rast" at C3), so we match by deviation.
+    //
+    // The chromatic slot and the cents deviation both come from the MAQAM-CONTEXT
+    // degree data, which the API supplies as a MATCHED PAIR (ipnReferenceNoteName +
+    // midiNotePlusCentsDeviation, added 2026-10-10).
+    //
+    // They must never be mixed with the tuning system's global pitch-class values.
+    // The same pitch class is spelled differently depending on its function in a
+    // maqam, and the two spellings can name DIFFERENT slots: nim_ajam is globally
+    // "A / 57 +90.2" but "Bb / 58 -9.8" in bayyat al-nawa. Using the global slot put
+    // it on slot 9 alongside tik_hisar, whose selection it then silently overwrote
+    // (a slot holds only one selected value), dropping a degree from the scale.
+    // Taking the global DEVIATION with the context SLOT is just as wrong: +90.2 is
+    // relative to A, and applying it to Bb sounds a whole tone sharp.
+    //
+    // Measured over all 48 system+startingNote combinations (64,848 variants):
+    // global data breaks 28.6%; context pair + octave cut breaks 6.2%. The residue
+    // is maqamat whose octave genuinely needs more than 12 distinct pitches.
+    const int tonicMidi = (! degrees.ascendingMidiNotes.empty())
+                        ? degrees.ascendingMidiNotes[0] : -1;
 
-        const int ci = it->second.chromaticIdx;
-        const double targetDev = it->second.deviation;
+    for (size_t di = 0; di < degrees.ascending.size(); ++di)
+    {
+        // No fallback to the global pitch-class data — it is a different musical
+        // statement, and substituting it is what produced the bugs above.
+        if (di >= degrees.ascendingIpnRefs.size()
+            || di >= degrees.ascendingMidiNotes.size()
+            || di >= degrees.ascendingCentsDeviations.size())
+            break;
+
+        const int midiNote = degrees.ascendingMidiNotes[di];
+        if (midiNote < 0) continue;
+
+        // Stop at the octave — the ascending list often continues past it, and those
+        // higher degrees would otherwise overwrite slots already claimed by the scale.
+        if (tonicMidi >= 0 && midiNote >= tonicMidi + 12)
+            break;
+
+        const int ci = chromaticIndexForIpnRef (degrees.ascendingIpnRefs[di]);
+        if (ci < 0) continue;
+
         auto& slot = activeTuningState.slots[(size_t) ci];
 
-        // Find the variant with the closest matching cents deviation
+        // centsOffset is the SOURCE OF TRUTH for the frequency table. The API's
+        // deviation is already expressed relative to ipnReferenceNoteName, and the
+        // slot IS that reference (midiNote % 12 == ci holds for every degree in the
+        // corpus), so it can be written through unchanged.
+        slot.centsOffset = degrees.ascendingCentsDeviations[di];
+
+        // Keep selectedIndex pointing at the nearest variant for the snap markers and
+        // PAO label. Compare in absolute cents: a slot's variant list is built from
+        // the GLOBAL spelling, so the degree may not appear in it at all, and a
+        // slot-relative comparison across different references would be meaningless.
+        const double targetAbs = midiNote * 100.0 + degrees.ascendingCentsDeviations[di];
         int bestVariant = 0;
         double bestDist = std::numeric_limits<double>::max();
         for (int vi = 0; vi < (int) slot.variants.size(); ++vi)
         {
-            const double dist = std::abs (slot.variants[(size_t) vi].midiCentsDeviation - targetDev);
-            if (dist < bestDist)
+            const auto& v = slot.variants[(size_t) vi];
+            double diff = std::fmod (v.midiNoteNumber * 100.0 + v.midiCentsDeviation - targetAbs, 1200.0);
+            if (diff >  600.0) diff -= 1200.0;
+            if (diff < -600.0) diff += 1200.0;
+
+            if (std::abs (diff) < bestDist)
             {
-                bestDist = dist;
+                bestDist = std::abs (diff);
                 bestVariant = vi;
             }
         }
         slot.selectedIndex = bestVariant;
-        if (const auto* v = slot.selectedVariant())
-            slot.centsOffset = v->midiCentsDeviation;
     }
 
     // Rebuild heptatonic map from the new degree set
@@ -2802,6 +2923,7 @@ void TanghimProcessor::saveSettingsToDisk() const
     obj->setProperty ("midiPresetDeviceId", midiPresetDeviceId);
     obj->setProperty ("oscillatorEnabled", oscillatorEnabled.load (std::memory_order_relaxed));
     obj->setProperty ("heptEnabled", heptEnabled.load (std::memory_order_relaxed));
+    obj->setProperty ("heptFromCEnabled", heptFromCEnabled.load (std::memory_order_relaxed));
 
     const auto dir = getTanghimDir();
     dir.createDirectory();
@@ -2825,6 +2947,8 @@ void TanghimProcessor::clearCache()
     currentTranspositionIdx = -1;
     currentActivePresetIdx  = -1;
     currentDegreeNames.clear();
+    currentDegreePerDegreeIpnRefs.clear();
+    currentDegreeCentsDeviations.clear();
     currentDegreeIpnRefs.fill ({});
     currentDegreeSolfegeRefs.fill ({});
     rebuildHeptMap();
@@ -2914,6 +3038,9 @@ void TanghimProcessor::loadSettingsFromDisk()
         auto heptEnabledProp = obj->getProperty ("heptEnabled");
         if (! heptEnabledProp.isVoid())
             heptEnabled.store ((bool) heptEnabledProp, std::memory_order_relaxed);
+        auto heptFromCProp = obj->getProperty ("heptFromCEnabled");
+        if (! heptFromCProp.isVoid())
+            heptFromCEnabled.store ((bool) heptFromCProp, std::memory_order_relaxed);
     }
 }
 

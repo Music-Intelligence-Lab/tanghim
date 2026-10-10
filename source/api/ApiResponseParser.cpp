@@ -339,7 +339,10 @@ MaqamDegrees ApiResponseParser::parseMaqamDegrees (const juce::var& obj)
     auto parseArray = [] (const juce::var* arr,
                           std::vector<juce::String>& names,
                           std::vector<juce::String>& englishNames,
-                          std::vector<juce::String>& solfeges)
+                          std::vector<juce::String>& solfeges,
+                          std::vector<juce::String>* ipnRefs    = nullptr,
+                          std::vector<int>*          midiNotes  = nullptr,
+                          std::vector<double>*       deviations = nullptr)
     {
         if (! arr || ! arr->isArray()) return;
         for (int i = 0; i < arr->size(); ++i)
@@ -355,6 +358,24 @@ MaqamDegrees ApiResponseParser::parseMaqamDegrees (const juce::var& obj)
                 englishNames.push_back (en ? en->toString() : juce::String());
                 const juce::var* sf = ep.getVarPointer ("solfege");
                 solfeges.push_back (sf ? sf->toString() : juce::String());
+
+                // 12-EDO reference pair (added to the API 2026-10-10). Parsed together
+                // so the slot and the deviation it is relative to never separate.
+                if (ipnRefs != nullptr)
+                {
+                    const juce::var* ir = ep.getVarPointer ("ipnReferenceNoteName");
+                    ipnRefs->push_back (ir ? ir->toString() : juce::String());
+                }
+                if (midiNotes != nullptr && deviations != nullptr)
+                {
+                    int    note = -1;
+                    double dev  = 0.0;
+                    const juce::var* md = ep.getVarPointer ("midiNotePlusCentsDeviation");
+                    if (md != nullptr)
+                        parseMidiNoteDeviation (md->toString(), note, dev);
+                    midiNotes->push_back (note);
+                    deviations->push_back (dev);
+                }
             }
             else
             {
@@ -365,7 +386,8 @@ MaqamDegrees ApiResponseParser::parseMaqamDegrees (const juce::var& obj)
     };
 
     std::vector<juce::String> descEnglish, descSolfege;  // descending enriched data (not stored)
-    parseArray (props.getVarPointer ("ascending"),  result.ascending, result.ascendingEnglishNames, result.ascendingSolfeges);
+    parseArray (props.getVarPointer ("ascending"),  result.ascending, result.ascendingEnglishNames, result.ascendingSolfeges,
+                &result.ascendingIpnRefs, &result.ascendingMidiNotes, &result.ascendingCentsDeviations);
     parseArray (props.getVarPointer ("descending"), result.descending, descEnglish, descSolfege);
     return result;
 }

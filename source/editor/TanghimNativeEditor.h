@@ -125,6 +125,7 @@ private:
     // ── Derived state computation (moved from App.tsx) ───────────────────
     void computeDerivedState();
     void computeModifiedSlots();
+    int degreeSlotForIndex (size_t degreeIndex) const;
     std::set<int> computeMaqamDegreeIndices() const;
     std::map<int, juce::String> buildDegreePaoNameMap() const;
     struct TonicInfo { int midi; int chromaticIndex; };

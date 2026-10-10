@@ -210,10 +210,15 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
         processor.setOscillatorEnabled (enabled);
         outputBadges.setOscillatorEnabled (enabled);  // immediate visual feedback
     };
-    outputBadges.onHeptToggle = [this] (bool enabled)
+    // Hept and Hept from C share one remap; the flag only picks the starting white key.
+    // Selecting either turns hept ON in that mode; clicking the active one turns it off.
+    auto applyHeptMode = [this] (bool enabled, bool fromC)
     {
+        processor.setHeptFromCEnabled (enabled && fromC);
         processor.setHeptEnabled (enabled);
-        outputBadges.setHeptEnabled (enabled);  // immediate visual feedback
+
+        outputBadges.setHeptFromCEnabled (enabled && fromC);
+        outputBadges.setHeptEnabled (enabled);   // immediate visual feedback
 
         std::array<int, 12> deltas {};
         for (int ci = 0; ci < 12; ++ci)
@@ -221,6 +226,9 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
         noteSliderBank.setHeptDeltas (deltas);
         noteSliderBank.setHeptEnabled (enabled);
     };
+
+    outputBadges.onHeptToggle      = [applyHeptMode] (bool on) { applyHeptMode (on, false); };
+    outputBadges.onHeptFromCToggle = [applyHeptMode] (bool on) { applyHeptMode (on, true);  };
 
     // Slider bank callbacks
     noteSliderBank.onVariantSelect = [this] (int ci, int vi)
@@ -444,6 +452,7 @@ void TanghimNativeEditor::syncFullState()
     // Output badges
     outputBadges.setOscillatorEnabled (processor.getOscillatorEnabled());
     outputBadges.setHeptEnabled (processor.getHeptEnabled());
+    outputBadges.setHeptFromCEnabled (processor.getHeptFromCEnabled());
     outputBadges.setHasMaqam (processor.getCurrentMaqamId().isNotEmpty());
 
     // Maqam selector — build transposition filter data from pitch classes
@@ -738,14 +747,31 @@ void TanghimNativeEditor::computeDerivedState()
     computeModifiedSlots();
 }
 
+// Slot for degree index `di`, from the maqam-context ipnReferenceNoteName the
+// processor used. paoNameMap is built from the tuning system's GLOBAL pitch-class
+// ipnReference, which is maqam-agnostic and can name a different slot: nim_ajam is
+// globally "A" (slot 9) but "Bb" (slot 10) in bayyat al-nawa. Using the global map
+// here made the UI disagree with the pitches the processor had actually set — the
+// degree showed as a non-degree, and modification detection compared the slot
+// against the wrong expected variant, painting it teal with a spurious value.
+// No fallback to paoNameMap: a wrong slot is worse than no highlight.
+int TanghimNativeEditor::degreeSlotForIndex (size_t di) const
+{
+    const auto& refs = processor.getDegreePerDegreeIpnRefs();
+    if (di >= refs.size() || refs[di].isEmpty())
+        return -1;
+    return chromaticIndexForIpnRef (refs[di]);
+}
+
 std::set<int> TanghimNativeEditor::computeMaqamDegreeIndices() const
 {
     std::set<int> result;
-    for (const auto& name : processor.getCurrentDegreeNames())
+    const auto& names = processor.getCurrentDegreeNames();
+    for (size_t di = 0; di < names.size(); ++di)
     {
-        auto it = paoNameMap.find (name);
-        if (it != paoNameMap.end())
-            result.insert (it->second);
+        const int ci = degreeSlotForIndex (di);
+        if (ci >= 0)
+            result.insert (ci);
     }
     return result;
 }
@@ -753,11 +779,12 @@ std::set<int> TanghimNativeEditor::computeMaqamDegreeIndices() const
 std::map<int, juce::String> TanghimNativeEditor::buildDegreePaoNameMap() const
 {
     std::map<int, juce::String> result;
-    for (const auto& name : processor.getCurrentDegreeNames())
+    const auto& names = processor.getCurrentDegreeNames();
+    for (size_t di = 0; di < names.size(); ++di)
     {
-        auto it = paoNameMap.find (name);
-        if (it != paoNameMap.end() && result.find (it->second) == result.end())
-            result[it->second] = name;
+        const int ci = degreeSlotForIndex (di);
+        if (ci >= 0 && result.find (ci) == result.end())
+            result[ci] = names[di];
     }
     return result;
 }
@@ -785,25 +812,38 @@ void TanghimNativeEditor::computeModifiedSlots()
 
     const auto& state = processor.getActiveTuningState();
 
+    // Expected cents per degree slot, taken from the SAME source the processor used
+    // (the API's per-degree centsDeviation, already relative to its ipnReferenceNoteName).
+    // Searching slot.variants for a variant matching the degree's PAO name does NOT
+    // work: buildVariantsPerSlot() indexes variants by the GLOBAL spelling, so a degree
+    // whose context spelling moved it to another slot is absent from that slot's list —
+    // the search then silently failed and the degree fell through to the "non-degree"
+    // branch, which compared it against the nearest-to-zero variant and flagged it
+    // modified (teal thumb, spurious value) even though the tuning was correct.
+    std::map<int, double> expectedCents;
+    {
+        const auto& refs = processor.getDegreePerDegreeIpnRefs();
+        const auto& devs = processor.getDegreeCentsDeviations();
+        for (size_t di = 0; di < refs.size() && di < devs.size(); ++di)
+        {
+            const int dci = chromaticIndexForIpnRef (refs[di]);
+            if (dci >= 0 && expectedCents.find (dci) == expectedCents.end())
+                expectedCents[dci] = devs[di];
+        }
+    }
+
     for (int ci = 0; ci < 12; ++ci)
     {
         const auto& slot = state.slots[(size_t) ci];
-        auto paoIt = degreePaoNameMap.find (ci);
+        auto expIt = expectedCents.find (ci);
 
-        if (paoIt != degreePaoNameMap.end())
+        if (expIt != expectedCents.end())
         {
-            // Degree slot: compare cents against expected variant
-            for (const auto& v : slot.variants)
+            // Degree slot: compare against the API's own value for this degree
+            if (std::abs (slot.centsOffset - expIt->second) > 0.01)
             {
-                if (v.noteName == paoIt->second)
-                {
-                    if (std::abs (slot.centsOffset - v.midiCentsDeviation) > 0.01)
-                    {
-                        modifiedSlots.insert (ci);
-                        isMaqamModified = true;
-                    }
-                    break;
-                }
+                modifiedSlots.insert (ci);
+                isMaqamModified = true;
             }
         }
         else

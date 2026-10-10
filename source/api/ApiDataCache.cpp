@@ -436,10 +436,20 @@ juce::var ApiDataCache::tuningDataToJson (const TuningData& data)
         for (const auto& n : mle.degrees.descending)            desc.add (juce::var (n));
         for (const auto& n : mle.degrees.ascendingEnglishNames) ascEn.add (juce::var (n));
         for (const auto& n : mle.degrees.ascendingSolfeges)     ascSol.add (juce::var (n));
+
+        // 12-EDO reference pair — must round-trip, or a cached load leaves them empty
+        // and applyMaqamDegrees() skips every degree (no fallback by design).
+        juce::Array<juce::var> ascIpn, ascMidi, ascDev;
+        for (const auto& n : mle.degrees.ascendingIpnRefs)         ascIpn.add  (juce::var (n));
+        for (int n : mle.degrees.ascendingMidiNotes)               ascMidi.add (juce::var (n));
+        for (double n : mle.degrees.ascendingCentsDeviations)      ascDev.add  (juce::var (n));
         degObj->setProperty ("ascending",              asc);
         degObj->setProperty ("descending",             desc);
         degObj->setProperty ("ascendingEnglishNames",  ascEn);
         degObj->setProperty ("ascendingSolfeges",      ascSol);
+        degObj->setProperty ("ascendingIpnRefs",         ascIpn);
+        degObj->setProperty ("ascendingMidiNotes",       ascMidi);
+        degObj->setProperty ("ascendingCentsDeviations", ascDev);
         mleObj->setProperty ("degrees", juce::var (degObj));
 
         // Transpositions
@@ -456,10 +466,18 @@ juce::var ApiDataCache::tuningDataToJson (const TuningData& data)
             for (const auto& n : t.degrees.descending)            tDesc.add (juce::var (n));
             for (const auto& n : t.degrees.ascendingEnglishNames) tAscEn.add (juce::var (n));
             for (const auto& n : t.degrees.ascendingSolfeges)     tAscSol.add (juce::var (n));
+
+            juce::Array<juce::var> tAscIpn, tAscMidi, tAscDev;
+            for (const auto& n : t.degrees.ascendingIpnRefs)      tAscIpn.add  (juce::var (n));
+            for (int n : t.degrees.ascendingMidiNotes)            tAscMidi.add (juce::var (n));
+            for (double n : t.degrees.ascendingCentsDeviations)   tAscDev.add  (juce::var (n));
             tdObj->setProperty ("ascending",              tAsc);
             tdObj->setProperty ("descending",             tDesc);
             tdObj->setProperty ("ascendingEnglishNames",  tAscEn);
             tdObj->setProperty ("ascendingSolfeges",      tAscSol);
+            tdObj->setProperty ("ascendingIpnRefs",         tAscIpn);
+            tdObj->setProperty ("ascendingMidiNotes",       tAscMidi);
+            tdObj->setProperty ("ascendingCentsDeviations", tAscDev);
             tObj->setProperty ("degrees", juce::var (tdObj));
 
             transArr.add (juce::var (tObj));
@@ -543,6 +561,18 @@ ApiDataCache::TuningData ApiDataCache::jsonToTuningData (const juce::var& json)
                     for (int j = 0; j < ascSolV->size(); ++j)
                         mle.degrees.ascendingSolfeges.push_back ((*ascSolV)[j].toString());
                 }
+                const juce::var* ascIpnV = dp.getVarPointer ("ascendingIpnRefs");
+                if (ascIpnV && ascIpnV->isArray())
+                    for (int j = 0; j < ascIpnV->size(); ++j)
+                        mle.degrees.ascendingIpnRefs.push_back ((*ascIpnV)[j].toString());
+                const juce::var* ascMidiV = dp.getVarPointer ("ascendingMidiNotes");
+                if (ascMidiV && ascMidiV->isArray())
+                    for (int j = 0; j < ascMidiV->size(); ++j)
+                        mle.degrees.ascendingMidiNotes.push_back ((int) (*ascMidiV)[j]);
+                const juce::var* ascDevV = dp.getVarPointer ("ascendingCentsDeviations");
+                if (ascDevV && ascDevV->isArray())
+                    for (int j = 0; j < ascDevV->size(); ++j)
+                        mle.degrees.ascendingCentsDeviations.push_back ((double) (*ascDevV)[j]);
             }
 
             // Transpositions
@@ -593,6 +623,18 @@ ApiDataCache::TuningData ApiDataCache::jsonToTuningData (const juce::var& json)
                             for (int a = 0; a < tAscSolV->size(); ++a)
                                 trans.degrees.ascendingSolfeges.push_back ((*tAscSolV)[a].toString());
                         }
+                        const juce::var* tAscIpnV = tdp.getVarPointer ("ascendingIpnRefs");
+                        if (tAscIpnV && tAscIpnV->isArray())
+                            for (int a = 0; a < tAscIpnV->size(); ++a)
+                                trans.degrees.ascendingIpnRefs.push_back ((*tAscIpnV)[a].toString());
+                        const juce::var* tAscMidiV = tdp.getVarPointer ("ascendingMidiNotes");
+                        if (tAscMidiV && tAscMidiV->isArray())
+                            for (int a = 0; a < tAscMidiV->size(); ++a)
+                                trans.degrees.ascendingMidiNotes.push_back ((int) (*tAscMidiV)[a]);
+                        const juce::var* tAscDevV = tdp.getVarPointer ("ascendingCentsDeviations");
+                        if (tAscDevV && tAscDevV->isArray())
+                            for (int a = 0; a < tAscDevV->size(); ++a)
+                                trans.degrees.ascendingCentsDeviations.push_back ((double) (*tAscDevV)[a]);
                     }
                     mle.transpositions.push_back (std::move (trans));
                 }

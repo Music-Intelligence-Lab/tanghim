@@ -66,6 +66,14 @@ public:
     // ── Heptatonic keyboard mode ────────────────────────────────────────────────
     std::atomic<bool> heptEnabled { false };
     void setHeptEnabled (bool enabled);
+
+    /** "Hept from C": white keys play the maqam degrees starting from C, instead of
+        from the tonic's own natural key. The degrees and their pitches are identical —
+        only the keyboard position of the tonic changes, so every maqam is fingered the
+        same way. Mutually exclusive with plain Hept (both share heptMap). */
+    std::atomic<bool> heptFromCEnabled { false };
+    void setHeptFromCEnabled (bool enabled);
+    bool getHeptFromCEnabled() const { return heptFromCEnabled.load (std::memory_order_relaxed); }
     bool getHeptEnabled() const { return heptEnabled.load (std::memory_order_relaxed); }
     void rebuildHeptMap();
 
@@ -140,6 +148,14 @@ public:
     void                                     setCurrentActivePresetIdx (int idx)  { currentActivePresetIdx = idx; }
     double                                   getCurrentStartMidi()         const { return currentStartMidi; }
     const std::vector<juce::String>&         getCurrentDegreeNames()       const { return currentDegreeNames; }
+    /** Per-degree maqam-context ipnReferenceNoteName, parallel to getCurrentDegreeNames().
+        The editor MUST use this (not the tuning system's global pitch-class ipnReference)
+        to decide which chromatic slot a degree occupies, or its degree highlighting and
+        modification detection will disagree with the pitches the processor actually set. */
+    const std::vector<juce::String>&         getDegreePerDegreeIpnRefs()   const { return currentDegreePerDegreeIpnRefs; }
+    /** Per-degree cents deviation, parallel to getCurrentDegreeNames() and already
+        relative to the matching getDegreePerDegreeIpnRefs() slot. */
+    const std::vector<double>&               getDegreeCentsDeviations()    const { return currentDegreeCentsDeviations; }
     bool                                     getSessionRecallInProgress()  const { return sessionRecallInProgress; }
     bool                                     getHasRecalledSessionState()  const { return hasRecalledSessionState; }
     const std::array<juce::String, 12>&      getDegreeIpnRefs()            const { return currentDegreeIpnRefs; }
@@ -289,6 +305,12 @@ private:
     int                       currentActivePresetIdx  = -1; // -1 = none
     double                    currentStartMidi       = 48.0; // scroll position (synced from JS)
     std::vector<juce::String> currentDegreeNames;           // ascending PAO names for highlighting
+    std::vector<juce::String> currentDegreePerDegreeIpnRefs; // parallel to currentDegreeNames:
+                                                             // the API's maqam-context ipnReferenceNoteName
+                                                             // per degree (slot source — see applyMaqamDegrees).
+                                                             // NOT currentDegreeIpnRefs, which is indexed BY slot.
+    std::vector<double>       currentDegreeCentsDeviations; // parallel: the API's per-degree deviation,
+                                                            // already relative to the ref above
     bool                      hasRecalledSessionState = false;
     bool                      sessionRecallInProgress = false;
     int                       currentTonicChromatic  = 0;   // 0-11, used for tonic-relative slot mapping
