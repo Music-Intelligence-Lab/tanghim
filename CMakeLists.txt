@@ -81,6 +81,7 @@ target_sources(Tanghim
         source/editor/ReferenceFreqControl.cpp
         source/editor/SearchablePopup.cpp
         source/editor/OutputBadges.cpp
+        source/editor/SettingsPanel.cpp
         source/editor/RangeScrollerComponent.cpp
         source/editor/MaqamPresetBar.cpp
         source/editor/MaqamSelectorComponent.cpp
@@ -90,6 +91,7 @@ target_sources(Tanghim
         source/api/ApiDataCache.cpp
         source/api/ApiResponseParser.cpp
         source/api/DataUpdateChecker.cpp
+        source/api/AppUpdateChecker.cpp
 
         # Tuning engine
         source/engine/TuningEngine.cpp

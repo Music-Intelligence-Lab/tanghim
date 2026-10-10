@@ -6,6 +6,7 @@
 #include "NoteSliderBankComponent.h"
 #include "ReferenceFreqControl.h"
 #include "OutputBadges.h"
+#include "SettingsPanel.h"
 #include "MaqamSelectorComponent.h"
 #include "MaqamPresetBar.h"
 #include "RangeScrollerComponent.h"
@@ -139,6 +140,12 @@ private:
     juce::TextButton loadButton   { "Load" };
     juce::TextButton saveButton   { "Save" };
     juce::TextButton settingsButton { "Settings" };
+    SettingsPanel    settingsPanel;
+    void showSettingsPanel();
+    void refreshSettingsUpdateStatus();
+    void syncAppUpdateButton();
+    /** Status-bar button shown only when a newer release exists; opens the release page. */
+    juce::TextButton appUpdateButton;
 
     TuningSystemSelectorComponent tuningSystemSelector;
     MaqamSelectorComponent        maqamSelector;

@@ -5,6 +5,7 @@
 #include "api/DiArMaqArClient.h"
 #include "api/ApiDataCache.h"
 #include "api/DataUpdateChecker.h"
+#include "api/AppUpdateChecker.h"
 #include "engine/TuningEngine.h"
 #include "engine/TriangleOscillator.h"
 #include "receiver/ReceiverRegistry.h"
@@ -187,6 +188,21 @@ public:
     enum class DownloadState { idle, downloading, connectionError };
     enum class UpdateState { idle, checking, updatesAvailable, updating, updated, upToDate, error };
 
+    // ── Application update check (GitHub Releases) ───────────────────────────
+    // Separate from updateState above, which tracks DiArMaqAr tuning-DATA versions.
+    /** Latest release newer than this build, or empty. Written on the message thread. */
+    juce::String  availableAppVersion;
+    juce::String  availableAppUrl;
+
+    /** Check for updates automatically on startup. User preference, persisted in
+        settings.json — not an APVTS parameter (not automatable). */
+    std::atomic<bool> autoUpdateCheck { true };
+    void setAutoUpdateCheck (bool enabled);
+    bool getAutoUpdateCheck() const { return autoUpdateCheck.load (std::memory_order_relaxed); }
+
+    /** Run the GitHub release check; populates availableAppVersion/Url on success. */
+    void checkForAppUpdate (std::function<void()> onDone = {});
+
     std::atomic<DownloadState> downloadState { DownloadState::idle };
     std::atomic<UpdateState>   updateState   { UpdateState::idle };
     std::atomic<bool>          maqamDataLoading { false };  // true while maqam list is being fetched
@@ -331,6 +347,7 @@ private:
     DiArMaqArClient  apiClient;
     ApiDataCache     dataCache;
     DataUpdateChecker updateChecker;
+    AppUpdateChecker  appUpdateChecker { alive };   // GitHub release check (needs `alive` above)
     TuningEngine     tuningEngine;
     TriangleOscillator oscillator;
 

@@ -89,6 +89,21 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
     setupMenuBtn (loadButton);
     setupMenuBtn (saveButton);
     setupMenuBtn (settingsButton);
+    settingsButton.onClick = [this] { showSettingsPanel(); };
+
+    // Status-bar indicator for a newer plug-in release. Sits BESIDE the tuning-data
+    // "Updates" button rather than replacing it — they mean different things, and the
+    // manual data check must stay reachable when auto-checking is off.
+    appUpdateButton.setButtonText (juce::CharPointer_UTF8 ("\xe2\x86\x91 Update"));
+    appUpdateButton.setColour (juce::TextButton::buttonColourId, Theme::surface2);
+    appUpdateButton.setColour (juce::TextButton::textColourOffId, Theme::gold);
+    appUpdateButton.setVisible (false);
+    appUpdateButton.onClick = [this]
+    {
+        if (processor.availableAppUrl.isNotEmpty())
+            juce::URL (processor.availableAppUrl).launchInDefaultBrowser();
+    };
+    addAndMakeVisible (appUpdateButton);
 
     loadButton.onClick = [this]
     {
@@ -391,6 +406,19 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
             [this] (auto) { processor.updateState.store (TanghimProcessor::UpdateState::idle); });
         if (! started)
             processor.updateState.store (TanghimProcessor::UpdateState::idle);
+    }
+
+    // Application update check (GitHub Releases) — independent of the tuning-data
+    // check above. Opt-out via Settings; a failure is silent, since the user did not
+    // ask for this check and must not be interrupted by it.
+    if (processor.getAutoUpdateCheck())
+    {
+        processor.checkForAppUpdate ([this] { syncAppUpdateButton(); });
+    }
+    else
+    {
+        // A previous run may already have found one — reflect it without re-checking.
+        syncAppUpdateButton();
     }
 
     startTimerHz (30);
@@ -864,6 +892,65 @@ void TanghimNativeEditor::computeModifiedSlots()
     }
 }
 
+void TanghimNativeEditor::showSettingsPanel()
+{
+    settingsPanel.setAutoUpdateCheck (processor.getAutoUpdateCheck());
+    refreshSettingsUpdateStatus();
+
+    settingsPanel.onAutoUpdateCheckChanged = [this] (bool on)
+    {
+        processor.setAutoUpdateCheck (on);
+    };
+
+    settingsPanel.onCheckNow = [this]
+    {
+        settingsPanel.setCheckInProgress (true);
+        settingsPanel.setUpdateStatus ("Checking for updates\xe2\x80\xa6", false);
+        processor.checkForAppUpdate ([this]
+        {
+            settingsPanel.setCheckInProgress (false);
+            refreshSettingsUpdateStatus();
+            syncAppUpdateButton();
+        });
+    };
+
+    settingsPanel.onOpenRelease = [this]
+    {
+        if (processor.availableAppUrl.isNotEmpty())
+            juce::URL (processor.availableAppUrl).launchInDefaultBrowser();
+    };
+
+    settingsPanel.onClose = [this]
+    {
+        settingsPanel.setVisible (false);
+        removeChildComponent (&settingsPanel);
+    };
+
+    addAndMakeVisible (settingsPanel);
+    settingsPanel.setBounds (getLocalBounds());
+    settingsPanel.toFront (true);
+    settingsPanel.grabKeyboardFocus();
+}
+
+void TanghimNativeEditor::refreshSettingsUpdateStatus()
+{
+    if (processor.availableAppVersion.isNotEmpty())
+        settingsPanel.setUpdateStatus ("Tanghim " + processor.availableAppVersion
+                                       + " is available", true);
+    else
+        settingsPanel.setUpdateStatus ("Tanghim is up to date", false);
+}
+
+void TanghimNativeEditor::syncAppUpdateButton()
+{
+    const bool show = processor.availableAppVersion.isNotEmpty();
+    if (show != appUpdateButton.isVisible())
+    {
+        appUpdateButton.setVisible (show);
+        resized();   // the status bar lays out right-to-left
+    }
+}
+
 // ── Layout ────────────────────────────────────────────────────────────────────
 //
 // Reference layout (from tanghim-ui.png):
@@ -1019,6 +1106,14 @@ void TanghimNativeEditor::resized()
         const int updatesBtnW = 120;
         updatesButton.setBounds (rightEdge - updatesBtnW, yPos, updatesBtnW, btnHeight);
         rightEdge -= updatesBtnW + 4;
+
+        // New-release indicator, only present when there is one to show
+        if (appUpdateButton.isVisible())
+        {
+            const int appUpdW = 90;
+            appUpdateButton.setBounds (rightEdge - appUpdW, yPos, appUpdW, btnHeight);
+            rightEdge -= appUpdW + 4;
+        }
 
         const int clearCacheBtnW = 80;
         clearCacheButton.setBounds (rightEdge - clearCacheBtnW, yPos, clearCacheBtnW, btnHeight);

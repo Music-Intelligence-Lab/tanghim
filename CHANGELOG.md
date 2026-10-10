@@ -46,8 +46,14 @@ first public release.
   white keys starting from C, rather than from the maqām's own tonic key, so every maqām
   is fingered identically. The degrees and their pitches are unchanged; only the keyboard
   position differs. The two modes are mutually exclusive.
-- Update notifications: Tanghīm checks for new releases and shows an indicator in the
-  status bar. Automatic checking can be turned off in Settings.
+- **Update notifications.** Tanghīm checks GitHub for a newer release on startup and shows
+  an **↑ Update** button in the status bar when one exists; clicking it opens the release
+  page. This is separate from the existing **Updates** button, which tracks DiArMaqAr
+  tuning-data versions — the two mean different things and both stay available.
+- **Settings panel**, opened from the Settings button: turn automatic update checking off,
+  check manually, and see the installed version. Automatic checking is on by default.
+  Tanghīm never replaces its own files — a DAW holds the plug-in open while running — so
+  updating is always "open the release page and run the installer".
 
 ## [0.9.0] - 2026-10-09
 

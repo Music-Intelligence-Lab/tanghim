@@ -1770,6 +1770,44 @@ void TanghimProcessor::setHeptEnabled (bool enabled)
     saveSettingsToDisk();
 }
 
+void TanghimProcessor::setAutoUpdateCheck (bool enabled)
+{
+    if (autoUpdateCheck.exchange (enabled, std::memory_order_relaxed) == enabled)
+        return;
+    saveSettingsToDisk();
+}
+
+void TanghimProcessor::checkForAppUpdate (std::function<void()> onDone)
+{
+    std::weak_ptr<std::atomic<bool>> weak (alive);
+
+    const bool started = appUpdateChecker.check (
+        [this, weak, onDone] (juce::String version, juce::String url)
+        {
+            if (! isAlive (weak)) return;
+            availableAppVersion = version;
+            availableAppUrl     = url;
+            if (onDone) onDone();
+        },
+        [this, weak, onDone]
+        {
+            if (! isAlive (weak)) return;
+            availableAppVersion.clear();
+            availableAppUrl.clear();
+            if (onDone) onDone();
+        },
+        [this, weak, onDone] (juce::String)
+        {
+            // Network failure is not surfaced: an update check the user did not ask
+            // for must never interrupt them. The manual Settings check reports errors.
+            if (! isAlive (weak)) return;
+            if (onDone) onDone();
+        });
+
+    if (! started && onDone)
+        onDone();   // a check was already in flight
+}
+
 void TanghimProcessor::setHeptFromCEnabled (bool enabled)
 {
     // heptEnabled stays the master switch for the whole remap path (processBlock, the
@@ -2924,6 +2962,7 @@ void TanghimProcessor::saveSettingsToDisk() const
     obj->setProperty ("oscillatorEnabled", oscillatorEnabled.load (std::memory_order_relaxed));
     obj->setProperty ("heptEnabled", heptEnabled.load (std::memory_order_relaxed));
     obj->setProperty ("heptFromCEnabled", heptFromCEnabled.load (std::memory_order_relaxed));
+    obj->setProperty ("autoUpdateCheck", autoUpdateCheck.load (std::memory_order_relaxed));
 
     const auto dir = getTanghimDir();
     dir.createDirectory();
@@ -3041,6 +3080,9 @@ void TanghimProcessor::loadSettingsFromDisk()
         auto heptFromCProp = obj->getProperty ("heptFromCEnabled");
         if (! heptFromCProp.isVoid())
             heptFromCEnabled.store ((bool) heptFromCProp, std::memory_order_relaxed);
+        auto autoUpdProp = obj->getProperty ("autoUpdateCheck");
+        if (! autoUpdProp.isVoid())
+            autoUpdateCheck.store ((bool) autoUpdProp, std::memory_order_relaxed);
     }
 }
 
