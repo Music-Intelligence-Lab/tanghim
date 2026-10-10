@@ -1846,7 +1846,15 @@ void TanghimProcessor::rebuildHeptMap()
     };
     std::vector<DegreeInfo> degreeInfos;
 
+    // The tonic's actual MIDI note, straight from the API. The octave must come from
+    // this, never be inferred from the chromatic slot: slots only span C3-B3 (48-59),
+    // while a maqam tonic can sit anywhere (maqam rahat al-arwah on ʿirāq is B2 = 47).
+    int tonicMidiNote = -1;
+
     static constexpr int whiteKeys[] = { 0, 2, 4, 5, 7, 9, 11 };
+
+    // C3 — the base of the 12-slider register (see ApiResponseParser::buildVariantsPerSlot)
+    static constexpr int kSliderRegisterBase = 48;
 
     // Map IPN letter to white key index
     auto letterToWhiteIdx = [] (juce::juce_wchar letter) -> int {
@@ -1889,7 +1897,6 @@ void TanghimProcessor::rebuildHeptMap()
         std::vector<int> degreeChroms;
         std::set<int> seenChroms;
         int startWhiteIdx = -1;
-        int tonicMidiNote = -1;
 
         for (size_t di = 0; di < currentDegreeNames.size(); ++di)
         {
@@ -1985,28 +1992,90 @@ void TanghimProcessor::rebuildHeptMap()
 
     if (! degreeInfos.empty())
     {
-        // Absolute (unwrapped) degree pitches, ascending, relative to the first degree
-        std::vector<int> ascending;
+        // Build the scale as ABSOLUTE ascending MIDI notes from the tonic's real
+        // note, then give each white key the delta that reaches its own degree.
+        //
+        // heptMap holds one delta per pitch class and is applied at every octave, so
+        // the map is necessarily octave-periodic. The delta for each key must
+        // therefore be measured from THAT key, not accumulated along the scale — an
+        // accumulated run made the C key +12 for a G tonic, so C4 sounded C5.
+        //
+        // The anchor is the first start key AT OR ABOVE the tonic: the slider bank
+        // and range scroller both show tonic..tonic+12, so for a B2 tonic the C in
+        // view is C3, not C2. Each later key takes the octave that keeps the run
+        // ascending from the anchor, which is what makes the scale play upward from
+        // whichever key the player starts on.
+        const int startKey = whiteKeys[degreeInfos[0].whiteKeyIdx];
+
+        // The anchor is the start key in the SAME LETTER-OCTAVE as the tonic, i.e. the
+        // C..B span the tonic's own letter belongs to — not the nearest key by pitch.
+        //
+        // The letter decides, because that is what "play this maqam from C" means to a
+        // player: a tonic spelled C, D, E, F, G, A or B sounds at or above its C; a
+        // tonic spelled B belongs to the span BELOW the next C, so maqam rahat
+        // al-arwah on ʿirāq (B-b2) correctly sounds B2 when C3 is pressed, while
+        // bayyat on nawa (G3) sounds G3, not G2.
+        //
+        // Using pitch distance instead sent every tonic more than a tritone above the
+        // key down an octave (G3 -> G2, and with an at-or-above-tonic anchor F3 and
+        // E-b3 too), which is what the tonic presets sounded like in octave 2.
+        // The tonic sounds at ITS OWN MIDI note. Nothing is folded or re-derived:
+        // the delta for the start key is simply the distance from that key to the
+        // tonic, so the maqam is heard in the register the API specifies.
+        //
+        //   press C3, tonic B-b2 (MIDI 47)  ->  delta  -1  ->  sounds B-b2
+        //   press C3, tonic G3   (MIDI 55)  ->  delta  +7  ->  sounds G3
+        //   press C3, tonic G4   (MIDI 67)  ->  delta +19  ->  sounds G4
+        //
+        // The reference key is the start key in the octave the slider bank shows,
+        // which is anchored on the tonic (range = tonic..tonic+12) — so it is the
+        // start key closest to the tonic from below, or the tonic's own key in plain
+        // Hept. heptMap is one delta per pitch class applied at every octave, so
+        // playing an octave up moves the whole maqam with it, as a keyboard should.
+        //
+        // Earlier attempts folded this distance to a nearest or at-or-above octave.
+        // Every one of them pushed some tonic into the wrong register: folding by
+        // pitch sent anything more than a tritone above the key down an octave
+        // (G3 -> G2, F3 -> F2, E-b3 -> E-b2), and an at-or-above rule sent B-b2 up
+        // to B-b3.
+        // The reference key differs per mode, because the player's hand does:
+        //
+        //  - plain Hept: the tonic key IS the start key, so the reference is the
+        //    tonic's own key and the delta is 0. Pressing B2 for a B-b2 tonic sounds
+        //    B-b2, and the octave follows the key as usual.
+        //
+        //  - Hept from C: the player reaches for C wherever they are, so the
+        //    reference is C in the SLIDER REGISTER (C3 = 48, the same register
+        //    buildVariantsPerSlot() uses). That is a fixed point of the plug-in, not
+        //    something derived from the tonic — every attempt to derive it from the
+        //    tonic moved the reference with the maqam while the player's hand stayed
+        //    put, which is what kept pushing one maqam or another into the wrong
+        //    octave (G3 -> G2, or B-b2 -> B-b3).
+        const int anchorKey = heptFromCEnabled.load (std::memory_order_relaxed)
+                            ? kSliderRegisterBase + startKey
+                            : (tonicMidiNote / 12) * 12 + startKey
+                              + (((tonicMidiNote / 12) * 12 + startKey) > tonicMidiNote ? -12 : 0);
+
+        std::vector<int> ascending;           // absolute MIDI, strictly ascending
         ascending.reserve (degreeInfos.size());
-        ascending.push_back (degreeInfos[0].chromatic);
+        ascending.push_back (tonicMidiNote);
         for (size_t i = 1; i < degreeInfos.size(); ++i)
         {
-            int next = degreeInfos[i].chromatic;
+            int next = (ascending.back() / 12) * 12 + degreeInfos[i].chromatic;
             while (next <= ascending.back()) next += 12;
             ascending.push_back (next);
         }
 
-        // Anchor the run so the FIRST degree stays within an octave of its own key —
-        // this reproduces plain Hept exactly (all-zero offset) and keeps "Hept from C"
-        // playing in the register the player expects.
-        int anchor = ascending[0] - whiteKeys[degreeInfos[0].whiteKeyIdx];
-        while (anchor >  6) anchor -= 12;
-        while (anchor < -6) anchor += 12;
-        const int shift = anchor - (ascending[0] - whiteKeys[degreeInfos[0].whiteKeyIdx]);
-
         for (size_t i = 0; i < degreeInfos.size(); ++i)
-            deltas[whiteKeys[degreeInfos[i].whiteKeyIdx]] = ascending[i] + shift
-                                                          - whiteKeys[degreeInfos[i].whiteKeyIdx];
+        {
+            const int wk = whiteKeys[degreeInfos[i].whiteKeyIdx];
+
+            // This key, in the octave at or above the anchor
+            int key = (anchorKey / 12) * 12 + wk;
+            while (key < anchorKey) key += 12;
+
+            deltas[wk] = ascending[i] - key;
+        }
     }
 
     for (int i = 0; i < 12; ++i)
