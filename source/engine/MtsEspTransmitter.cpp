@@ -4,7 +4,15 @@
 
 MtsEspTransmitter::MtsEspTransmitter()
 {
-    if (MTS_CanRegisterMaster())
+    if (MTS_HasIPC() && MTS_CanRegisterMaster())
+    {
+        // Stale shared memory with no master — reinitialize to clear phantom client count
+        DBG ("MtsEspTransmitter: stale IPC (no master), reinitializing MTS-ESP");
+        MTS_Reinitialize();
+        MTS_RegisterMaster();
+        registered = true;
+    }
+    else if (MTS_CanRegisterMaster())
     {
         DBG ("MtsEspTransmitter: registering as transmitter");
         MTS_RegisterMaster();
@@ -12,10 +20,8 @@ MtsEspTransmitter::MtsEspTransmitter()
     }
     else if (MTS_HasIPC())
     {
-        // IPC is in use but another master appears registered — this can happen
-        // if a previous DAW session crashed without calling MTS_DeregisterMaster().
-        // Reinitialize the shared memory and re-register.
-        DBG ("MtsEspTransmitter: stale IPC detected, reinitializing MTS-ESP");
+        // IPC is in use and another master is registered — previous session crashed
+        DBG ("MtsEspTransmitter: stale master detected, reinitializing MTS-ESP");
         MTS_Reinitialize();
         MTS_RegisterMaster();
         registered = true;
