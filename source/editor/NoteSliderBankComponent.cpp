@@ -87,6 +87,16 @@ void NoteSliderBankComponent::setHeptEnabled (bool enabled)
     }
 }
 
+void NoteSliderBankComponent::setHeptDeltas (const std::array<int, 12>& deltas)
+{
+    if (heptDeltas != deltas)
+    {
+        heptDeltas = deltas;
+        computeHeptInfo();
+        updateVisibleSliders();
+    }
+}
+
 void NoteSliderBankComponent::updateSlotCents (int chromaticIndex, double cents)
 {
     if (chromaticIndex >= 0 && chromaticIndex < 12)
@@ -190,29 +200,32 @@ void NoteSliderBankComponent::computeHeptInfo()
 
     if (! heptEnabled || maqamDegreeIndices.empty()) return;
 
+    // Derive the display from the processor's authoritative deltas rather than
+    // re-deriving white keys from IPN letters. Letter-based assignment collides
+    // when degrees share a letter after microtonal modifiers are stripped (e.g.
+    // Ab-- and A-#), which made the labels disagree with what the keys play.
+    static constexpr int WHITE_KEYS[7] = { 0, 2, 4, 5, 7, 9, 11 };
+    static constexpr const char* KEY_LETTERS[12] = {
+        "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
+    };
+
     std::set<int> reachable;
 
     // Black keys always reachable (delta 0)
     for (int bk : BLACK_KEYS)
         reachable.insert (bk);
 
-    // Degrees reachable; IPN first letter = source white key
-    static const std::map<char, int> WHITE_KEY_MAP = {
-        {'C', 0}, {'D', 2}, {'E', 4}, {'F', 5}, {'G', 7}, {'A', 9}, {'B', 11}
-    };
-
-    for (int ci : maqamDegreeIndices)
+    // A white key with delta d plays chromatic slot (key + d) % 12 — that slot is
+    // reachable, and it is labelled with the key the player presses to reach it.
+    for (int wk : WHITE_KEYS)
     {
-        reachable.insert (ci);
-        juce::String ipn = degreeIpnMap[(size_t) ci];
+        const int delta = heptDeltas[(size_t) wk];
+        const int target = ((wk + delta) % 12 + 12) % 12;
 
-        if (ipn.isNotEmpty())
-        {
-            char letter = ipn[0];
-            auto it = WHITE_KEY_MAP.find (letter);
-            if (it != WHITE_KEY_MAP.end() && it->second != ci)
-                heptSourceKeyMap[ci] = juce::String::charToString (letter);
-        }
+        reachable.insert (target);
+
+        if (delta != 0)
+            heptSourceKeyMap[target] = juce::String (KEY_LETTERS[wk]);
     }
 
     for (int i = 0; i < 12; ++i)

@@ -214,6 +214,11 @@ TanghimNativeEditor::TanghimNativeEditor (TanghimProcessor& p)
     {
         processor.setHeptEnabled (enabled);
         outputBadges.setHeptEnabled (enabled);  // immediate visual feedback
+
+        std::array<int, 12> deltas {};
+        for (int ci = 0; ci < 12; ++ci)
+            deltas[(size_t) ci] = processor.getHeptDelta (ci);
+        noteSliderBank.setHeptDeltas (deltas);
         noteSliderBank.setHeptEnabled (enabled);
     };
 
@@ -409,12 +414,18 @@ void TanghimNativeEditor::syncFullState()
     // Compute derived maqam state
     computeDerivedState();
 
-    // Push to slider bank — set IPN/solfege maps BEFORE maqamInfo
-    // (maqamInfo triggers computeHeptInfo which needs degreeIpnMap)
+    // Push to slider bank — set IPN/solfege maps and hept deltas BEFORE maqamInfo
+    // (maqamInfo triggers computeHeptInfo, which needs both)
     noteSliderBank.setTuningState (state);
     noteSliderBank.setScrollPosition (processor.getCurrentStartMidi());
     noteSliderBank.setDegreeIpnMap (processor.getDegreeIpnRefs());
     noteSliderBank.setDegreeSolfegeMap (processor.getDegreeSolfegeRefs());
+
+    std::array<int, 12> heptDeltas {};
+    for (int ci = 0; ci < 12; ++ci)
+        heptDeltas[(size_t) ci] = processor.getHeptDelta (ci);
+    noteSliderBank.setHeptDeltas (heptDeltas);
+
     noteSliderBank.setMaqamInfo (maqamDegreeIndices, maqamTonicIndex, maqamTonicMidi,
                                 modifiedSlots, degreePaoNameMap);
     noteSliderBank.setNoteNames (noteNameMap);

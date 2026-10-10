@@ -26,6 +26,9 @@ public:
     void setDegreeSolfegeMap (const std::array<juce::String, 12>& solMap);
     void setNoteNames (const std::map<int, std::map<int, juce::String>>& names);
     void setHeptEnabled (bool enabled);
+    /** Authoritative per-slot semitone deltas from the processor's rebuildHeptMap().
+        Must be set before setHeptEnabled/setMaqamInfo recompute the hept display. */
+    void setHeptDeltas (const std::array<int, 12>& deltas);
     void updateSlotCents (int chromaticIndex, double cents);
     void updateMidiActivity (const std::vector<int>& onsVec, const std::vector<int>& offsVec);
 
@@ -65,7 +68,8 @@ private:
 
     bool heptEnabled = false;
 
-    // Hept info (computed from degree indices + IPN map)
+    // Hept info (derived from the processor's authoritative heptDeltas)
+    std::array<int, 12> heptDeltas {};
     std::set<int> heptMuted;
     std::map<int, juce::String> heptSourceKeyMap;
 

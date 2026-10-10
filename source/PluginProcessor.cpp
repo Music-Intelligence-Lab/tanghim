@@ -1758,14 +1758,22 @@ void TanghimProcessor::setHeptEnabled (bool enabled)
 
 void TanghimProcessor::rebuildHeptMap()
 {
-    // Map each degree to its natural white key using IPN letter name.
-    // Bb→B key, Gb→G key, F#→F key, Eb→E key, etc.
-    // This ensures musically correct mapping (Bb is a variant of B, not A).
+    // Assign white keys by DEGREE POSITION, not by each degree's IPN letter:
+    // the tonic's IPN letter picks the starting white key, then degree k goes to
+    // white key (tonicWhiteIdx + k) % 7. This is the spec — "white keys play maqam
+    // degrees starting from the tonic's natural key".
     //
-    // IPN source priority:
-    //   1. currentDegreeIpnRefs[chromIdx] — context-aware from maqam detail
-    //      (enharmonically correct: Saba uses Gb, Hijaz uses F# for same pitch)
-    //   2. Pitch class ipnReference — from tuning system data (always available)
+    // Position-based assignment is required because degree spellings are NOT
+    // guaranteed to use 7 distinct letters. Microtonal modifiers are stripped when
+    // deriving the IPN letter, so e.g. maqam kurd on chahārgāh (al-Sabbāgh 1954)
+    // spells its degrees F, G-b, Ab--, A-#, C, Db, D-# → letters F, G, A, A, C, D, D.
+    // Letter-based assignment collided on A and D, silently dropped those degrees,
+    // and left the B and E keys unmapped (playing their un-remapped chromatic
+    // pitch) — which is exactly the reported "F, G, A, A, C, D, D". Position is
+    // injective by construction, so it cannot collide. → diary/2026-10-10.md
+    //
+    // IPN source: currentDegreeIpnRefs[chromIdx] — context-aware from the maqam list
+    // (enharmonically correct: Saba uses Gb, Hijaz uses F# for the same pitch).
 
     struct DegreeInfo {
         int chromatic;     // 0-11 chromatic index
@@ -1790,38 +1798,70 @@ void TanghimProcessor::rebuildHeptMap()
     {
         const auto& data = dataCache.getData (currentSystemId, currentStartingNote);
 
-        // Build PAO name → chromatic index lookup
-        std::map<juce::String, int> nameToChrom;
+        // Build PAO name → (chromatic index, MIDI note) lookup
+        struct SlotRef { int chromatic; int midiNote; };
+        std::map<juce::String, SlotRef> nameToSlot;
         for (const auto& pc : data.pitchClasses)
         {
             if (pc.noteName.isEmpty()) continue;
             const int ci = chromaticIndexForIpnRef (pc.ipnReference);
-            if (ci >= 0 && nameToChrom.count (pc.noteName) == 0)
-                nameToChrom[pc.noteName] = ci;
+            if (ci >= 0 && nameToSlot.count (pc.noteName) == 0)
+                nameToSlot[pc.noteName] = { ci, pc.midiNoteNumber };
         }
 
-        // Collect degree info: chromatic index + white key from IPN letter
+        // Collect the ascending degrees with distinct chromatic slots, in order.
+        // Only the tonic (first degree) needs a usable IPN letter — it sets the
+        // starting white key; the rest are assigned by position.
+        //
+        // Degrees are cut at the OCTAVE (MIDI note >= tonic + 12). The ascending
+        // degree list often continues past the octave, and a maqam may repeat a
+        // chromatic slot within the octave (e.g. ʿawj ārā on tīk ḥisār has both
+        // A-b and A-# on slot 9). Without the cut, the seenChroms dedup drops the
+        // repeat and pulls in degrees from ABOVE the octave to reach 7, shifting
+        // every later degree onto the wrong key and producing a non-monotonic
+        // keyboard (pressing G could sound higher than pressing A). Measured: 16
+        // such keyboards across the cached systems before the cut, 0 after.
+        std::vector<int> degreeChroms;
         std::set<int> seenChroms;
-        std::set<int> seenWhiteKeys;
+        int startWhiteIdx = -1;
+        int tonicMidiNote = -1;
+
         for (const auto& name : currentDegreeNames)
         {
-            auto chromIt = nameToChrom.find (name);
-            if (chromIt == nameToChrom.end()) continue;
+            auto slotIt = nameToSlot.find (name);
+            if (slotIt == nameToSlot.end()) continue;
 
-            const int ci = chromIt->second;
+            const int ci = slotIt->second.chromatic;
+            const int midiNote = slotIt->second.midiNote;
+
+            if (degreeChroms.empty())
+            {
+                // Context-aware IPN ref from the maqam list (no fallback — tuning
+                // system IPN may carry the wrong enharmonic, e.g. "C#" vs "Db")
+                const juce::String tonicIpn = currentDegreeIpnRefs[(size_t) ci];
+                if (tonicIpn.isEmpty()) break;
+
+                startWhiteIdx = letterToWhiteIdx (tonicIpn[0]);
+                if (startWhiteIdx < 0) break;
+
+                tonicMidiNote = midiNote;
+            }
+            else if (midiNote >= tonicMidiNote + 12)
+            {
+                break;  // reached the octave — the scale is complete
+            }
+
             if (! seenChroms.insert (ci).second) continue;
 
-            // Context-aware IPN ref from maqam detail (no fallback — tuning system IPN
-            // may have wrong enharmonic, e.g. "C#" vs "Db", causing white key collision)
-            juce::String ipn = currentDegreeIpnRefs[(size_t) ci];
-            if (ipn.isEmpty()) continue;
-
-            const int wki = letterToWhiteIdx (ipn[0]);
-            if (wki < 0 || ! seenWhiteKeys.insert (wki).second) continue;
-
-            degreeInfos.push_back ({ ci, wki });
-            if (degreeInfos.size() >= 7) break;
+            degreeChroms.push_back (ci);
+            if (degreeChroms.size() >= 7) break;
         }
+
+        // Need a full heptatonic set — a partial map would leave white keys playing
+        // their un-remapped chromatic pitch, which is exactly the bug this avoids.
+        if (degreeChroms.size() == 7 && startWhiteIdx >= 0)
+            for (size_t k = 0; k < 7; ++k)
+                degreeInfos.push_back ({ degreeChroms[k], (startWhiteIdx + (int) k) % 7 });
     }
 
     if (degreeInfos.empty())

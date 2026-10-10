@@ -69,6 +69,14 @@ public:
     bool getHeptEnabled() const { return heptEnabled.load (std::memory_order_relaxed); }
     void rebuildHeptMap();
 
+    /** Signed semitone delta applied to chromatic slot ci (0-11) in heptatonic mode.
+        The editor reads this so its labels/muting match what the keys actually play
+        — rebuildHeptMap() is the single source of truth for the remapping. */
+    int getHeptDelta (int ci) const
+    {
+        return (ci >= 0 && ci < 12) ? heptMap[(size_t) ci].load (std::memory_order_relaxed) : 0;
+    }
+
     // ── Reference frequency control ───────────────────────────────────────────
     void   setReferenceCentsOffset (double cents);
     void   finalizeReferenceCentsOffset (double cents);
