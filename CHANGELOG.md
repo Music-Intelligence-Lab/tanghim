@@ -29,6 +29,12 @@ first public release.
   keys are now assigned by degree position rather than by each degree's note letter, which
   could collide and drop degrees. Degree collection also stops at the octave, fixing
   keyboards where pressing a higher white key sounded a lower pitch.
+- **Heptatonic mode played some maqāmāt in the wrong octave.** The starting octave was
+  worked out from the chromatic slider positions rather than read from the maqām's tonic,
+  so a maqām whose tonic sits outside the slider register sounded an octave out — maqām
+  bayyāt on nawā played in octave 2, maqām rāhat al-arwāh on ʿirāq in octave 3. The tonic
+  now always sounds at the pitch DiArMaqAr specifies, and playing in a different octave
+  moves the whole maqām with it.
 - **Pitches spelled with double accidentals** (`F##`, `B♭♭`, `E♭♭`, `C##`…) were not
   recognised and their degrees were skipped.
 - **Slider display contradicted the tuning.** A degree moved to a different chromatic slot
