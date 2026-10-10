@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(Tanghim VERSION 0.9.0)
+project(Tanghim VERSION 0.9.1)
 
 # ── Version-consistency guard ─────────────────────────────────────────────────
 # When the workflow builds a tagged release it passes -DTANGHIM_EXPECTED_VERSION=<version>

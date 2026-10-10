@@ -19,6 +19,13 @@ void OutputBadges::setHeptEnabled (bool enabled)
     repaint();
 }
 
+void OutputBadges::setHeptFromCEnabled (bool enabled)
+{
+    heptFromCEnabled = enabled;
+    rebuildBadges();
+    repaint();
+}
+
 void OutputBadges::setHasMaqam (bool has)
 {
     hasMaqam = has;
@@ -40,9 +47,13 @@ void OutputBadges::rebuildBadges()
 {
     badges.clear();
 
-    // Row 1: toggle badges (always shown)
+    // Row 1: toggle badges (always shown). Hept and Hept from C are mutually
+    // exclusive — both drive the same remap, differing only in the starting white key.
     badges.push_back ({ "Osc",  Theme::oscAmber,   oscEnabled,  true, -1, {} });
-    badges.push_back ({ "Hept", Theme::heptMagenta, heptEnabled && hasMaqam, true, -1, {} });
+    badges.push_back ({ "Hept", Theme::heptMagenta,
+                        heptEnabled && ! heptFromCEnabled && hasMaqam, true, -1, {} });
+    badges.push_back ({ "Hept from C", Theme::heptMagenta,
+                        heptEnabled && heptFromCEnabled && hasMaqam, true, -1, {} });
 
     // Row 2: status badges (always shown, greyed out when inactive)
     badges.push_back ({ "MTS-ESP", Theme::mtsEsp,    isMtsTransmitter, false, mtsNativeCount, {} });
@@ -68,7 +79,7 @@ void OutputBadges::resized()
 
     // Row 1: Osc, Hept — flex: 1 each (equal width)
     {
-        const int row1Count = 2;
+        const int row1Count = kRow1Count;
         const int totalGap = badgeGap * (row1Count - 1);
         const int badgeW = (area.getWidth() - totalGap) / row1Count;
         int x = area.getX();
@@ -82,7 +93,7 @@ void OutputBadges::resized()
 
     // Row 2: MTS-ESP, MPE, Mono PB — flex: 1 each (equal width)
     {
-        const int row2Start = 2;
+        const int row2Start = kRow1Count;
         const int row2Count = (int) badges.size() - row2Start;
         if (row2Count > 0)
         {
@@ -177,7 +188,11 @@ void OutputBadges::mouseDown (const juce::MouseEvent& e)
             if (badge.label == "Osc" && onOscToggle)
                 onOscToggle (! oscEnabled);
             else if (badge.label == "Hept" && hasMaqam && onHeptToggle)
-                onHeptToggle (! heptEnabled);
+                // Active only when hept is on AND not in from-C mode, so clicking it
+                // while from-C is active switches mode rather than switching off.
+                onHeptToggle (! (heptEnabled && ! heptFromCEnabled));
+            else if (badge.label == "Hept from C" && hasMaqam && onHeptFromCToggle)
+                onHeptFromCToggle (! (heptEnabled && heptFromCEnabled));
             return;
         }
     }
