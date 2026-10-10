@@ -169,29 +169,6 @@ jobs:
         shell: bash
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
-      # CHANGELOG.md is the single source of truth for release notes (RELEASING.md).
-      - name: Checkout (for CHANGELOG)
-        uses: actions/checkout@v4
-
-      - name: Extract release notes from CHANGELOG
-        shell: bash
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          python3 - "$VERSION" <<'PY' > notes.md
-          import re, sys
-          version = sys.argv[1]
-          text = open("CHANGELOG.md", encoding="utf-8").read()
-          m = re.search(r"^## \[" + re.escape(version) + r"\][^\n]*\n(.*?)(?=^## \[|\Z)",
-                        text, re.S | re.M)
-          if not m or not m.group(1).strip():
-              sys.exit("No '## [%s]' section in CHANGELOG.md - add one before tagging "
-                       "(see RELEASING.md)" % version)
-          print("## What's new in %s\n" % version)
-          print(m.group(1).strip())
-          PY
-          echo "----- release notes -----"
-          cat notes.md
-
       - name: Download staged plugins
         uses: actions/download-artifact@v4
         with:
@@ -277,6 +254,33 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+
+      # CHANGELOG.md is the single source of truth for release notes (RELEASING.md).
+      # This runs in the release job (ubuntu-latest) so it executes once, not once
+      # per platform, and never under Windows' cp1252 default stdout encoding.
+      - name: Checkout (for CHANGELOG)
+        uses: actions/checkout@v4
+
+      - name: Extract release notes from CHANGELOG
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # PYTHONIOENCODING guards the Arabic transliteration (maqām, bayyāt, ...)
+          # against any non-UTF-8 default stdout encoding.
+          PYTHONIOENCODING=utf-8 python3 - "$VERSION" > notes.md <<'PY'
+          import re, sys
+          version = sys.argv[1]
+          text = open("CHANGELOG.md", encoding="utf-8").read()
+          m = re.search(r"^## \[" + re.escape(version) + r"\][^\n]*\n(.*?)(?=^## \[|\Z)",
+                        text, re.S | re.M)
+          if not m or not m.group(1).strip():
+              sys.exit("No '## [%s]' section in CHANGELOG.md - add one before tagging "
+                       "(see RELEASING.md)" % version)
+          sys.stdout.write("## What's new in %s\n\n" % version)
+          sys.stdout.write(m.group(1).strip() + "\n")
+          PY
+          echo "----- release notes -----"
+          cat notes.md
 
       - name: Download all installers
         uses: actions/download-artifact@v4
